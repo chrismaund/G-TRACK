@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-TRACK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style(admin).css">
+</head>
+<body>
+
+    <!-- Sliding Sidebar Nav Menu Drawer -->
+    <div id="sidebar-drawer" class="sidebar-drawer">
+        <div class="sidebar-header">
+            <div class="sidebar-user-profile">
+                <div class="user-avatar employee-avatar" title="Employee">
+                    <i class="fas fa-id-badge"></i>
+                </div>
+                <div class="user-info">
+                    <span class="user-name" id="emp-profile-name">Employee</span>
+                    <span class="user-role-tag employee-role-tag" id="emp-profile-email">Staff Access</span>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-content">
+            <!-- Navigation Links -->
+            <button id="sidebar-home-btn" class="sidebar-link-btn active" title="Dashboard Home" onclick="switchEmpView('home'); closeSidebarNavMenu();">
+                <i class="fas fa-home"></i> <span class="sidebar-text">Dashboard </span>
+            </button>
+            <button id="sidebar-directory-btn" class="sidebar-link-btn" title="Equipment Directory" onclick="switchEmpView('directory'); closeSidebarNavMenu();">
+                <i class="fas fa-table-list"></i> <span class="sidebar-text">Masterlist </span>
+            </button>
+            <hr class="sidebar-divider">
+
+            <!-- Theme Toggle Option (Visible only in Masterlist) -->
+            <button id="dark-mode-toggle" class="sidebar-link-btn theme-toggle-hidden" title="Dark Mode">
+                <i class="fas fa-moon"></i> <span class="sidebar-text">Dark Mode</span>
+            </button>
+            <hr id="dark-mode-divider" class="sidebar-divider theme-toggle-hidden">
+
+            <!-- Employee Profile Button -->
+            <button id="sidebar-profile-btn" class="sidebar-link-btn" title="My Profile" onclick="openEmpProfileModal(); closeSidebarNavMenu();">
+                <i class="fas fa-user-cog"></i> <span class="sidebar-text">My Profile</span>
+            </button>
+            <hr class="sidebar-divider">
+            <!-- Consolidated Employee Real-Time Request Control Trigger -->
+            <button id="sidebar-request-btn" class="sidebar-link-btn request-accent-btn" title="Request Copy">
+                <i class="fas fa-paper-plane"></i> <span class="sidebar-text">Request Copy</span>
+            </button>
+            <hr class="sidebar-divider">
+
+            <!-- Quick Expand Button for Request History in mini mode -->
+            <button id="sidebar-history-quick-btn" class="sidebar-link-btn" title="Request History" onclick="toggleHistoryStack()">
+                <i class="fas fa-clock-rotate-left"></i> <span class="sidebar-text">Request History</span>
+                <span id="emp-history-badge" class="badge-count" style="display: none; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 8px;">0</span>
+            </button>
+
+            <!-- Embedded Request History Panel inside the Sidebar -->
+            <div id="request-history-wrapper" class="sidebar-stack-wrapper">
+                <div class="sidebar-section-header">
+                    <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Request History</span>
+                    <button id="clear-history-btn" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: color 0.2s;">
+                        <i class="fas fa-sync-alt"></i> Clear
+                    </button>
+                </div>
+                <!-- Scrollable container for the stacking requests -->
+                <div id="request-history-log" class="sidebar-section-body">
+                    <!-- Stacking cards will render dynamically here -->
+                </div>
+            </div>
+
+            <hr class="sidebar-divider" style="margin-top: auto;">
+            <button id="sidebar-toggle-btn" class="sidebar-link-btn sidebar-collapse-btn" title="Toggle Sidebar" onclick="toggleSidebar()">
+                <i class="fas fa-chevron-right toggle-icon"></i>
+                <span class="sidebar-text">Collapse</span>
+            </button>
+            <!-- Security Operations with Direct Confirmation Popover -->
+            <div class="sign-out-wrapper" style="position: relative; width: 100%;">
+                <!-- Confirmation popover floating directly above the Sign Out button -->
+                <div id="signout-popover" class="hidden signout-popover" style="
+                    position: absolute;
+                    bottom: calc(100% + 8px);
+                    left: 0;
+                    width: 100%;
+                    min-width: 220px;
+                    background-color: #0f172a;
+                    border: 1px solid rgba(239, 68, 68, 0.4);
+                    border-radius: 10px;
+                    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.7);
+                    padding: 12px 14px;
+                    z-index: 1050;
+                    text-align: left;
+                    box-sizing: border-box;
+                ">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 13px;"></i>
+                        <span style="font-size: 12px; font-weight: 700; color: #f8fafc;">Sign Out of G-TRACK?</span>
+                    </div>
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px 0; line-height: 1.3;">
+                        Are you sure you want to end your current session?
+                    </p>
+                    <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                        <button type="button" onclick="closeSignOutPopover(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="button" onclick="executeSignOut()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; border: none; padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" id="sidebar-signout-btn" class="sidebar-link-btn sign-out-sidebar" title="Sign Out" onclick="toggleSignOutPopover(event)" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; font-family: inherit;">
+                    <i class="fas fa-sign-out-alt"></i> <span class="sidebar-text">Sign Out</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Sidebar Dimmer Overlay Screen Background Layer -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo-box">
+                <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+            </div>
+            <span class="brand-name">GSO Inventory</span>
+        </div>
+        <div class="nav-right">
+            <span class="user-email">Employee</span>
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+
+        <!-- ========================================================================= -->
+        <!-- EMPLOYEE HOMEPAGE VIEW (DEFAULT LANDING) -->
+        <!-- ========================================================================= -->
+        <div id="home-view" class="dashboard-home-view">
+            <!-- Hero Welcome Card -->
+            <section class="home-hero-card">
+                <span class="hero-badge green-badge"><i class="fas fa-id-badge"></i> Staff Lookup & Requests</span>
+                <h2 class="hero-title">Welcome to G-TRACK, <span id="emp-hero-name" style="color: #38bdf8;">Employee</span></h2>
+                <p class="hero-desc">
+                    Access the official equipment lookup directory, verify property accountability records, and submit verified requests to the General Services Office of Pagbilao, Quezon.
+                </p>
+            </section>
+
+            <!-- Quick Live Stats Row -->
+            <section class="home-stats-bar">
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle blue-gradient">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Articles</span>
+                        <span id="emp-home-stat-total" class="stat-val">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle green-gradient">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Serviceable</span>
+                        <span id="emp-home-stat-serviceable" class="stat-val text-success">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle red-gradient">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Unserviceable</span>
+                        <span id="emp-home-stat-unserviceable" class="stat-val text-danger">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle amber-gradient">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Units</span>
+                        <span id="emp-home-stat-qty" class="stat-val text-blue">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Action Module Cards -->
+            <section>
+                <h3 class="home-section-title"><i class="fas fa-compass" style="color: #38bdf8;"></i> Quick Navigation & Actions</h3>
+                <div class="home-actions-grid">
+                    <div class="action-card" onclick="switchEmpView('directory')">
+                        <div class="action-card-header">
+                            <div class="action-card-icon blue-gradient">
+                                <i class="fas fa-table-list"></i>
+                            </div>
+                            <h4 class="action-card-title">Equipment Directory</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Search and filter official inventory records, property numbers, account groups, and assigned personnel.
+                        </p>
+                        <span class="action-card-btn">Browse Directory <i class="fas fa-arrow-right"></i></span>
+                    </div>
+
+                    <div class="action-card" onclick="sendMasterlistRequest()">
+                        <div class="action-card-header">
+                            <div class="action-card-icon green-gradient">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <h4 class="action-card-title">Request Masterlist Copy</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Send an official request to the GSO Admin for an export copy of the equipment inventory.
+                        </p>
+                        <span class="action-card-btn">Submit Request <i class="fas fa-arrow-right"></i></span>
+                    </div>
+
+                    <div class="action-card" onclick="openRequestHistory()">
+                        <div class="action-card-header">
+                            <div class="action-card-icon amber-gradient">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </div>
+                            <h4 class="action-card-title">Request History</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Track the status of your submitted requests and download approved CSV reports directly.
+                        </p>
+                        <span class="action-card-btn">View History <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Staff Responsibilities & Guidelines -->
+            <section class="guidelines-card">
+                <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-circle-info" style="color: #38bdf8;"></i> Equipment Accountability & Operating Guidelines
+                </h4>
+                <ul class="guidelines-list">
+                    <li><strong>Read-Only Lookup Clearance:</strong> Employees have secure lookup permissions to trace equipment availability without risking accidental database overwrites.</li>
+                    <li><strong>Requesting Approved Exports:</strong> To generate audit reports or obtain full spreadsheets, submit a request via the <em>Request Copy</em> button. Once approved by Admin, download the CSV directly from your sidebar history.</li>
+                    <li><strong>Reporting Equipment Condition:</strong> If any municipal property requires maintenance or servicing, notify the GSO custodian promptly with the corresponding Property No.</li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- EQUIPMENT DIRECTORY (MASTERLIST) VIEW -->
+        <!-- ========================================================================= -->
+        <div id="directory-view" class="directory-view hidden">
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <span class="card-title">Total Articles</span>
+                    <span id="total-items-count" class="card-number">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Serviceable</span>
+                    <span id="serviceable-items-count" class="card-number text-success">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Unserviceable</span>
+                    <span id="unserviceable-items-count" class="card-number text-danger">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Total Quantity</span>
+                    <span id="total-qty-count" class="card-number text-blue">0</span>
+                </div>
+            </section>
+
+            <section class="utility-bar">
+                <div class="utility-left">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Search articles...">
+                        <button type="button" id="clear-search-btn" class="clear-search-btn" title="Clear search" aria-label="Clear search">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <div class="dropdowns-group">
+                        <select class="filter-dropdown" id="account-filter">
+                            <option>All Accounts</option>
+                        </select>
+                        <select class="filter-dropdown" id="condition-filter">
+                            <option>All Conditions</option>
+                        </select>
+                    </div>
+                    <div class="pagination-controls" id="pagination-controls">
+                        <button class="page-btn" id="prev-page-btn" title="Previous Page"><i class="fas fa-chevron-left"></i></button>
+                        <span class="page-indicator" id="page-indicator">Page 1 of 1</span>
+                        <button class="page-btn" id="next-page-btn" title="Next Page"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="report-actions-group">
+                    <button type="button" id="my-assignments-btn" class="add-eq-btn" onclick="toggleMyAssignmentsFilter()" style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 11.5px; padding: 7px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                        <i class="fas fa-user-check"></i> <span id="my-assignments-text">My Assigned Items</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="table-container">
+                <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Qty</th>
+                                <th>Unit</th>
+                                <th>Unit Cost</th>
+                                <th>Article</th>
+                                <th>Description</th>
+                                <th>Property No.</th>
+                                <th>Total Cost</th>
+                                <th>Location</th>
+                                <th>Accountable Person</th>
+                                <th>Condition</th>
+                                <th>Account Group</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                    <tbody id="inventory-body">
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- EMPLOYEE PROFILE & CREDENTIALS MODAL (LEFT-SIDE SLIDING DRAWER) -->
+    <!-- ========================================================================= -->
+    <div id="emp-profile-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="position: relative;">
+            <button type="button" onclick="closeEmpProfileModal()" class="modal-close-btn" aria-label="Close profile drawer">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header" style="padding-right: 40px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">My Profile & Credentials</h3>
+                        <span style="font-size: 11.5px; color: #94a3b8;">Manage your name and account password</span>
+                    </div>
+                </div>
+            </div>
+
+            <form id="emp-profile-form" class="modal-body" onsubmit="saveEmpProfileChanges(event)">
+                <!-- Profile Alert Notifications -->
+                <div id="profile-success-alert" style="display: none; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; align-items: center; gap: 8px;">
+                    <i class="fas fa-check-circle"></i> <span id="profile-success-text">Profile updated successfully!</span>
+                </div>
+                <div id="profile-error-alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="profile-error-text">An error occurred.</span>
+                </div>
+
+                <!-- Institutional Email (Immutable / Locked) -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Institutional Email Address</span>
+                        <span style="font-size: 10.5px; color: #fbbf24; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-lock" style="font-size: 10px;"></i> Immutable GSO Identifier
+                        </span>
+                    </label>
+                    <input type="email" id="profile-email-input" disabled style="cursor: not-allowed;">
+                </div>
+
+                <!-- Full Legal Name -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="profile-name-input">Full Legal Name</label>
+                    <input type="text" id="profile-name-input" required placeholder="Enter full name">
+                </div>
+
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; margin-bottom: 16px;">
+                    <span style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
+                        <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password (Optional)
+                    </span>
+                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 14px;">Enter your current password to authorize setting a new password.</span>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="profile-old-password">Current Password</label>
+                        <input type="password" id="profile-old-password" placeholder="Enter current password">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="profile-new-password">New Password</label>
+                        <input type="password" id="profile-new-password" placeholder="At least 6 characters" minlength="6">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label for="profile-confirm-password">Confirm New Password</label>
+                        <input type="password" id="profile-confirm-password" placeholder="Re-type new password" minlength="6">
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <button type="button" class="add-eq-btn secondary-btn" onclick="closeEmpProfileModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" id="save-profile-btn" class="add-eq-btn btn-blue">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- Supabase JS SDK (For Masterlist & Requests) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="script(emp).js"></script>
+
+</body>
+</html>

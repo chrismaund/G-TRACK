@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-TRACK | Tracking System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="gov-container">
+        <!-- Background Hero with Overlay -->
+        <div class="hero-background"></div>
+        <div class="hero-overlay"></div>
+
+        <!-- Centered Layout Wrapper -->
+        <div class="content-wrapper">
+            
+            <!-- Left Brand Details (Moved to center-left, increased size) -->
+            <div class="hero-content">
+                <div class="gov-badge"><i class="fas fa-shield-alt"></i> Official Web Tracking</div>
+                <h2>GENERAL SERVICES OFFICE</h2>
+                <p class="tagline">Pagbilao, Quezon Equipment & Asset Tracking System</p>
+                
+                <!-- Added Features to fill space elegantly -->
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Real-time inventory & asset monitoring</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Secure employee access portal</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Centralized equipment management</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Floating Glassmorphism Form Card (Widened) -->
+            <div class="gov-login-wrapper">
+                <div class="login-card">
+                    
+                    <div class="login-header">
+                        <div class="logo-wrapper">
+                            <img src="logo.png" alt="GSO Logo" class="login-logo">
+                        </div>
+                        <span class="agency-subtext">LGU PAGBILAO</span>
+                        <h1>G-TRACK</h1>
+                        <p id="formSubtitle">Select your role to sign in</p>
+                    </div>
+
+                    <!-- Role Selector Tabs -->
+                    <div class="role-tabs">
+                        <button class="tab-btn active" id="tabAdmin" onclick="switchRole('admin')">
+                            <i class="fas fa-user-shield"></i> Admin
+                        </button>
+                        <button class="tab-btn" id="tabEmployee" onclick="switchRole('employee')">
+                            <i class="fas fa-id-badge"></i> Employee
+                        </button>
+                    </div>
+                    
+                    <!-- LOGIN FORM -->
+                    <form id="loginForm">
+                        <input type="hidden" id="selectedRole" value="admin">
+                        
+                        <div class="form-section">
+                            <div class="input-group">
+                                <label for="email">Email Address</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email" id="email" placeholder="name@example.com" required>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="password">Password</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" id="password" placeholder="••••••••" required>
+                                    <i class="fas fa-eye toggle-password" onclick="togglePass('password', this)"></i>
+                                </div>
+                            </div>
+
+                            <div id="error-message" class="error-popup" style="display: none;"></div>
+                            
+                            <button type="submit" class="sign-in-btn">
+                                <span>Sign In</span> <i class="fas fa-arrow-right"></i>
+                            </button>
+
+                            <div class="toggle-auth-mode" id="registerLinkWrapper" style="display: none;">
+                                <span>Don't have an account?</span>
+                                <a href="#" onclick="showRegisterForm(event)">Create Account</a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- EMPLOYEE REGISTRATION FORM -->
+                    <form id="registerForm" style="display: none;">
+                        <div class="form-section">
+                            <div class="input-group">
+                                <label for="regFullName">Full Name</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user input-icon"></i>
+                                    <input type="text" id="regFullName" placeholder="e.g. Juan Cruz" required>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="regEmail">Employee Email</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email" id="regEmail" placeholder="must contain 'emp'" required>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="regPassword">Create Password</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" id="regPassword" placeholder="Minimum 6 characters" required>
+                                    <i class="fas fa-eye toggle-password" onclick="togglePass('regPassword', this)"></i>
+                                </div>
+                            </div>
+                            
+                            <div id="reg-error-message" class="error-popup" style="display: none;"></div>
+                            <div id="reg-success-message" class="success-popup" style="display: none;"></div>
+                            
+                            <button type="submit" class="sign-in-btn">
+                                <span>Submit Request</span> <i class="fas fa-paper-plane"></i>
+                            </button>
+
+                            <div class="toggle-auth-mode">
+                                <span>Already registered?</span>
+                                <a href="#" onclick="showLoginForm(event)">Back to Login</a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="security-disclaimer">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>Restricted access. Authorized personnel only.</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Firebase Core App (v8) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+<!-- Firebase Auth & Firestore -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

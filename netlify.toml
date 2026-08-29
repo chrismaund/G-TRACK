@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/"
+  to = "/login/index.html"
+  status = 302
+  force = true

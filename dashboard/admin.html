@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-TRACK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style(admin).css">
+    <!-- Chart.js CDN for Analytics Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+   <div id="sidebar-drawer" class="sidebar-drawer">
+    <div class="sidebar-header">
+        <div class="sidebar-user-profile">
+            <div class="user-avatar" title="Administrator">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="user-info">
+                <span class="user-name">Administrator</span>
+                <span class="user-role-tag">Admin Access</span>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar-content">
+        <!-- HOME DASHBOARD BUTTON -->
+        <button id="sidebar-home-btn" class="sidebar-link-btn active" title="Dashboard Home" onclick="switchAdminView('home'); closeSidebarNavMenu();">
+            <i class="fas fa-home"></i> <span class="sidebar-text">Dashboard</span>
+        </button>
+        <button id="sidebar-masterlist-btn" class="sidebar-link-btn" title="Inventory Masterlist" onclick="switchAdminView('masterlist'); closeSidebarNavMenu();">
+            <i class="fas fa-table-list"></i> <span class="sidebar-text"> Masterlist</span>
+        </button>
+        <!-- ANALYTICS DASHBOARD BUTTON -->
+        <button id="sidebar-analytics-btn" class="sidebar-link-btn" title="Analytics & Predictions" onclick="switchAdminView('analytics'); closeSidebarNavMenu();">
+            <i class="fas fa-chart-pie"></i> <span class="sidebar-text">Analytics</span>
+        </button>
+        <hr class="sidebar-divider">
+
+        <button id="dark-mode-toggle" class="sidebar-link-btn theme-toggle-hidden" title="Dark Mode">
+            <i class="fas fa-moon"></i> <span class="sidebar-text">Dark Mode</span>
+        </button>
+        <hr id="dark-mode-divider" class="sidebar-divider theme-toggle-hidden">
+
+        <!-- USER PROFILES / AUTHORIZATION BUTTON -->
+        <button id="sidebar-profiles-btn" class="sidebar-link-btn" title="User Profiles" onclick="openProfilesModal()">
+            <i class="fas fa-users-cog"></i> <span class="sidebar-text">User Profiles</span>
+            <span id="pending-users-badge" class="badge-count" style="display: none; background: #ef4444; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 8px;">0</span>
+        </button>
+        <hr class="sidebar-divider">
+
+        <div class="print-menu-wrapper" style="position: relative; width: 100%;">
+            <button id="btnPrint" class="sidebar-link-btn" title="Print Report" onclick="togglePrintPopover(event)">
+                <i class="fas fa-print"></i> <span class="sidebar-text">Print Report</span>
+            </button>
+
+            <div id="printPopover" class="hidden" style="
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                z-index: 999;
+                margin-top: 8px;
+                background-color: #1e293b;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 14px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                box-sizing: border-box;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">SELECT PPE REPORT FORMAT</span>
+                    <button type="button" onclick="togglePrintPopover(event)" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">&times;</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Report Template:</label>
+                        <select id="reportFormatSelect" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                            <option value="format1">Format 1: Physical Count (Card vs Count)</option>
+                            <option value="format2">Format 2: Equipment & Furniture List</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">As of Date / Period (e.g. July 2026):</label>
+                        <input type="text" id="reportAsOfDate" value="July 2026" placeholder="e.g. July 2026, 2026-07, All Dates" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Fund Cluster:</label>
+                        <input type="text" id="reportFund" value="GENERAL FUND" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Accountable Officer:</label>
+                        <input type="text" id="reportAccountableOfficer" value="RIZALDO A. RICAFORT" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Officer Designation:</label>
+                        <input type="text" id="reportDesignation" value="MGDH I - GSO" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Date of Assumption:</label>
+                        <input type="text" id="reportAssumptionDate" value="January 5, 2022" placeholder="e.g. January 5, 2022" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px;">
+                        <button type="button" onclick="togglePrintPopover(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Cancel</button>
+                        <button type="button" onclick="executePrintReport()" style="background-color: #0284c7; color: #ffffff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Generate & Print</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="sidebar-csv-btn" class="sidebar-link-btn" title="Export CSV">
+            <i class="fas fa-file-excel"></i> <span class="sidebar-text">Export CSV</span>
+        </button>
+        <hr class="sidebar-divider">
+
+        <button id="sidebar-requests-quick-btn" class="sidebar-link-btn" title="Pending Requests" onclick="toggleRequestsStack()">
+            <i class="fas fa-inbox"></i> <span class="sidebar-text">Pending Requests</span>
+            <span id="pending-requests-badge" class="badge-count" style="display: none; background: #ef4444; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 8px;">0</span>
+        </button>
+
+        <div id="pending-requests-wrapper" class="sidebar-stack-wrapper">
+            <div class="sidebar-section-header">
+                <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Pending Requests</span>
+            </div>
+            
+            <div id="pending-requests-log" class="sidebar-section-body">
+            </div>
+        </div>
+
+        <hr class="sidebar-divider" style="margin-top: auto;">
+        <button id="sidebar-toggle-btn" class="sidebar-link-btn sidebar-collapse-btn" title="Toggle Sidebar" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-right toggle-icon"></i>
+            <span class="sidebar-text">Collapse</span>
+        </button>
+
+        <div class="sign-out-wrapper" style="position: relative; width: 100%;">
+            <!-- Confirmation popover floating directly above the Sign Out button -->
+            <div id="signout-popover" class="hidden signout-popover" style="
+                position: absolute;
+                bottom: calc(100% + 8px);
+                left: 0;
+                width: 100%;
+                min-width: 220px;
+                background-color: #0f172a;
+                border: 1px solid rgba(239, 68, 68, 0.4);
+                border-radius: 10px;
+                box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.7);
+                padding: 12px 14px;
+                z-index: 1050;
+                text-align: left;
+                box-sizing: border-box;
+            ">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 13px;"></i>
+                    <span style="font-size: 12px; font-weight: 700; color: #f8fafc;">Sign Out of G-TRACK?</span>
+                </div>
+                <p style="font-size: 11px; color: #94a3b8; margin: 0 0 10px 0; line-height: 1.3;">
+                    Are you sure you want to end your current session?
+                </p>
+                <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                    <button type="button" onclick="closeSignOutPopover(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="executeSignOut()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; border: none; padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+
+            <button type="button" id="sidebar-signout-btn" class="sidebar-link-btn sign-out-sidebar" title="Sign Out" onclick="toggleSignOutPopover(event)" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer; font-family: inherit;">
+                <i class="fas fa-sign-out-alt"></i> <span class="sidebar-text">Sign Out</span>
+            </button>
+        </div>
+    </div>
+</div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo-box">
+                <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+            </div>
+            <span class="brand-name">GSO Inventory</span>
+        </div>
+        <div class="nav-right">
+            <span class="user-email">Administrator</span>
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+
+        <!-- ========================================================================= -->
+        <!-- HOMEPAGE VIEW (ADMIN DEFAULT LANDING) -->
+        <!-- ========================================================================= -->
+        <div id="home-view" class="dashboard-home-view">
+            <!-- Hero Welcome Card -->
+            <section class="home-hero-card">
+                <span class="hero-badge"><i class="fas fa-shield-alt"></i> Administrator Portal</span>
+                <h2 class="hero-title">Welcome to G-TRACK Admin Hub</h2>
+                <p class="hero-desc">
+                    Centralized web-based inventory management, property accountability monitoring, and predictive lifecycle analytics for the General Services Office of the Local Government of Pagbilao, Quezon.
+                </p>
+            </section>
+
+            <!-- Quick Live Stats Row -->
+            <section class="home-stats-bar">
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle blue-gradient">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Articles</span>
+                        <span id="home-stat-total-articles" class="stat-val">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle green-gradient">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Serviceable</span>
+                        <span id="home-stat-serviceable" class="stat-val text-success">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle red-gradient">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Maintenance / Alerts</span>
+                        <span id="home-stat-alerts" class="stat-val text-danger">0</span>
+                    </div>
+                </div>
+
+                <div class="home-stat-item">
+                    <div class="stat-icon-circle amber-gradient">
+                        <i class="fas fa-peso-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Valuation</span>
+                        <span id="home-stat-valuation" class="stat-val text-amber">₱0.00</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Action Module Cards -->
+            <section>
+                <h3 class="home-section-title"><i class="fas fa-compass" style="color: #38bdf8;"></i> Core Operations & Quick Navigation</h3>
+                <div class="home-actions-grid">
+                    <div class="action-card" onclick="switchAdminView('masterlist')">
+                        <div class="action-card-header">
+                            <div class="action-card-icon blue-gradient">
+                                <i class="fas fa-table-list"></i>
+                            </div>
+                            <h4 class="action-card-title">Inventory Masterlist</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Browse, search, filter, encode new items, edit records, or batch delete municipal assets in real-time.
+                        </p>
+                        <span class="action-card-btn">Open Masterlist <i class="fas fa-arrow-right"></i></span>
+                    </div>
+
+                    <div class="action-card" onclick="switchAdminView('analytics')">
+                        <div class="action-card-header">
+                            <div class="action-card-icon green-gradient">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <h4 class="action-card-title">Analytics & Predictions</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Examine condition distributions, category valuation breakdown, equipment lifecycle aging, and replacement forecasts.
+                        </p>
+                        <span class="action-card-btn">View Analytics <i class="fas fa-arrow-right"></i></span>
+                    </div>
+
+                    <div class="action-card" onclick="openProfilesModal()">
+                        <div class="action-card-header">
+                            <div class="action-card-icon red-gradient">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <h4 class="action-card-title">User Authorizations</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Review pending employee registrations, approve or revoke staff access, and manage user accounts securely.
+                        </p>
+                        <span class="action-card-btn">Manage Users <i class="fas fa-arrow-right"></i></span>
+                    </div>
+
+                    <div class="action-card" onclick="switchAdminView('masterlist'); setTimeout(function(){ var sd = document.getElementById('sidebar-drawer'); var so = document.getElementById('sidebar-overlay'); if(sd) sd.classList.add('open'); if(so) so.classList.add('show'); setTimeout(function(){ var pop = document.getElementById('printPopover'); if(pop) pop.classList.remove('hidden'); }, 200); }, 150);">
+                        <div class="action-card-header">
+                            <div class="action-card-icon amber-gradient">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <h4 class="action-card-title">Generate PPE Report</h4>
+                        </div>
+                        <p class="action-card-desc">
+                            Produce printable, COA-compliant Physical Count of Property, Plant & Equipment (PPE) audit reports.
+                        </p>
+                        <span class="action-card-btn">Print Report <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GSO Governance & Accountability Summary Card -->
+            <section class="guidelines-card">
+                <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-circle-info" style="color: #38bdf8;"></i> GSO Administrative Directives & Data Integrity Standards
+                </h4>
+                <ul class="guidelines-list">
+                    <li><strong>Real-time Cloud Coordination:</strong> All updates made to property records sync across all connected terminals immediately via Supabase and Firebase.</li>
+                    <li><strong>Predictive Maintenance Advisory:</strong> Monitor items flagged under <em>Needs Repair</em> or <em>Aging (&gt;5 Years)</em> in the Analytics view to prepare annual budget requests.</li>
+                    <li><strong>Property Accountability:</strong> Verify accountable officers and office locations prior to approving physical transfers or batch removals.</li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- MASTERLIST VIEW -->
+        <!-- ========================================================================= -->
+        <div id="masterlist-view" class="masterlist-view hidden">
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <span class="card-title">Total Articles</span>
+                    <span id="total-items-count" class="card-number">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Serviceable</span>
+                    <span id="serviceable-items-count" class="card-number text-success">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Unserviceable</span>
+                    <span id="unserviceable-items-count" class="card-number text-danger">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="card-title">Total Quantity</span>
+                    <span id="total-qty-count" class="card-number text-blue">0</span>
+                </div>
+            </section>
+
+            <section class="utility-bar">
+                <div class="utility-left">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Search articles...">
+                        <button type="button" id="clear-search-btn" class="clear-search-btn" title="Clear search" aria-label="Clear search">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <div class="dropdowns-group">
+                        <select class="filter-dropdown" id="account-filter">
+                            <option>All Accounts</option>
+                        </select>
+                        <select class="filter-dropdown" id="condition-filter">
+                            <option>All Conditions</option>
+                        </select>
+                    </div>
+                    <div class="pagination-controls" id="pagination-controls">
+                        <button class="page-btn" id="prev-page-btn" title="Previous Page"><i class="fas fa-chevron-left"></i></button>
+                        <span class="page-indicator" id="page-indicator">Page 1 of 1</span>
+                        <button class="page-btn" id="next-page-btn" title="Next Page"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                
+                <div class="report-actions-group">
+                    <button id="add-article-btn" class="add-eq-btn btn-blue">
+                        <i class="fas fa-plus"></i> Add Article
+                    </button>
+                    <div class="delete-btn-wrapper" style="position: relative; display: inline-block;">
+                        <button id="delete-mode-btn" class="add-eq-btn btn-red" style="background-color: #dc2626; color: #ffffff;">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                        <!-- Compact popup directly below the Delete button -->
+                        <div id="delete-popover" class="hidden" style="position: absolute; right: 0; top: calc(100% + 8px); background-color: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.7); padding: 14px 16px; width: 260px; z-index: 1050; text-align: left; box-sizing: border-box;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 14px;"></i>
+                                <span id="delete-popover-title" style="font-size: 13px; font-weight: 700; color: #f8fafc;">Delete Selected?</span>
+                            </div>
+                            <p id="delete-popover-subtext" style="font-size: 11.5px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4;">
+                                This action cannot be undone.
+                            </p>
+                            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                <button type="button" class="add-eq-btn secondary-btn" onclick="closeDeletePopover()" style="padding: 5px 12px; font-size: 11.5px; border-radius: 6px;">
+                                    Cancel
+                                </button>
+                                <button type="button" id="confirm-batch-delete-btn" class="add-eq-btn btn-red" onclick="executeBatchDelete()" style="padding: 5px 14px; font-size: 11.5px; border-radius: 6px;">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="cancel-delete-mode-btn" class="add-eq-btn secondary-btn" style="display: none; padding: 8px 12px;">
+                        Cancel
+                    </button>
+                </div>
+            </section>
+
+            <section class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th id="th-checkbox" style="display: none; width: 36px; text-align: center; padding: 8px 6px;">
+                                <input type="checkbox" id="select-all-checkbox" style="cursor: pointer; width: 15px; height: 15px; accent-color: #ef4444;" title="Select All">
+                            </th>
+                            <th>Date</th>
+                            <th>Qty</th>
+                            <th>Unit</th>
+                            <th>Unit Cost</th>
+                            <th>Article</th>
+                            <th>Description</th>
+                            <th>Property No.</th>
+                            <th>Total Cost</th>
+                            <th>Location</th>
+                            <th>Accountable Person</th>
+                            <th>Condition</th>
+                            <th>Account Group</th>
+                            <th>Remarks</th>
+                            <th class="text-center actions-header">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-body">
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- ANALYTICS & PREDICTIVE INSIGHTS VIEW (ADMIN ONLY) -->
+        <!-- ========================================================================= -->
+        <div id="analytics-view" class="analytics-view hidden">
+            <!-- Executive KPI Header Cards -->
+            <section class="analytics-kpi-grid">
+                <div class="analytics-kpi-card">
+                    <div class="kpi-card-inner">
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Capital Valuation</span>
+                            <span id="kpi-total-valuation" class="kpi-value">₱0.00</span>
+                            <span class="kpi-subtitle"><i class="fas fa-coins text-cyan"></i> Total municipal asset value</span>
+                        </div>
+                        <div class="kpi-icon-box blue-gradient">
+                            <i class="fas fa-peso-sign"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card">
+                    <div class="kpi-card-inner">
+                        <div class="kpi-info">
+                            <span class="kpi-label">Serviceability Index</span>
+                            <span id="kpi-serviceable-rate" class="kpi-value text-success">0%</span>
+                            <span class="kpi-subtitle" id="kpi-serviceable-ratio"><i class="fas fa-check-circle text-success"></i> 0 of 0 active items</span>
+                        </div>
+                        <div class="kpi-icon-box green-gradient">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card">
+                    <div class="kpi-card-inner">
+                        <div class="kpi-info">
+                            <span class="kpi-label">Maintenance & Repair Alerts</span>
+                            <span id="kpi-repair-alerts" class="kpi-value text-danger">0</span>
+                            <span class="kpi-subtitle text-warning"><i class="fas fa-triangle-exclamation text-warning"></i> Requires GSO attention</span>
+                        </div>
+                        <div class="kpi-icon-box red-gradient">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card">
+                    <div class="kpi-card-inner">
+                        <div class="kpi-info">
+                            <span class="kpi-label">Forecasted Replacement Budget</span>
+                            <span id="kpi-replacement-budget" class="kpi-value text-amber">₱0.00</span>
+                            <span class="kpi-subtitle"><i class="fas fa-calendar-check text-amber"></i> For obsolete / unserviceable assets</span>
+                        </div>
+                        <div class="kpi-icon-box amber-gradient">
+                            <i class="fas fa-hand-holding-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Visual Analytics (2x2 Grid) -->
+            <section class="analytics-charts-grid">
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h4 class="chart-card-title"><i class="fas fa-chart-pie" style="color: #38bdf8;"></i> Equipment Condition & Serviceability</h4>
+                            <span class="chart-card-subtitle">Real-time status breakdown across all municipal assets</span>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper doughnut-wrapper">
+                        <canvas id="conditionDoughnutChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h4 class="chart-card-title"><i class="fas fa-chart-column" style="color: #818cf8;"></i> Account Group Valuation (₱)</h4>
+                            <span class="chart-card-subtitle">Procurement expenditure per category classification</span>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="categoryValuationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h4 class="chart-card-title"><i class="fas fa-hourglass-half" style="color: #f59e0b;"></i> Predictive Equipment Aging & Lifecycle</h4>
+                            <span class="chart-card-subtitle">Years in service vs recommended replacement timeline</span>
+                        </div>
+                        <span class="badge-predictive"><i class="fas fa-wand-magic-sparkles"></i> Predictive</span>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="lifecycleAgingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h4 class="chart-card-title"><i class="fas fa-building" style="color: #10b981;"></i> Department Asset Allocation</h4>
+                            <span class="chart-card-subtitle">Equipment distribution across Pagbilao municipal offices</span>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="departmentAllocationChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Predictive Maintenance & Replacement Advisory Matrix -->
+            <section class="advisory-section">
+                <div class="advisory-header">
+                    <div>
+                        <h4 class="advisory-title"><i class="fas fa-clipboard-check" style="color: #38bdf8;"></i> Predictive Maintenance & Replacement Advisory Matrix</h4>
+                        <p class="advisory-subtitle">Automated GSO recommendations for equipment servicing, lifecycle replacement, and municipal budget requests.</p>
+                    </div>
+                    <button type="button" class="advisory-refresh-btn" onclick="renderAnalyticsDashboard()">
+                        <i class="fas fa-sync-alt"></i> Refresh Analytics
+                    </button>
+                </div>
+                <div class="advisory-table-container">
+                    <table class="advisory-table">
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th>Property No.</th>
+                                <th>Article & Description</th>
+                                <th>Location / Office</th>
+                                <th>Current Condition</th>
+                                <th>Est. Lifespan</th>
+                                <th>Unit Cost</th>
+                                <th>Recommended GSO Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="advisory-table-body">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+<div id="add-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h3 id="add-modal-title"><i class="fas fa-plus-circle" style="color: #38bdf8;"></i> Add New Property Item</h3>
+        <span id="add-success-toast" style="display: none; align-items: center; gap: 4px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+          <i class="fas fa-check-circle"></i> Saved! Ready for next
+        </span>
+      </div>
+      <button type="button" id="close-add-modal" class="modal-close-btn" aria-label="Close modal">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="add-item-form" class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="add-date">Date Acquired</label>
+          <input type="date" id="add-date" required>
+        </div>
+        <div class="form-group">
+          <label for="add-qty">Quantity</label>
+          <input type="number" id="add-qty" min="1" required>
+        </div>
+        <div class="form-group">
+          <label for="add-unit">Unit of Measure</label>
+          <input type="text" id="add-unit" placeholder="e.g., pcs, set, unit" required>
+        </div>
+        <div class="form-group">
+          <label for="add-unit-cost">Unit Cost (₱)</label>
+          <input type="number" id="add-unit-cost" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label for="add-article">Article</label>
+          <input type="text" id="add-article" placeholder="e.g., Desktop Computer" required>
+        </div>
+        <div class="form-group">
+          <label for="add-description">Description</label>
+          <input type="text" id="add-description" placeholder="Brand, model, specs" required>
+        </div>
+        <div class="form-group">
+          <label for="add-property">Property No.</label>
+          <input type="text" id="add-property" placeholder="PROP-2026-001" required>
+        </div>
+        <div class="form-group">
+          <label for="add-location">Location</label>
+          <input type="text" id="add-location" placeholder="e.g., Computer Lab 1" required>
+        </div>
+        <div class="form-group">
+          <label for="add-accountable">Accountable Person</label>
+          <input type="text" id="add-accountable" placeholder="Full Name" required>
+        </div>
+        <div class="form-group">
+          <label for="add-condition">Condition</label>
+          <select id="add-condition" required>
+            <option value="Serviceable">Serviceable</option>
+            <option value="Unserviceable">Unserviceable</option>
+            <option value="For Disposal">For Disposal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="add-account">Account Group</label>
+          <input type="text" id="add-account" placeholder="e.g., ICT Equipment" required>
+        </div>
+        <div class="form-group full-width">
+          <label for="add-remarks">Remarks</label>
+          <textarea id="add-remarks" rows="2" placeholder="Additional notes or comments"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="add-eq-btn btn-blue">
+            <i class="fas fa-plus"></i> Save Item
+        </button>
+    </div>
+</form>
+  </div>
+</div>
+
+
+<div id="printArea" class="print-area" style="display: none;"></div> 
+
+<!-- USER PROFILES & AUTHORIZATION SLIDING DRAWER (LEFT SIDE) -->
+<div id="profiles-modal" class="modal-overlay hidden" style="z-index: 1100;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+          <i class="fas fa-users-cog"></i>
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">User Profile Authorizations</h3>
+          <span style="font-size: 11.5px; color: #94a3b8;">Review, approve, reject, or manage staff user accounts</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeProfilesModal()" class="modal-close-btn" aria-label="Close user profiles drawer">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="flex: 1; min-height: 380px; overflow-y: auto; overflow-x: auto; border: 1px solid #334155; border-radius: 8px; background: rgba(15, 23, 42, 0.6); scrollbar-width: thin; scrollbar-color: #334155 transparent; padding-bottom: 30px; box-sizing: border-box;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+          <thead style="position: sticky; top: 0; background: #0f172a; z-index: 5;">
+            <tr style="border-bottom: 2px solid #334155; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+              <th style="padding: 12px 14px;">Full Name</th>
+              <th style="padding: 12px 14px;">Email Address</th>
+              <th style="padding: 12px 14px;">Status</th>
+              <th style="padding: 12px 14px;">Date Created</th>
+              <th style="padding: 12px 14px; text-align: center; width: 60px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="profiles-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Firebase SDKs (For Authentication & Profiles) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- Supabase JS SDK (For Masterlist & Requests) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="script(admin).js"></script>
+    
+</body>
+</html>

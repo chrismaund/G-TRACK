@@ -1,0 +1,462 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #0b0f19;
+    color: #f8fafc;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Base Container */
+.gov-container {
+    position: relative;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Background Image */
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('buildingg.png') no-repeat center left / cover;
+    z-index: 1;
+}
+
+/* Overlay with Pointer-Events Fix */
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        linear-gradient(90deg, rgba(11, 15, 25, 0.4) 0%, rgba(11, 15, 25, 0.8) 55%, #0b0f19 100%),
+        radial-gradient(circle at 30% 50%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
+    z-index: 2;
+    pointer-events: none; /* CRITICAL FIX: Allows mouse clicks to pass through to buttons */
+}
+
+/* Centered Wrapper */
+.content-wrapper {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    width: 100%;
+    max-width: 1280px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    gap: 40px;
+}
+
+/* Left Hero Branding Block */
+.hero-content {
+    max-width: 580px;
+}
+
+.gov-badge {
+    background: rgba(56, 189, 248, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.hero-content h2 {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #ffffff;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+}
+
+.hero-content .tagline {
+    font-size: 16px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* Feature List */
+.feature-list {
+    margin-top: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.feature-item i {
+    color: #38bdf8;
+    font-size: 18px;
+}
+
+/* Right Floating Glass Card Wrapper */
+.gov-login-wrapper {
+    width: 100%;
+    max-width: 440px;
+}
+
+.login-card {
+    background: rgba(18, 26, 43, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 40px 36px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 
+                0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.logo-wrapper {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 12px auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; 
+    box-sizing: border-box; 
+}
+
+.login-logo {
+    width: 149%;
+    height: 145%;
+    object-fit: contain; 
+    border-radius: 50%; 
+}
+.agency-subtext {
+    font-size: 11px;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 1.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.login-header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.4px;
+    margin-bottom: 4px;
+}
+
+.login-header p {
+    font-size: 13.5px;
+    color: #94a3b8;
+}
+
+/* Modern Segmented Role Selector */
+.role-tabs {
+    display: flex;
+    background: rgba(11, 15, 25, 0.6);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 11px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-btn.active {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.tab-btn:hover:not(.active) {
+    color: #cbd5e1;
+}
+
+/* Form Controls */
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.toggle-password:hover {
+    color: #38bdf8;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 13px 42px;
+    background: rgba(11, 15, 25, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    font-size: 14.5px;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.input-wrapper input::placeholder {
+    color: #475569;
+}
+
+.input-wrapper input:focus {
+    outline: none;
+    border-color: #38bdf8;
+    background: rgba(11, 15, 25, 0.85);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.input-wrapper input:focus + .input-icon,
+.input-wrapper input:focus ~ .input-icon {
+    color: #38bdf8;
+}
+
+/* Accent Glowing Action Button */
+.sign-in-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
+    transition: all 0.25s ease;
+}
+
+.sign-in-btn:hover {
+    background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Secondary Auth Links */
+.toggle-auth-mode {
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.toggle-auth-mode a {
+    color: #38bdf8;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+.toggle-auth-mode a:hover {
+    text-decoration: underline;
+}
+
+/* Alerts */
+.error-popup {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;            
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.success-popup {
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;            
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+
+.security-disclaimer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.security-disclaimer i, .security-disclaimer span {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Responsiveness */
+@media (max-width: 1200px) {
+    .content-wrapper {
+        max-width: 1100px;
+        padding: 0 30px;
+        gap: 30px;
+    }
+    .hero-content h2 {
+        font-size: 36px;
+    }
+    .hero-content .tagline {
+        font-size: 14px;
+    }
+    .feature-item {
+        font-size: 13px;
+    }
+    .feature-item i {
+        font-size: 16px;
+    }
+    .login-card {
+        padding: 32px 28px;
+    }
+    .login-header h1 {
+        font-size: 20px;
+    }
+    .login-header p {
+        font-size: 12.5px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .content-wrapper {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+    }
+    .hero-content {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .gov-login-wrapper {
+        max-width: 400px;
+        width: 92%;
+    }
+    .login-card {
+        padding: 28px 22px;
+        border-radius: 16px;
+    }
+    .login-header h1 {
+        font-size: 18px;
+    }
+    .logo-wrapper {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+@media (max-height: 720px) {
+    .login-card {
+        padding: 24px 24px;
+    }
+    .login-header {
+        margin-bottom: 16px;
+    }
+    .logo-wrapper {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 8px;
+    }
+    .login-header h1 {
+        font-size: 18px;
+    }
+    .role-tabs {
+        margin-bottom: 16px;
+    }
+    .feature-list {
+        margin-top: 20px;
+        gap: 12px;
+    }
+}
