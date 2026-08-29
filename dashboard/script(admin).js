@@ -941,15 +941,8 @@ function initUserProfilesListener() {
             return;
         }
 
-        // Sort queue: Pending accounts prioritized at top, ordered chronologically by creation date (newest first)
-        employeeUsers.sort((a, b) => {
-            const aPending = a.status === 'pending' ? 1 : 0;
-            const bPending = b.status === 'pending' ? 1 : 0;
-            if (aPending !== bPending) {
-                return bPending - aPending; // Pending accounts at the top of the queue
-            }
-            return b.createdTime - a.createdTime; // Newest accounts first
-        });
+        // Sort queue strictly based on Date Created (Newest accounts at the very top)
+        employeeUsers.sort((a, b) => b.createdTime - a.createdTime);
 
         employeeUsers.forEach((item) => {
             const user = item.data;
