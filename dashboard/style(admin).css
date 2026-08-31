@@ -3,13 +3,11 @@
 /* Base Page Styling */
 * {
     box-sizing: border-box;
-}
-
-html, body {
     scrollbar-width: none !important; /* Firefox */
     -ms-overflow-style: none !important; /* IE and Edge */
 }
 
+*::-webkit-scrollbar,
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
     display: none !important;
@@ -394,29 +392,43 @@ body {
     background-color: #ffffff; 
     border-radius: 14px; 
     border: 1px solid #e2e8f0; 
-    overflow-x: auto !important; 
-    overflow-y: auto !important;
-    height: calc(100vh - 270px);
-    min-height: 380px;
+    overflow-x: auto; 
+    overflow-y: auto;
+    height: calc(100vh - 280px);
+    min-height: 420px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 rgba(241, 245, 249, 0.7);
     -webkit-overflow-scrolling: touch;
 }
 
-/* Hide scrollbar on Chrome, Safari, Edge */
+/* Custom Sleek Scrollbar Indicator (Ensures user knows all 15 columns can be scrolled horizontally) */
 .table-container::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+    width: 8px;
+    height: 8px;
+    display: block;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.8);
+    border-radius: 8px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #0284c7;
 }
 
 .data-table { 
     width: 100%; 
-    min-width: 1060px; /* Fully responsive across 13" - 24" monitors */
+    min-width: 1120px; /* Guarantees complete column spacing and full legibility across any screen size */
     border-collapse: separate; 
     border-spacing: 0;
     text-align: left; 
@@ -3184,13 +3196,16 @@ body.dark-theme-mode .btn-cancel:hover {
 
 /* Dark mode scrollbars for data table */
 body.dark-theme-mode .table-container {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+    scrollbar-color: #334155 rgba(15, 23, 42, 0.6);
 }
-body.dark-theme-mode .table-container::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+body.dark-theme-mode .table-container::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+}
+body.dark-theme-mode .table-container::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
+    background: #38bdf8;
 }
 
 /* ── Ultra Wide Monitors (1920px+) — generous breathing room ── */
@@ -3206,95 +3221,48 @@ body.dark-theme-mode .table-container::-webkit-scrollbar {
     }
 }
 
-/* ── Mid-Sized Laptops & Standard Monitors (1366px - 1600px) ── */
-@media (max-width: 1600px) {
-    .content-wrapper {
-        padding: 16px 22px;
-    }
-    .data-table {
-        min-width: 1000px;
-        font-size: 11px;
-    }
-    .data-table th {
-        padding: 8px 8px;
-        font-size: 10px;
-    }
-    .data-table td {
-        padding: 7px 8px;
-    }
-    .data-table td.description-cell {
-        max-width: 130px;
-    }
-    .data-table td.article-cell {
-        max-width: 110px;
-    }
-    .data-table td.remarks-cell {
-        max-width: 110px;
-    }
-}
-
 /* ── Large Laptops & Standard Desktops (1200px - 1440px) ── */
 @media (max-width: 1440px) {
     .content-wrapper {
-        padding: 14px 18px;
-        gap: 12px;
+        padding: 18px 24px;
+        gap: 14px;
     }
     .metrics-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
     .metric-card {
-        padding: 12px 14px;
+        padding: 14px 16px;
     }
     .card-number {
-        font-size: 20px;
+        font-size: 22px;
     }
     .card-title {
-        font-size: 10px;
+        font-size: 10.5px;
     }
     .analytics-kpi-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
     .analytics-kpi-card {
-        padding: 12px 14px;
+        padding: 14px 16px;
     }
     .kpi-value {
-        font-size: 18px;
+        font-size: 20px;
     }
     .home-stats-bar {
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
     .home-stat-item {
-        padding: 12px 14px;
+        padding: 14px 16px;
     }
     .stat-val {
-        font-size: 15px;
-    }
-    .data-table {
-        min-width: 950px;
-        font-size: 10.5px;
-    }
-    .data-table th {
-        font-size: 9.5px;
-        padding: 7px 6px;
-    }
-    .data-table td {
-        padding: 6px 6px;
-    }
-    .data-table td.description-cell {
-        max-width: 110px;
-    }
-    .data-table td.article-cell {
-        max-width: 95px;
-    }
-    .data-table td.remarks-cell {
-        max-width: 95px;
+        font-size: 16px;
     }
     .table-container {
-        height: calc(100vh - 250px);
-        min-height: 360px;
+        height: calc(100vh - 260px);
+        min-height: 400px;
     }
 }
 
