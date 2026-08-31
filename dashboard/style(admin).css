@@ -2586,17 +2586,18 @@ body.dark-theme-mode .btn-cancel:hover {
     gap: 20px;
 }
 
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(1) { animation: dashboardEntranceFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(2) { animation: dashboardEntranceFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(3) { animation: dashboardEntranceFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(4) { animation: dashboardEntranceFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+@keyframes simpleFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
 
-.analytics-view:not(.hidden) .chart-card:nth-child(1) { animation: dashboardEntranceFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
-.analytics-view:not(.hidden) .chart-card:nth-child(2) { animation: dashboardEntranceFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
-.analytics-view:not(.hidden) .chart-card:nth-child(3) { animation: dashboardEntranceFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both; }
-.analytics-view:not(.hidden) .chart-card:nth-child(4) { animation: dashboardEntranceFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(1) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(2) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(3) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(4) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
 
-.analytics-view:not(.hidden) .advisory-section { animation: dashboardEntranceFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both; }
+.analytics-view:not(.hidden) .chart-card { animation: simpleFadeIn 0.3s ease both; }
+.analytics-view:not(.hidden) .advisory-section { animation: simpleFadeIn 0.35s ease 0.15s both; }
 
 /* Analytics Executive KPI Grid */
 .analytics-kpi-grid {

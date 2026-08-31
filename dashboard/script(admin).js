@@ -2290,6 +2290,7 @@ function renderConditionDoughnutChart(counts) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 100,
             cutout: '68%',
             animation: {
                 animateScale: true,
@@ -2352,6 +2353,7 @@ function renderCategoryValuationChart(valuations) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 100,
             animation: {
                 duration: 750,
                 easing: 'easeOutQuart'
@@ -2438,6 +2440,7 @@ function renderLifecycleAgingChart(buckets) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 100,
             animation: {
                 duration: 750,
                 easing: 'easeOutQuart'
@@ -2506,6 +2509,7 @@ function renderDepartmentAllocationChart(departments) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 100,
             animation: {
                 duration: 750,
                 easing: 'easeOutQuart'
