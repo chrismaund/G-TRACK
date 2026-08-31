@@ -402,30 +402,16 @@ body {
     max-width: 100%;
     box-sizing: border-box;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    scrollbar-width: thin !important;
-    scrollbar-color: #94a3b8 rgba(241, 245, 249, 0.7) !important;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
     -webkit-overflow-scrolling: touch;
 }
 
-/* Custom Sleek Scrollbar Indicator */
+/* Hide scrollbar on Chrome, Safari, Edge */
 .table-container::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
-    display: block !important;
-}
-
-.table-container::-webkit-scrollbar-track {
-    background: rgba(241, 245, 249, 0.9) !important;
-    border-radius: 6px !important;
-}
-
-.table-container::-webkit-scrollbar-thumb {
-    background: #94a3b8 !important;
-    border-radius: 6px !important;
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-    background: #0284c7 !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .data-table { 
@@ -3198,16 +3184,13 @@ body.dark-theme-mode .btn-cancel:hover {
 
 /* Dark mode scrollbars for data table */
 body.dark-theme-mode .table-container {
-    scrollbar-color: #334155 rgba(15, 23, 42, 0.6);
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
-body.dark-theme-mode .table-container::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.6);
-}
-body.dark-theme-mode .table-container::-webkit-scrollbar-thumb {
-    background: #334155;
-}
-body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
-    background: #38bdf8;
+body.dark-theme-mode .table-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* ── Ultra Wide Monitors (1920px+) — generous breathing room ── */
