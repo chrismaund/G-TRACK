@@ -2133,25 +2133,37 @@ window.renderAnalyticsDashboard = function() {
         }
     });
 
-    // Update KPI Card UI Elements
+    // Update KPI Card UI Elements with smooth number counting animation
     const serviceableRate = totalArticles > 0 ? Math.round((serviceableCount / totalArticles) * 100) : 0;
     const totalRepairAlerts = needsRepairCount + unserviceableCount;
 
-    if (totalValuationEl) {
-        totalValuationEl.textContent = `₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    function animateNumberValue(el, targetNum, isCurrency = false, isPercent = false, duration = 800) {
+        if (!el) return;
+        const start = performance.now();
+        function frame(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            const current = targetNum * ease;
+            if (isCurrency) {
+                el.textContent = `₱${current.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } else if (isPercent) {
+                el.textContent = `${Math.round(current)}%`;
+            } else {
+                el.textContent = Math.round(current).toLocaleString('en-US');
+            }
+            if (progress < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
     }
-    if (serviceableRateEl) {
-        serviceableRateEl.textContent = `${serviceableRate}%`;
-    }
+
+    if (totalValuationEl) animateNumberValue(totalValuationEl, totalValuation, true, false, 850);
+    if (serviceableRateEl) animateNumberValue(serviceableRateEl, serviceableRate, false, true, 850);
     if (serviceableRatioEl) {
         serviceableRatioEl.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${serviceableCount} of ${totalArticles} articles operational`;
     }
-    if (repairAlertsEl) {
-        repairAlertsEl.textContent = totalRepairAlerts.toLocaleString();
-    }
-    if (replacementBudgetEl) {
-        replacementBudgetEl.textContent = `₱${replacementBudget.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-    }
+    if (repairAlertsEl) animateNumberValue(repairAlertsEl, totalRepairAlerts, false, false, 750);
+    if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, replacementBudget, true, false, 850);
 
     // 2. Render Chart.js Visualizations (Safely checking Chart availability)
     if (typeof Chart !== 'undefined') {
