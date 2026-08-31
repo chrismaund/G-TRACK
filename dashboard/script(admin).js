@@ -2004,6 +2004,7 @@ function calculateItemAge(dateStr) {
  * Aggregates data and renders the complete Analytics & Predictive Insights Dashboard.
  */
 window.renderAnalyticsDashboard = function() {
+    if (activeAdminView !== 'analytics') return;
     const totalValuationEl = document.getElementById('kpi-total-valuation');
     const serviceableRateEl = document.getElementById('kpi-serviceable-rate');
     const serviceableRatioEl = document.getElementById('kpi-serviceable-ratio');
@@ -2293,7 +2294,7 @@ function renderConditionDoughnutChart(counts) {
             animation: {
                 animateScale: true,
                 animateRotate: true,
-                duration: 1200,
+                duration: 800,
                 easing: 'easeOutQuart'
             },
             plugins: {
@@ -2352,7 +2353,7 @@ function renderCategoryValuationChart(valuations) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 1100,
+                duration: 750,
                 easing: 'easeOutQuart'
             },
             plugins: {
@@ -2438,7 +2439,7 @@ function renderLifecycleAgingChart(buckets) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 1100,
+                duration: 750,
                 easing: 'easeOutQuart'
             },
             plugins: {
@@ -2506,7 +2507,7 @@ function renderDepartmentAllocationChart(departments) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 1100,
+                duration: 750,
                 easing: 'easeOutQuart'
             },
             plugins: {
