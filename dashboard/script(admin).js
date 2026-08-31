@@ -45,16 +45,6 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-function sanitizeText(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 // =========================================================================
 // SUPABASE CONFIGURATION & DATA MAPPERS
 // =========================================================================
