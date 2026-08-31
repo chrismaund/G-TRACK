@@ -492,9 +492,13 @@ window.switchEmpView = function(viewName) {
     if (directoryView) directoryView.classList.toggle('hidden', viewName !== 'directory');
 
     if (viewName === 'directory') {
-        renderTable();
+        setTimeout(() => {
+            renderTable();
+        }, 30);
     } else {
-        calculateMetrics();
+        setTimeout(() => {
+            calculateMetrics();
+        }, 30);
     }
 };
 

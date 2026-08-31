@@ -470,7 +470,7 @@ body {
 @keyframes tableRowEntrance {
     0% {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(10px);
     }
     100% {
         opacity: 1;
@@ -481,7 +481,8 @@ body {
 .data-table tbody tr {
     background-color: #ffffff;
     transition: background 0.15s ease;
-    animation: tableRowEntrance 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: tableRowEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
 }
 
 .data-table tbody tr:hover {

@@ -1930,14 +1930,20 @@ window.switchAdminView = function(viewName) {
 
     if (viewName === 'analytics') {
         if (analyticsView) analyticsView.classList.remove('hidden');
-        renderAnalyticsDashboard();
+        setTimeout(() => {
+            renderAnalyticsDashboard();
+        }, 30);
     } else if (viewName === 'masterlist') {
         if (masterlistView) masterlistView.classList.remove('hidden');
-        renderTable();
+        setTimeout(() => {
+            renderTable();
+        }, 30);
     } else {
         // Default to Home View
         if (homeView) homeView.classList.remove('hidden');
-        renderHomeDashboard();
+        setTimeout(() => {
+            renderHomeDashboard();
+        }, 30);
     }
 };
 
@@ -2257,6 +2263,12 @@ function renderConditionDoughnutChart(counts) {
             responsive: true,
             maintainAspectRatio: false,
             cutout: '68%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 950,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -2311,6 +2323,10 @@ function renderCategoryValuationChart(valuations) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 850,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -2390,6 +2406,10 @@ function renderLifecycleAgingChart(buckets) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 850,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -2451,6 +2471,10 @@ function renderDepartmentAllocationChart(departments) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 850,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
