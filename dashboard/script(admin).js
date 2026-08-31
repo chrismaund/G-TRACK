@@ -2227,11 +2227,12 @@ window.inspectAdvisoryItem = function(propertyNo) {
  * Chart 1: Equipment Condition & Serviceability Breakdown (Doughnut Chart)
  */
 function renderConditionDoughnutChart(counts) {
-    const ctx = document.getElementById('conditionDoughnutChart');
-    if (!ctx) return;
+    const canvas = document.getElementById('conditionDoughnutChart');
+    if (!canvas) return;
 
     if (conditionChartInstance) {
         conditionChartInstance.destroy();
+        conditionChartInstance = null;
     }
 
     const labels = Object.keys(counts).filter(k => counts[k] > 0);
@@ -2247,7 +2248,7 @@ function renderConditionDoughnutChart(counts) {
 
     const backgroundColors = labels.map(l => colorMap[l] || '#38bdf8');
 
-    conditionChartInstance = new Chart(ctx, {
+    conditionChartInstance = new Chart(canvas, {
         type: 'doughnut',
         data: {
             labels: labels.length ? labels : ['No Data'],
@@ -2256,7 +2257,7 @@ function renderConditionDoughnutChart(counts) {
                 backgroundColor: backgroundColors.length ? backgroundColors : ['#334155'],
                 borderWidth: 2,
                 borderColor: '#121a2b',
-                hoverOffset: 6
+                hoverOffset: 8
             }]
         },
         options: {
@@ -2266,7 +2267,7 @@ function renderConditionDoughnutChart(counts) {
             animation: {
                 animateScale: true,
                 animateRotate: true,
-                duration: 950,
+                duration: 1200,
                 easing: 'easeOutQuart'
             },
             plugins: {
@@ -2296,17 +2297,18 @@ function renderConditionDoughnutChart(counts) {
  * Chart 2: Account Group Valuation in ₱ (Bar Chart)
  */
 function renderCategoryValuationChart(valuations) {
-    const ctx = document.getElementById('categoryValuationChart');
-    if (!ctx) return;
+    const canvas = document.getElementById('categoryValuationChart');
+    if (!canvas) return;
 
     if (categoryValuationChartInstance) {
         categoryValuationChartInstance.destroy();
+        categoryValuationChartInstance = null;
     }
 
     const labels = Object.keys(valuations);
     const data = labels.map(k => valuations[k]);
 
-    categoryValuationChartInstance = new Chart(ctx, {
+    categoryValuationChartInstance = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: labels.length ? labels : ['No Data'],
@@ -2324,8 +2326,9 @@ function renderCategoryValuationChart(valuations) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 850,
-                easing: 'easeOutQuart'
+                duration: 1100,
+                easing: 'easeOutQuart',
+                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 80 : 0)
             },
             plugins: {
                 legend: { display: false },
@@ -2369,17 +2372,18 @@ function renderCategoryValuationChart(valuations) {
  * Chart 3: Predictive Equipment Aging & Lifecycle Distribution (Bar Chart)
  */
 function renderLifecycleAgingChart(buckets) {
-    const ctx = document.getElementById('lifecycleAgingChart');
-    if (!ctx) return;
+    const canvas = document.getElementById('lifecycleAgingChart');
+    if (!canvas) return;
 
     if (lifecycleAgingChartInstance) {
         lifecycleAgingChartInstance.destroy();
+        lifecycleAgingChartInstance = null;
     }
 
     const labels = Object.keys(buckets);
     const data = labels.map(k => buckets[k]);
 
-    lifecycleAgingChartInstance = new Chart(ctx, {
+    lifecycleAgingChartInstance = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: labels,
@@ -2407,8 +2411,9 @@ function renderLifecycleAgingChart(buckets) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 850,
-                easing: 'easeOutQuart'
+                duration: 1100,
+                easing: 'easeOutQuart',
+                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 120 : 0)
             },
             plugins: {
                 legend: { display: false },
@@ -2443,17 +2448,18 @@ function renderLifecycleAgingChart(buckets) {
  * Chart 4: Department Asset Allocation (Horizontal Bar Chart)
  */
 function renderDepartmentAllocationChart(departments) {
-    const ctx = document.getElementById('departmentAllocationChart');
-    if (!ctx) return;
+    const canvas = document.getElementById('departmentAllocationChart');
+    if (!canvas) return;
 
     if (departmentAllocationChartInstance) {
         departmentAllocationChartInstance.destroy();
+        departmentAllocationChartInstance = null;
     }
 
     const sortedDepts = Object.keys(departments).sort((a, b) => departments[b] - departments[a]).slice(0, 6);
     const data = sortedDepts.map(d => departments[d]);
 
-    departmentAllocationChartInstance = new Chart(ctx, {
+    departmentAllocationChartInstance = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: sortedDepts.length ? sortedDepts : ['No Department Assigned'],
@@ -2472,8 +2478,9 @@ function renderDepartmentAllocationChart(departments) {
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 850,
-                easing: 'easeOutQuart'
+                duration: 1100,
+                easing: 'easeOutQuart',
+                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 90 : 0)
             },
             plugins: {
                 legend: { display: false },
