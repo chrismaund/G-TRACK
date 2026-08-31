@@ -2227,8 +2227,8 @@ window.inspectAdvisoryItem = function(propertyNo) {
  * Chart 1: Equipment Condition & Serviceability Breakdown (Doughnut Chart)
  */
 function renderConditionDoughnutChart(counts) {
-    const canvas = document.getElementById('conditionDoughnutChart');
-    if (!canvas) return;
+    const ctx = document.getElementById('conditionDoughnutChart');
+    if (!ctx) return;
 
     if (conditionChartInstance) {
         conditionChartInstance.destroy();
@@ -2248,7 +2248,7 @@ function renderConditionDoughnutChart(counts) {
 
     const backgroundColors = labels.map(l => colorMap[l] || '#38bdf8');
 
-    conditionChartInstance = new Chart(canvas, {
+    conditionChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: labels.length ? labels : ['No Data'],
@@ -2297,8 +2297,8 @@ function renderConditionDoughnutChart(counts) {
  * Chart 2: Account Group Valuation in ₱ (Bar Chart)
  */
 function renderCategoryValuationChart(valuations) {
-    const canvas = document.getElementById('categoryValuationChart');
-    if (!canvas) return;
+    const ctx = document.getElementById('categoryValuationChart');
+    if (!ctx) return;
 
     if (categoryValuationChartInstance) {
         categoryValuationChartInstance.destroy();
@@ -2308,7 +2308,7 @@ function renderCategoryValuationChart(valuations) {
     const labels = Object.keys(valuations);
     const data = labels.map(k => valuations[k]);
 
-    categoryValuationChartInstance = new Chart(canvas, {
+    categoryValuationChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels.length ? labels : ['No Data'],
@@ -2327,8 +2327,7 @@ function renderCategoryValuationChart(valuations) {
             maintainAspectRatio: false,
             animation: {
                 duration: 1100,
-                easing: 'easeOutQuart',
-                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 80 : 0)
+                easing: 'easeOutQuart'
             },
             plugins: {
                 legend: { display: false },
@@ -2352,6 +2351,8 @@ function renderCategoryValuationChart(valuations) {
                     grid: { display: false }
                 },
                 y: {
+                    beginAtZero: true,
+                    min: 0,
                     ticks: {
                         color: '#94a3b8',
                         font: { family: 'Plus Jakarta Sans', size: 10 },
@@ -2372,8 +2373,8 @@ function renderCategoryValuationChart(valuations) {
  * Chart 3: Predictive Equipment Aging & Lifecycle Distribution (Bar Chart)
  */
 function renderLifecycleAgingChart(buckets) {
-    const canvas = document.getElementById('lifecycleAgingChart');
-    if (!canvas) return;
+    const ctx = document.getElementById('lifecycleAgingChart');
+    if (!ctx) return;
 
     if (lifecycleAgingChartInstance) {
         lifecycleAgingChartInstance.destroy();
@@ -2383,7 +2384,7 @@ function renderLifecycleAgingChart(buckets) {
     const labels = Object.keys(buckets);
     const data = labels.map(k => buckets[k]);
 
-    lifecycleAgingChartInstance = new Chart(canvas, {
+    lifecycleAgingChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -2412,8 +2413,7 @@ function renderLifecycleAgingChart(buckets) {
             maintainAspectRatio: false,
             animation: {
                 duration: 1100,
-                easing: 'easeOutQuart',
-                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 120 : 0)
+                easing: 'easeOutQuart'
             },
             plugins: {
                 legend: { display: false },
@@ -2436,6 +2436,8 @@ function renderLifecycleAgingChart(buckets) {
                     grid: { display: false }
                 },
                 y: {
+                    beginAtZero: true,
+                    min: 0,
                     ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 }, stepSize: 1 },
                     grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 }
@@ -2448,8 +2450,8 @@ function renderLifecycleAgingChart(buckets) {
  * Chart 4: Department Asset Allocation (Horizontal Bar Chart)
  */
 function renderDepartmentAllocationChart(departments) {
-    const canvas = document.getElementById('departmentAllocationChart');
-    if (!canvas) return;
+    const ctx = document.getElementById('departmentAllocationChart');
+    if (!ctx) return;
 
     if (departmentAllocationChartInstance) {
         departmentAllocationChartInstance.destroy();
@@ -2459,7 +2461,7 @@ function renderDepartmentAllocationChart(departments) {
     const sortedDepts = Object.keys(departments).sort((a, b) => departments[b] - departments[a]).slice(0, 6);
     const data = sortedDepts.map(d => departments[d]);
 
-    departmentAllocationChartInstance = new Chart(canvas, {
+    departmentAllocationChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: sortedDepts.length ? sortedDepts : ['No Department Assigned'],
@@ -2479,8 +2481,7 @@ function renderDepartmentAllocationChart(departments) {
             maintainAspectRatio: false,
             animation: {
                 duration: 1100,
-                easing: 'easeOutQuart',
-                delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * 90 : 0)
+                easing: 'easeOutQuart'
             },
             plugins: {
                 legend: { display: false },
@@ -2499,6 +2500,8 @@ function renderDepartmentAllocationChart(departments) {
             },
             scales: {
                 x: {
+                    beginAtZero: true,
+                    min: 0,
                     ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 }, stepSize: 1 },
                     grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 },
