@@ -20,6 +20,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const inventoryRef = database.ref('inventoryData');
 const requestsRef = database.ref('masterlistRequests');
+const auditRef = database.ref('auditLogs');
 
 // =========================================================================
 // AUTHENTICATION GUARD & SESSION PROTECTION (ADMIN)
@@ -501,6 +502,7 @@ if (addForm) {
                         .update(supabasePayload)
                         .eq('id', currentEditingId);
                 }
+                logAuditEvent('UPDATE', 'Administrator', `Modified property item: ${formData.article || 'Article'} (Property #${formData.propertyNo || 'N/A'})`, currentEditingId, 'INVENTORY');
                 closeModal();
             } else {
                 // Generate push key for Firebase
@@ -516,6 +518,8 @@ if (addForm) {
                         .from('inventory')
                         .insert([supabasePayload]);
                 }
+
+                logAuditEvent('CREATE', 'Administrator', `Registered new property item: ${formData.article || 'Article'} (Property #${formData.propertyNo || 'N/A'})`, newId, 'INVENTORY');
 
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
@@ -619,6 +623,7 @@ window.executeBatchDelete = async function() {
     // Always delete from Firebase Realtime DB too
     const promises = idsToDelete.map(id => database.ref(`inventoryData/${id}`).remove());
     Promise.all(promises).then(() => {
+        logAuditEvent('DELETE', 'Administrator', `Batch deleted ${idsToDelete.length} inventory record${idsToDelete.length > 1 ? 's' : ''} from masterlist`, null, 'INVENTORY');
         closeDeletePopover();
         exitDeleteSelectionMode();
         if (supabaseClient) fetchInventoryFromSupabase();
@@ -832,6 +837,7 @@ window.deleteUserAccount = function(userId, userEmail) {
     if (confirm(`Are you sure you want to permanently delete ${displayName}?\nThis account will be permanently removed from the system and can no longer log in.`)) {
         db.collection("users").doc(userId).delete()
             .then(() => {
+                logAuditEvent('DELETE', 'Administrator', `Permanently deleted user profile account: ${userEmail || userId}`, userId, 'USER_AUTH');
                 console.log(`User account ${userId} permanently deleted.`);
             })
             .catch((error) => {
@@ -1020,6 +1026,7 @@ function updateUserStatus(userId, newStatus) {
         status: newStatus
     })
     .then(() => {
+        logAuditEvent('USER_AUTH', 'Administrator', `Changed user account status to "${newStatus.toUpperCase()}"`, userId, 'USER_AUTH');
         console.log(`User status updated to ${newStatus}`);
     })
     .catch((error) => {
@@ -2534,3 +2541,202 @@ function renderDepartmentAllocationChart(departments) {
         }
     });
 }
+
+// =========================================================================
+// SYSTEM AUDIT TRAIL & ACTIVITY LOG ENGINE
+// =========================================================================
+let currentAuditFilter = 'ALL';
+let auditLogsData = [];
+
+/**
+ * Records an immutable, real-time audit trail event in Firebase Realtime Database.
+ * @param {'CREATE'|'UPDATE'|'DELETE'|'USER_AUTH'|'REQUEST'} actionType 
+ * @param {string} actorName 
+ * @param {string} description 
+ * @param {string|null} targetId 
+ * @param {'INVENTORY'|'USER_AUTH'|'REQUEST'|'SYSTEM'} category 
+ */
+function logAuditEvent(actionType, actorName, description, targetId = null, category = 'INVENTORY') {
+    try {
+        if (typeof auditRef === 'undefined' || !auditRef) return;
+        const newLogRef = auditRef.push();
+        const payload = {
+            id: newLogRef.key,
+            actionType: actionType,
+            actor: actorName || 'Administrator',
+            description: description || '',
+            targetId: targetId || '',
+            category: category || 'INVENTORY',
+            timestamp: new Date().toISOString()
+        };
+        newLogRef.set(payload).catch(err => console.warn("Audit logging warning:", err));
+    } catch (e) {
+        console.warn("Audit log exception:", e);
+    }
+}
+
+// User Profiles & Audit Drawer Controls
+window.openAuditModal = function() {
+    if (typeof closeSidebarNavMenu === 'function') {
+        closeSidebarNavMenu();
+    }
+    const auditModal = document.getElementById('audit-modal');
+    if (auditModal) {
+        auditModal.classList.remove('hidden');
+        auditModal.style.display = 'flex';
+        setTimeout(() => {
+            auditModal.classList.add('open');
+        }, 10);
+    }
+};
+
+window.closeAuditModal = function() {
+    const auditModal = document.getElementById('audit-modal');
+    if (auditModal) {
+        auditModal.classList.remove('open');
+        setTimeout(() => {
+            auditModal.classList.add('hidden');
+            auditModal.style.display = 'none';
+        }, 300);
+    }
+};
+
+const auditDrawerModal = document.getElementById('audit-modal');
+if (auditDrawerModal) {
+    auditDrawerModal.addEventListener('click', (e) => {
+        if (e.target === auditDrawerModal) {
+            window.closeAuditModal();
+        }
+    });
+}
+
+window.setAuditFilter = function(category) {
+    currentAuditFilter = category;
+    const chips = document.querySelectorAll('#audit-filter-chips .audit-chip');
+    chips.forEach(chip => {
+        const text = chip.textContent.trim().toUpperCase();
+        if (category === 'ALL' && text.includes('ALL')) chip.classList.add('active');
+        else if (category === 'INVENTORY' && text.includes('INVENTORY')) chip.classList.add('active');
+        else if (category === 'USER_AUTH' && (text.includes('USER') || text.includes('ACCESS'))) chip.classList.add('active');
+        else if (category === 'REQUEST' && text.includes('REQUEST')) chip.classList.add('active');
+        else chip.classList.remove('active');
+    });
+    renderAuditLogsTable();
+};
+
+function renderAuditLogsTable() {
+    const tableBody = document.getElementById('audit-table-body');
+    const searchInput = document.getElementById('audit-search-input');
+    const query = (searchInput ? searchInput.value.trim().toLowerCase() : '');
+
+    if (!tableBody) return;
+
+    let filtered = auditLogsData.filter(log => {
+        if (currentAuditFilter !== 'ALL' && log.category !== currentAuditFilter) {
+            return false;
+        }
+        if (query) {
+            const combined = `${log.actionType} ${log.actor} ${log.description} ${log.targetId}`.toLowerCase();
+            return combined.includes(query);
+        }
+        return true;
+    });
+
+    tableBody.innerHTML = '';
+
+    if (filtered.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12px;">
+                    <i class="fas fa-clipboard-list" style="font-size: 24px; display: block; margin-bottom: 8px; color: #475569;"></i>
+                    No audit records found matching the current filter.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    filtered.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+
+        let badgeClass = 'badge-update';
+        let badgeIcon = 'fa-edit';
+        if (log.actionType === 'CREATE') { badgeClass = 'badge-create'; badgeIcon = 'fa-plus-circle'; }
+        else if (log.actionType === 'DELETE') { badgeClass = 'badge-delete'; badgeIcon = 'fa-trash-alt'; }
+        else if (log.actionType === 'USER_AUTH') { badgeClass = 'badge-auth'; badgeIcon = 'fa-user-shield'; }
+        else if (log.actionType === 'REQUEST') { badgeClass = 'badge-request'; badgeIcon = 'fa-tasks'; }
+
+        let formattedTime = 'Just now';
+        try {
+            if (log.timestamp) {
+                const dateObj = new Date(log.timestamp);
+                formattedTime = dateObj.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+        } catch (e) {
+            formattedTime = log.timestamp || '—';
+        }
+
+        tr.innerHTML = `
+            <td style="padding: 10px 14px; color: #94a3b8; font-size: 11.5px; white-space: nowrap;">
+                <i class="far fa-clock" style="margin-right: 4px; color: #64748b;"></i> ${sanitizeText(formattedTime)}
+            </td>
+            <td style="padding: 10px 14px;">
+                <span class="audit-badge ${badgeClass}">
+                    <i class="fas ${badgeIcon}"></i> ${sanitizeText(log.actionType)}
+                </span>
+            </td>
+            <td style="padding: 10px 14px; font-weight: 600; color: #f1f5f9; white-space: nowrap;">
+                ${sanitizeText(log.actor)}
+            </td>
+            <td style="padding: 10px 14px; color: #cbd5e1; font-size: 12px; line-height: 1.4;">
+                ${sanitizeText(log.description)}
+            </td>
+        `;
+        fragment.appendChild(tr);
+    });
+
+    tableBody.appendChild(fragment);
+}
+
+function initAuditLogsListener() {
+    if (typeof auditRef === 'undefined' || !auditRef) return;
+
+    auditRef.limitToLast(100).on('value', (snapshot) => {
+        auditLogsData = [];
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                const val = child.val();
+                auditLogsData.push({
+                    id: child.key,
+                    ...val
+                });
+            });
+        }
+        // Newest logs first
+        auditLogsData.sort((a, b) => {
+            const timeA = new Date(a.timestamp || 0).getTime();
+            const timeB = new Date(b.timestamp || 0).getTime();
+            return timeB - timeA;
+        });
+
+        renderAuditLogsTable();
+    });
+
+    const searchInput = document.getElementById('audit-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', renderAuditLogsTable);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initAuditLogsListener);
+
