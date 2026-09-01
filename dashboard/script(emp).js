@@ -1,3 +1,6 @@
+/* global firebase, supabase */
+/* eslint-disable no-undef */
+
 // =========================================================================
 // FIREBASE CONFIGURATION & INITIALIZATION
 // =========================================================================
@@ -35,6 +38,7 @@ let currentEmployeeEmail = "";
 let currentEmployeeName = "";
 let currentEmployeeUid = "";
 let currentEmployeeCreatedAt = "";
+let currentEmployeeDept = "";
 
 // =========================================================================
 // AUTHENTICATION GUARD & SESSION PROTECTION (EMPLOYEE)
@@ -72,7 +76,7 @@ auth.onAuthStateChanged(async (user) => {
 
         currentEmployeeName = userData.fullName || userData.name || user.email;
         currentEmployeeCreatedAt = userData.createdAt || "";
-        const currentEmployeeDept = userData.department || "Staff Access";
+        currentEmployeeDept = userData.department || "Staff Access";
 
         // Update UI displays with employee info
         const nameEl = document.getElementById('emp-profile-name');
