@@ -1,3 +1,7 @@
+// @ts-nocheck
+/* global firebase, supabase */
+/* eslint-disable no-undef */
+
 // =========================================================================
 // FIREBASE CONFIGURATION & INITIALIZATION
 // =========================================================================
