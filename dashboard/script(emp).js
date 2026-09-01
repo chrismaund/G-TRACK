@@ -1040,7 +1040,6 @@ if (profileForm) {
 
             let passwordUpdated = false;
             let nameUpdated = false;
-            let deptUpdated = false;
 
             // 1. If password change is requested, Re-authenticate with Firebase Auth (Google-style authorization)
             if (isPasswordChangeAttempt) {
