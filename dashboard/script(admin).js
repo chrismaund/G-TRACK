@@ -1546,10 +1546,10 @@ async function renderAdminRequestsPanel() {
                     </div>
                     ${isPending ? `
                         <div class="req-actions">
-                            <button onclick="approveDeptTransfer('${item.id}', '${d.userId}', '${d.targetDepartment}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                            <button onclick="approveDeptTransfer('${item.id}', '${d.userId}', '${d.targetDepartment}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
                                 <i class="fas fa-check"></i> Approve Transfer
                             </button>
-                            <button onclick="rejectDeptTransfer('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                            <button onclick="rejectDeptTransfer('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
@@ -1594,10 +1594,10 @@ async function renderAdminRequestsPanel() {
                     </div>
                     ${isPending ? `
                         <div class="req-actions">
-                            <button onclick="approveEquipmentTransfer('${item.id}', '${d.itemId}', '${d.targetDepartment}', '${sanitizeText(d.newCustodian)}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                            <button onclick="approveEquipmentTransfer('${item.id}', '${d.itemId}', '${d.targetDepartment}', '${sanitizeText(d.newCustodian)}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
                                 <i class="fas fa-check"></i> Approve Transfer
                             </button>
-                            <button onclick="rejectEquipmentTransfer('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                            <button onclick="rejectEquipmentTransfer('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
@@ -1634,10 +1634,10 @@ async function renderAdminRequestsPanel() {
                     </div>
                     ${isPending ? `
                         <div class="req-actions">
-                            <button onclick="approveMasterlistRequest('${item.id}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                            <button onclick="approveMasterlistRequest('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
                                 <i class="fas fa-check"></i> Approve Copy
                             </button>
-                            <button onclick="rejectMasterlistRequest('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                            <button onclick="rejectMasterlistRequest('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
                                 <i class="fas fa-times"></i> Decline
                             </button>
                         </div>
@@ -1688,7 +1688,7 @@ window.showGTrackToast = function(type, title, message, duration = 4000) {
     }, duration);
 };
 
-window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', cancelText = 'Cancel', isDanger = false) {
+window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', cancelText = 'Cancel', isDanger = false, anchorEl = null) {
     return new Promise((resolve) => {
         const modal = document.getElementById('gtrack-confirm-modal');
         const titleEl = document.getElementById('confirm-modal-title');
@@ -1697,6 +1697,7 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
         const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
         const iconWrapper = document.getElementById('confirm-modal-icon-wrapper');
         const icon = document.getElementById('confirm-modal-icon');
+        const card = modal ? modal.querySelector('.gtrack-confirm-card') : null;
 
         if (!modal || !actionBtn || !cancelBtn) {
             resolve(window.confirm(`${title}\n\n${message}`));
@@ -1731,6 +1732,51 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
             }
         }
 
+        // Anchor confirmation popup directly adjacent to the clicked button (No searching/delay)
+        if (card) {
+            if (anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
+                const rect = anchorEl.getBoundingClientRect();
+                const cardWidth = Math.min(360, window.innerWidth - 32);
+                card.style.position = 'fixed';
+                card.style.width = `${cardWidth}px`;
+                card.style.maxWidth = '94vw';
+
+                // Horizontal clamping inside viewport
+                let left = rect.right - cardWidth;
+                if (left < 16) left = 16;
+                if (left + cardWidth > window.innerWidth - 16) {
+                    left = window.innerWidth - cardWidth - 16;
+                }
+
+                // Vertical positioning (prefer right above button, fallback to below)
+                const spaceAbove = rect.top;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const estHeight = 160;
+
+                let top = 0;
+                if (spaceAbove >= estHeight + 8 || spaceAbove > spaceBelow) {
+                    top = rect.top - estHeight - 8;
+                    if (top < 12) top = 12;
+                } else {
+                    top = rect.bottom + 8;
+                    if (top + estHeight > window.innerHeight - 12) {
+                        top = window.innerHeight - estHeight - 12;
+                    }
+                }
+
+                card.style.top = `${top}px`;
+                card.style.left = `${left}px`;
+                card.style.margin = '0';
+            } else {
+                card.style.position = 'relative';
+                card.style.top = '';
+                card.style.left = '';
+                card.style.margin = 'auto';
+                card.style.width = '380px';
+                card.style.maxWidth = '92vw';
+            }
+        }
+
         const handleConfirm = () => {
             cleanup();
             resolve(true);
@@ -1741,14 +1787,28 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
             resolve(false);
         };
 
+        const handleOverlayClick = (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        };
+
         const cleanup = () => {
             modal.classList.remove('open');
             actionBtn.removeEventListener('click', handleConfirm);
             cancelBtn.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleOverlayClick);
+            if (card) {
+                card.style.position = '';
+                card.style.top = '';
+                card.style.left = '';
+                card.style.margin = '';
+            }
         };
 
         actionBtn.addEventListener('click', handleConfirm);
         cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleOverlayClick);
 
         modal.classList.add('open');
     });
@@ -1760,16 +1820,18 @@ window.adminClearRequestsLogs = async function(e) {
         e.stopPropagation();
     }
 
+    const btn = document.getElementById('admin-clear-requests-btn') || (e && e.currentTarget ? e.currentTarget : null);
+
     const ok = await window.showGTrackConfirm(
         "Clear All Request Logs?",
         "Warning: This will permanently delete all request records (Department Transfers, Equipment Transfers, and Masterlist Copies) from the database. This action cannot be undone.",
         "Yes, Clear Everything",
         "Cancel",
-        true
+        true,
+        btn
     );
     if (!ok) return;
 
-    const btn = document.getElementById('admin-clear-requests-btn') || (e && e.currentTarget ? e.currentTarget : null);
     const icon = btn ? btn.querySelector('i') : null;
     if (icon) icon.className = 'fas fa-spinner fa-spin';
     if (btn) btn.style.pointerEvents = 'none';
@@ -1827,12 +1889,14 @@ function buildMasterlistCSVString() {
     return [headers.join(","), ...rows].join("\n");
 }
 
-window.approveMasterlistRequest = async function(reqId) {
+window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Approve Masterlist Request?",
         "Authorize this staff member to download the current inventory masterlist copy?",
         "Approve Request",
-        "Cancel"
+        "Cancel",
+        false,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -1864,13 +1928,14 @@ window.approveMasterlistRequest = async function(reqId) {
     }
 };
 
-window.rejectMasterlistRequest = async function(reqId) {
+window.rejectMasterlistRequest = async function(reqId, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Decline Masterlist Request?",
         "Are you sure you want to decline this masterlist copy request?",
         "Decline Request",
         "Cancel",
-        true
+        true,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -1900,12 +1965,14 @@ window.rejectMasterlistRequest = async function(reqId) {
     }
 };
 
-window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
+window.approveDeptTransfer = async function(reqId, userId, targetDepartment, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Approve Department Transfer?",
         `Authorize employee transfer to ${targetDepartment}?`,
         "Approve Transfer",
-        "Cancel"
+        "Cancel",
+        false,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -1927,13 +1994,14 @@ window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
     }
 };
 
-window.rejectDeptTransfer = async function(reqId) {
+window.rejectDeptTransfer = async function(reqId, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Reject Department Transfer?",
         "Are you sure you want to decline this department transfer request?",
         "Reject Request",
         "Cancel",
-        true
+        true,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -1949,12 +2017,14 @@ window.rejectDeptTransfer = async function(reqId) {
     }
 };
 
-window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian) {
+window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Approve Equipment Transfer?",
         `Transfer this equipment to ${newDept} (Custodian: ${newCustodian})?`,
         "Approve Transfer",
-        "Cancel"
+        "Cancel",
+        false,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -2002,13 +2072,14 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
     }
 };
 
-window.rejectEquipmentTransfer = async function(transferId) {
+window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Reject Equipment Transfer?",
         "Are you sure you want to decline this equipment transfer request?",
         "Reject Request",
         "Cancel",
-        true
+        true,
+        triggerBtn
     );
     if (!ok) return;
 
