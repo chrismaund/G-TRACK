@@ -1060,15 +1060,30 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
         saveBtn.innerHTML = '<i class="fas fa-check"></i> Reassign Department';
     }
 
-    // Dynamically align card vertically to the clicked row
-    if (modalCard) {
-        if (clickEvent && clickEvent.clientY && window.innerWidth >= 1200) {
-            let targetTop = clickEvent.clientY - 60;
-            targetTop = Math.max(30, Math.min(window.innerHeight - 420, targetTop));
-            modalCard.style.top = `${targetTop}px`;
-        } else {
-            modalCard.style.top = '90px';
+    // Highlight target row in the user profiles table
+    const targetRow = clickEvent?.target?.closest('tr');
+    document.querySelectorAll('#profiles-table-body tr').forEach(r => r.classList.remove('reassign-active-row'));
+    if (targetRow) targetRow.classList.add('reassign-active-row');
+
+    // Dynamically align card and triangular arrow connector to the clicked row
+    if (modalCard && window.innerWidth >= 1200) {
+        let rowCenter = 140;
+        if (targetRow) {
+            const rect = targetRow.getBoundingClientRect();
+            rowCenter = rect.top + (rect.height / 2);
+        } else if (clickEvent && clickEvent.clientY) {
+            rowCenter = clickEvent.clientY;
         }
+
+        // Align modal card so arrow is near the top or centered
+        let targetTop = rowCenter - 42;
+        targetTop = Math.max(25, Math.min(window.innerHeight - 460, targetTop));
+        modalCard.style.top = `${targetTop}px`;
+
+        const arrowOffset = Math.max(24, Math.min(380, rowCenter - targetTop - 9));
+        modalCard.style.setProperty('--arrow-top', `${arrowOffset}px`);
+    } else if (modalCard) {
+        modalCard.style.top = '80px';
     }
 
     // Reset dropdown to current or placeholder
@@ -1085,6 +1100,9 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
 
 window.closeAdminReassignModal = function() {
     const modal = document.getElementById('admin-reassign-modal');
+    // Clear active row highlight
+    document.querySelectorAll('#profiles-table-body tr').forEach(r => r.classList.remove('reassign-active-row'));
+
     if (modal) {
         modal.classList.remove('open');
         setTimeout(() => {
