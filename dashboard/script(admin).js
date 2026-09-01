@@ -993,7 +993,7 @@ function initUserProfilesListener() {
                                 <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
                             </button>
                         `}
-                        <button onclick="adminChangeUserDepartment('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(deptName)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                        <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                             <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
                         </button>
                         <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
@@ -1036,35 +1036,177 @@ function updateUserStatus(userId, newStatus) {
     });
 }
 
-// Function for Admin to Reassign an Employee's Department
-window.adminChangeUserDepartment = function(userId, userName, currentDept) {
-    const departments = [
-        "ACCOUNTING", "ADMIN", "AGRI", "ASSESSOR", "BFP", "CCTV/IT", "COMELEC",
-        "DILG", "GSO", "HRMO", "LIGA", "MBO", "MCR", "MDRRMO", "MENRO", "MEO",
-        "MHO", "MPDO", "MSWDO", "MTC", "MTO", "OMM", "OMVM", "PNP", "SB", "SSB",
-        "TOURISM/CULTURAL", "TRAFFIC"
-    ];
+// =========================================================================
+// ADMIN REASSIGN EMPLOYEE DEPARTMENT MODAL LOGIC
+// =========================================================================
+window.openAdminReassignModal = function(userId, userName, userEmail, currentDept) {
+    const modal = document.getElementById('admin-reassign-modal');
+    const userIdInput = document.getElementById('reassign-user-id');
+    const nameEl = document.getElementById('reassign-staff-name');
+    const emailEl = document.getElementById('reassign-staff-email');
+    const currentDeptEl = document.getElementById('reassign-staff-current-dept');
+    const alertBox = document.getElementById('admin-reassign-alert');
+    const saveBtn = document.getElementById('save-reassign-btn');
 
-    const promptMsg = `Reassign Department for ${userName}:\n\nCurrent Department: ${currentDept || 'None'}\n\nEnter Department Code (e.g. ACCOUNTING, MDRRMO, GSO, OMM):`;
-    const chosen = prompt(promptMsg, currentDept || "GSO");
-    if (!chosen) return;
+    if (userIdInput) userIdInput.value = userId;
+    if (nameEl) nameEl.textContent = userName || 'Staff Member';
+    if (emailEl) emailEl.textContent = userEmail || 'No Email';
+    if (currentDeptEl) currentDeptEl.textContent = currentDept || 'None';
+    if (alertBox) alertBox.style.display = 'none';
 
-    const formatted = chosen.trim().toUpperCase();
-    if (!departments.includes(formatted)) {
-        alert(`"${chosen}" is not a recognized Pagbilao Municipal Department. Please enter one of the 28 official municipal codes.`);
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-check"></i> Reassign Department';
+    }
+
+    // Reset dropdown to current or placeholder
+    window.selectAdminCustomDept('reassign-new-dept', 'adminReassignText', 'adminReassignTrigger', 'adminReassignDeptWrapper', currentDept || '', currentDept ? `${currentDept}` : 'Select Department');
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+};
+
+window.closeAdminReassignModal = function() {
+    const modal = document.getElementById('admin-reassign-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+    }
+};
+
+window.toggleAdminCustomDropdown = function(event, wrapperId, searchInputId) {
+    if (event) event.stopPropagation();
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const wasOpen = wrapper.classList.contains('open');
+    document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+        if (el !== wrapper) el.classList.remove('open');
+    });
+
+    if (wasOpen) {
+        wrapper.classList.remove('open');
+    } else {
+        wrapper.classList.add('open');
+        if (searchInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            if (searchInput) {
+                setTimeout(() => searchInput.focus(), 80);
+            }
+        }
+    }
+};
+
+window.filterAdminDropdownOptions = function(query, listId) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const options = list.querySelectorAll('.custom-option');
+    options.forEach(opt => {
+        const text = opt.textContent.toLowerCase();
+        opt.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+    });
+};
+
+window.selectAdminCustomDept = function(hiddenInputId, textSpanId, triggerId, wrapperId, value, label) {
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const textSpan = document.getElementById(textSpanId);
+    const trigger = document.getElementById(triggerId);
+    const wrapper = document.getElementById(wrapperId);
+
+    if (hiddenInput) {
+        hiddenInput.value = value;
+        hiddenInput.dispatchEvent(new Event('change'));
+    }
+
+    if (textSpan) {
+        textSpan.textContent = label || value || 'Select Department';
+    }
+
+    if (trigger) {
+        if (value) trigger.classList.add('selected');
+        else trigger.classList.remove('selected');
+    }
+
+    if (wrapper) {
+        wrapper.classList.remove('open');
+        wrapper.querySelectorAll('.custom-option').forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
+};
+
+window.saveAdminReassignedDept = async function(event) {
+    event.preventDefault();
+    const userId = document.getElementById('reassign-user-id')?.value;
+    const newDept = document.getElementById('reassign-new-dept')?.value?.trim();
+    const alertBox = document.getElementById('admin-reassign-alert');
+    const saveBtn = document.getElementById('save-reassign-btn');
+
+    if (!userId || !newDept) {
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+            alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please select a municipal department.';
+        }
         return;
     }
 
-    db.collection("users").doc(userId).update({
-        department: formatted
-    })
-    .then(() => {
-        alert(`Successfully reassigned ${userName} to ${formatted}!`);
-    })
-    .catch((err) => {
-        alert("Error reassigning department: " + err.message);
-    });
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        await db.collection("users").doc(userId).update({
+            department: newDept
+        });
+
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(34, 197, 94, 0.15)';
+            alertBox.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+            alertBox.style.color = '#4ade80';
+            alertBox.innerHTML = `<i class="fas fa-check-circle"></i> Successfully reassigned department to ${newDept}!`;
+        }
+
+        setTimeout(() => {
+            window.closeAdminReassignModal();
+        }, 1200);
+
+    } catch (err) {
+        console.error("Error reassigning department:", err);
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+            alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${err.message || 'Could not update department.'}`;
+        }
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Reassign Department';
+        }
+    }
 };
+
+// Document click listener to close custom dropdowns
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-select-wrapper')) {
+        document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+            el.classList.remove('open');
+        });
+    }
+});
 
 // =========================================================================
 // PENDING REQUESTS & EQUIPMENT TRANSFER APPROVAL WORKFLOW
