@@ -1160,6 +1160,190 @@ body,
     left: 0; 
 }
 
+/* Pending Requests Left-Side Sliding Drawer (Admin) - Matches User Profiles UI */
+#requests-modal.modal-overlay { 
+    justify-content: flex-start; 
+    align-items: stretch; 
+    z-index: 1100; 
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#requests-modal.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#requests-modal .modal-card { 
+    position: fixed; 
+    top: 0; 
+    left: -820px; 
+    width: 780px; 
+    max-width: 95vw; 
+    height: 100vh; 
+    max-height: 100vh; 
+    background: #0f172a; 
+    border-right: 1px solid rgba(255, 255, 255, 0.12); 
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 0; 
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.65); 
+    padding: 24px 24px 28px 24px; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 1105; 
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+    box-sizing: border-box; 
+    overflow-y: hidden; 
+    scrollbar-width: thin; 
+    color: #f8fafc;
+}
+
+#requests-modal.open .modal-card { 
+    left: 0; 
+}
+
+#requests-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+
+#requests-modal .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Request Tab Buttons */
+.request-tab-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #94a3b8;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.request-tab-btn:hover {
+    background: rgba(56, 189, 248, 0.08);
+    color: #f8fafc;
+    border-color: rgba(56, 189, 248, 0.25);
+}
+
+.request-tab-btn.active {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.tab-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.request-tab-btn.active .tab-badge {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+/* Beautiful Structured Request Item Cards in the Sliding Modal */
+.req-item-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.req-item-card:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+.req-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.req-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.req-status-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.req-body-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+}
+
+.req-data-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.req-data-label {
+    font-size: 10.5px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.req-data-val {
+    color: #f8fafc;
+    font-weight: 500;
+}
+
+.req-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+}
+
 /* Admin Reassign Department Right-Sized Floating Connected Card */
 #admin-reassign-modal.modal-overlay { 
     justify-content: flex-start; 

@@ -123,7 +123,7 @@
         </button>
         <hr class="sidebar-divider">
 
-        <button id="sidebar-requests-quick-btn" class="sidebar-link-btn" title="Pending Requests" onclick="toggleRequestsStack()">
+        <button id="sidebar-requests-quick-btn" class="sidebar-link-btn" title="Pending Requests" onclick="openRequestsModal()">
             <i class="fas fa-inbox"></i> <span class="sidebar-text">Pending Requests</span>
             <span id="pending-requests-badge" class="badge-count" style="display: none; background: #ef4444; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 8px;">0</span>
         </button>
@@ -693,6 +693,53 @@
             <!-- Dynamically populated -->
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- PENDING REQUESTS SLIDING DRAWER MODAL (MATCHES USER PROFILES UI) -->
+<!-- ========================================================================= -->
+<div id="requests-modal" class="modal-overlay hidden" style="z-index: 1100;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+          <i class="fas fa-inbox"></i>
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">Pending Requests &amp; Approvals</h3>
+          <span style="font-size: 11.5px; color: #94a3b8;">Review, approve, reject, or manage institutional requests</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" onclick="dismissAllMasterlistRequests()" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto;" title="Mark masterlist requests as handled">
+          <i class="fas fa-check-double"></i> Clear Masterlist Logs
+        </button>
+        <button type="button" onclick="closeRequestsModal()" class="modal-close-btn" aria-label="Close pending requests drawer">&times;</button>
+      </div>
+    </div>
+
+    <!-- Request Filter Tabs -->
+    <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; flex-wrap: wrap;">
+      <button type="button" id="tab-btn-all" class="request-tab-btn active" onclick="filterRequestsTab('all', this)">
+        All Requests <span id="tab-count-all" class="tab-badge">0</span>
+      </button>
+      <button type="button" id="tab-btn-dept" class="request-tab-btn" onclick="filterRequestsTab('dept', this)">
+        <i class="fas fa-building"></i> Dept Transfers <span id="tab-count-dept" class="tab-badge">0</span>
+      </button>
+      <button type="button" id="tab-btn-transfer" class="request-tab-btn" onclick="filterRequestsTab('transfer', this)">
+        <i class="fas fa-exchange-alt"></i> Equipment Transfers <span id="tab-count-transfer" class="tab-badge">0</span>
+      </button>
+      <button type="button" id="tab-btn-masterlist" class="request-tab-btn" onclick="filterRequestsTab('masterlist', this)">
+        <i class="fas fa-file-export"></i> Masterlist Copies <span id="tab-count-masterlist" class="tab-badge">0</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+      <div id="admin-requests-container" style="flex: 1; min-height: 380px; overflow-y: auto; overflow-x: hidden; border: 1px solid #334155; border-radius: 8px; background: rgba(15, 23, 42, 0.6); padding: 16px; scrollbar-width: thin; scrollbar-color: #334155 transparent; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Dynamically rendered request cards -->
       </div>
     </div>
   </div>

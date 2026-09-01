@@ -1289,47 +1289,72 @@ document.addEventListener('click', (e) => {
 });
 
 // =========================================================================
-// PENDING REQUESTS & EQUIPMENT TRANSFER APPROVAL WORKFLOW
+// PENDING REQUESTS SLIDING DRAWER MODAL & APPROVAL WORKFLOW
 // =========================================================================
-const pendingRequestsWrapper = document.getElementById('pending-requests-wrapper');
-const pendingRequestsLog = document.getElementById('pending-requests-log');
-const pendingRequestsBadge = document.getElementById('pending-requests-badge');
+let currentRequestTab = 'all';
 
-window.toggleRequestsStack = function(forceOpen) {
-    if (sidebarDrawer && !sidebarDrawer.classList.contains('expanded')) {
-        sidebarDrawer.classList.add('expanded');
-        document.body.classList.add('sidebar-expanded');
-        localStorage.setItem('gtrack_sidebar_expanded', 'true');
+window.openRequestsModal = function() {
+    if (typeof closeSidebarNavMenu === 'function') {
+        closeSidebarNavMenu();
     }
+    const modal = document.getElementById('requests-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('open');
+        }, 10);
+    }
+    renderAdminRequestsPanel();
+};
 
-    if (pendingRequestsWrapper) {
-        if (forceOpen === true) {
-            pendingRequestsWrapper.classList.add('open');
-        } else {
-            pendingRequestsWrapper.classList.toggle('open');
+window.closeRequestsModal = function() {
+    const modal = document.getElementById('requests-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }, 300);
+    }
+};
+
+const requestsDrawerModal = document.getElementById('requests-modal');
+if (requestsDrawerModal) {
+    requestsDrawerModal.addEventListener('click', (e) => {
+        if (e.target === requestsDrawerModal) {
+            window.closeRequestsModal();
         }
-    }
+    });
+}
+
+window.filterRequestsTab = function(tabName, btn) {
+    currentRequestTab = tabName;
+    document.querySelectorAll('.request-tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderAdminRequestsPanel();
 };
 
 function initRequestsListener() {
     // 1. Listen for Equipment Transfer Requests
-    database.ref('equipmentTransfers').on('value', (snapshot) => {
+    database.ref('equipmentTransfers').on('value', () => {
         renderAdminRequestsPanel();
     });
 
     // 2. Listen for Masterlist Requests
-    database.ref('masterlistRequests').on('value', (snapshot) => {
+    database.ref('masterlistRequests').on('value', () => {
         renderAdminRequestsPanel();
     });
 
     // 3. Listen for Department Transfer Requests
-    database.ref('deptTransferRequests').on('value', (snapshot) => {
+    database.ref('deptTransferRequests').on('value', () => {
         renderAdminRequestsPanel();
     });
 }
 
 async function renderAdminRequestsPanel() {
-    if (!pendingRequestsLog) return;
+    const modalContainer = document.getElementById('admin-requests-container');
+    const badgeEl = document.getElementById('pending-requests-badge');
 
     try {
         const [transfersSnap, masterlistSnap, deptTransfersSnap] = await Promise.all([
@@ -1339,157 +1364,250 @@ async function renderAdminRequestsPanel() {
         ]);
 
         const allCards = [];
-        let pendingCount = 0;
+        let pendingTotal = 0;
+        let countDept = 0;
+        let countTransfer = 0;
+        let countMasterlist = 0;
 
-        // Process Equipment Transfers
+        // 1. Process Equipment Transfers
         if (transfersSnap.exists()) {
             transfersSnap.forEach((child) => {
                 const req = child.val();
-                const reqId = child.key;
-                if (req.status === 'Pending') pendingCount++;
+                const isPending = req.status === 'Pending' || req.status === 'pending';
+                if (isPending) {
+                    pendingTotal++;
+                    countTransfer++;
+                }
 
                 allCards.push({
-                    id: reqId,
+                    id: child.key,
                     type: 'transfer',
                     data: req,
-                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0
+                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0,
+                    isPending: isPending
                 });
             });
         }
 
-        // Process Department Transfer Requests
+        // 2. Process Department Transfer Requests
         if (deptTransfersSnap.exists()) {
             deptTransfersSnap.forEach((child) => {
                 const req = child.val();
-                const reqId = child.key;
-                if (req.status === 'Pending') pendingCount++;
+                const isPending = req.status === 'Pending' || req.status === 'pending';
+                if (isPending) {
+                    pendingTotal++;
+                    countDept++;
+                }
 
                 allCards.push({
-                    id: reqId,
+                    id: child.key,
                     type: 'dept_transfer',
                     data: req,
-                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0
+                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0,
+                    isPending: isPending
                 });
             });
         }
 
-        // Process Masterlist Requests
+        // 3. Process Masterlist Requests
         if (masterlistSnap.exists()) {
             masterlistSnap.forEach((child) => {
                 const req = child.val();
-                const reqId = child.key;
-                if (req.status === 'Pending') pendingCount++;
+                const isPending = req.status === 'Pending' || req.status === 'pending';
+                if (isPending) {
+                    pendingTotal++;
+                    countMasterlist++;
+                }
 
                 allCards.push({
-                    id: reqId,
+                    id: child.key,
                     type: 'masterlist',
                     data: req,
-                    time: req.requestedAt ? new Date(req.requestedAt).getTime() : 0
+                    time: req.requestedAt ? new Date(req.requestedAt).getTime() : (req.time ? new Date(req.time).getTime() : 0),
+                    isPending: isPending
                 });
             });
         }
 
-        if (pendingRequestsBadge) {
-            pendingRequestsBadge.textContent = pendingCount;
-            pendingRequestsBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        // Update Notification Badge
+        if (badgeEl) {
+            badgeEl.textContent = pendingTotal;
+            badgeEl.style.display = pendingTotal > 0 ? 'inline-block' : 'none';
         }
 
-        if (allCards.length === 0) {
-            pendingRequestsLog.innerHTML = `
-                <div style="padding: 18px 12px; text-align: center; color: #64748b; font-size: 11.5px;">
-                    <i class="far fa-bell-slash" style="font-size: 16px; display: block; margin-bottom: 6px;"></i>
-                    No pending requests.
+        // Update Tab Badges
+        const tabCountAll = document.getElementById('tab-count-all');
+        const tabCountDept = document.getElementById('tab-count-dept');
+        const tabCountTransfer = document.getElementById('tab-count-transfer');
+        const tabCountMasterlist = document.getElementById('tab-count-masterlist');
+
+        if (tabCountAll) tabCountAll.textContent = pendingTotal;
+        if (tabCountDept) tabCountDept.textContent = countDept;
+        if (tabCountTransfer) tabCountTransfer.textContent = countTransfer;
+        if (tabCountMasterlist) tabCountMasterlist.textContent = countMasterlist;
+
+        if (!modalContainer) return;
+
+        // Filter cards according to active tab
+        let filtered = allCards;
+        if (currentRequestTab === 'dept') {
+            filtered = allCards.filter(c => c.type === 'dept_transfer');
+        } else if (currentRequestTab === 'transfer') {
+            filtered = allCards.filter(c => c.type === 'transfer');
+        } else if (currentRequestTab === 'masterlist') {
+            filtered = allCards.filter(c => c.type === 'masterlist');
+        }
+
+        if (filtered.length === 0) {
+            modalContainer.innerHTML = `
+                <div style="padding: 48px 20px; text-align: center; color: #64748b;">
+                    <i class="far fa-bell-slash" style="font-size: 32px; display: block; margin-bottom: 12px; opacity: 0.5;"></i>
+                    <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: #cbd5e1;">No Requests Found</h4>
+                    <p style="margin: 0; font-size: 12px; color: #64748b;">There are currently no requests under this filter category.</p>
                 </div>
             `;
             return;
         }
 
-        allCards.sort((a, b) => b.time - a.time);
+        // Sort: Pending items first, then newest timestamps
+        filtered.sort((a, b) => {
+            if (a.isPending && !b.isPending) return -1;
+            if (!a.isPending && b.isPending) return 1;
+            return b.time - a.time;
+        });
 
-        pendingRequestsLog.innerHTML = '';
-        allCards.forEach((item) => {
+        modalContainer.innerHTML = '';
+
+        filtered.forEach((item) => {
             const cardEl = document.createElement('div');
-            cardEl.className = 'history-item-card';
-            cardEl.style.cssText = 'background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 12px;';
+            cardEl.className = 'req-item-card';
 
-            if (item.type === 'transfer') {
-                const t = item.data;
-                const isPending = t.status === 'Pending';
+            const d = item.data;
+            const status = d.status || 'Pending';
+            const isPending = item.isPending;
+            
+            let statusStyle = 'background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3);';
+            if (status === 'Approved' || status === 'Handled') {
+                statusStyle = 'background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3);';
+            } else if (status === 'Rejected') {
+                statusStyle = 'background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3);';
+            }
+
+            const formattedDate = d.createdAt ? new Date(d.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : (d.time || 'Recent');
+
+            if (item.type === 'dept_transfer') {
                 cardEl.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                        <span style="font-weight: 700; color: #38bdf8; font-size: 11.5px;">
-                            <i class="fas fa-exchange-alt"></i> Equipment Transfer
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+                            <i class="fas fa-building"></i> Department Transfer Request
                         </span>
-                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : (t.status === 'Approved' ? 'background: rgba(34,197,94,0.2); color: #86efac;' : 'background: rgba(239,68,68,0.2); color: #fca5a5;')}">
-                            ${sanitizeText(t.status || 'Pending')}
-                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
                     </div>
-                    <div style="font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${sanitizeText(t.article || 'Equipment')}</div>
-                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">Prop #: ${sanitizeText(t.propertyNo || '-')}</div>
-                    <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; margin-bottom: 6px; color: #cbd5e1;">
-                        <div><strong>From:</strong> ${sanitizeText(t.originLocation || '-')}</div>
-                        <div><strong>To:</strong> <span style="color: #38bdf8; font-weight: 700;">${sanitizeText(t.targetDepartment || '-')}</span></div>
-                        <div><strong>New Custodian:</strong> ${sanitizeText(t.newCustodian || '-')}</div>
-                        <div style="margin-top: 2px; color: #94a3b8;"><em>"${sanitizeText(t.reason || '')}"</em></div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Name</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || 'Staff Member')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Email Address</span>
+                            <span class="req-data-val">${sanitizeText(d.userEmail || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Current Department</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.originDepartment || 'Not Assigned')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Requested Department</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> ${sanitizeText(d.targetDepartment || '-')}</span>
+                        </div>
                     </div>
                     ${isPending ? `
-                        <div style="display: flex; gap: 6px; margin-top: 6px;">
-                            <button onclick="approveEquipmentTransfer('${item.id}', '${t.itemId}', '${t.targetDepartment}', '${sanitizeText(t.newCustodian)}')" style="flex: 1; background: #0284c7; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                                <i class="fas fa-check"></i> Approve
+                        <div class="req-actions">
+                            <button onclick="approveDeptTransfer('${item.id}', '${d.userId}', '${d.targetDepartment}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                                <i class="fas fa-check"></i> Approve Transfer
                             </button>
-                            <button onclick="rejectEquipmentTransfer('${item.id}')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                                Reject
+                            <button onclick="rejectDeptTransfer('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                                <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
                     ` : ''}
                 `;
-            } else if (item.type === 'dept_transfer') {
-                const d = item.data;
-                const isPending = d.status === 'Pending';
+            } else if (item.type === 'transfer') {
                 cardEl.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                        <span style="font-weight: 700; color: #a855f7; font-size: 11.5px;">
-                            <i class="fas fa-building"></i> Dept Transfer Request
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                            <i class="fas fa-exchange-alt"></i> Equipment Transfer Request
                         </span>
-                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : (d.status === 'Approved' ? 'background: rgba(34,197,94,0.2); color: #86efac;' : 'background: rgba(239,68,68,0.2); color: #fca5a5;')}">
-                            ${sanitizeText(d.status || 'Pending')}
-                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
                     </div>
-                    <div style="font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${sanitizeText(d.userName || 'Staff Member')}</div>
-                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${sanitizeText(d.userEmail || '')}</div>
-                    <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; margin-bottom: 6px; color: #cbd5e1;">
-                        <div><strong>Current Office:</strong> ${sanitizeText(d.originDepartment || '-')}</div>
-                        <div><strong>Requested Office:</strong> <span style="color: #38bdf8; font-weight: 700;">${sanitizeText(d.targetDepartment || '-')}</span></div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Equipment Article</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.article || 'Equipment')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Property Number</span>
+                            <span class="req-data-val" style="font-family: monospace; color: #38bdf8;">${sanitizeText(d.propertyNo || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">From Department</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.originLocation || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Target Department</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> ${sanitizeText(d.targetDepartment || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">New Custodian</span>
+                            <span class="req-data-val" style="color: #ffffff;">${sanitizeText(d.newCustodian || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Transfer Reason</span>
+                            <span class="req-data-val" style="color: #cbd5e1; font-style: italic;">"${sanitizeText(d.reason || '-')}"</span>
+                        </div>
                     </div>
                     ${isPending ? `
-                        <div style="display: flex; gap: 6px; margin-top: 6px;">
-                            <button onclick="approveDeptTransfer('${item.id}', '${d.userId}', '${d.targetDepartment}')" style="flex: 1; background: #0284c7; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                                <i class="fas fa-check"></i> Approve
+                        <div class="req-actions">
+                            <button onclick="approveEquipmentTransfer('${item.id}', '${d.itemId}', '${d.targetDepartment}', '${sanitizeText(d.newCustodian)}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                                <i class="fas fa-check"></i> Approve Transfer
                             </button>
-                            <button onclick="rejectDeptTransfer('${item.id}')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
-                                Reject
+                            <button onclick="rejectEquipmentTransfer('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                                <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
                     ` : ''}
                 `;
             } else {
-                const m = item.data;
-                const isPending = m.status === 'Pending' || m.status === 'pending';
                 cardEl.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-weight: 700; color: #a78bfa; font-size: 11.5px;">
-                            <i class="fas fa-file-export"></i> Masterlist Copy
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3);">
+                            <i class="fas fa-file-export"></i> Masterlist Copy Request
                         </span>
-                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : 'background: rgba(34,197,94,0.2); color: #86efac;'}">
-                            ${sanitizeText(m.status || 'Pending')}
-                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
                     </div>
-                    <div style="font-size: 11px; color: #cbd5e1;">Requested by: <strong>${sanitizeText(m.userName || m.user || 'Staff')}</strong></div>
-                    <div style="font-size: 10.5px; color: #64748b;">${sanitizeText(m.time || '')}</div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Requested By</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || d.user || 'Staff')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Request Type</span>
+                            <span class="req-data-val">Inventory Masterlist Export</span>
+                        </div>
+                    </div>
                 `;
             }
 
-            pendingRequestsLog.appendChild(cardEl);
+            modalContainer.appendChild(cardEl);
         });
 
     } catch (e) {
