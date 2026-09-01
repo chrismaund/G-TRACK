@@ -110,16 +110,16 @@ auth.onAuthStateChanged(async (user) => {
                 );
             }
 
-            // Update UI displays with employee info
+            // Update UI displays with employee info (Clearly showing Employee Role and Department)
             const nameEl = document.getElementById('emp-profile-name');
-            const emailEl = document.getElementById('emp-profile-email');
+            const roleTagEl = document.getElementById('emp-profile-email');
             const heroNameEl = document.getElementById('emp-hero-name');
             const navbarEmailEl = document.querySelector('.navbar .user-email');
 
             if (nameEl) nameEl.textContent = currentEmployeeName;
-            if (emailEl) emailEl.textContent = 'Staff Access';
+            if (roleTagEl) roleTagEl.textContent = `Staff • ${currentEmployeeDept}`;
             if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
-            if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
+            if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (Staff • ${currentEmployeeDept})`;
 
             // Profile modal fields
             const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');

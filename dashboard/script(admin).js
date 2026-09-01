@@ -57,7 +57,17 @@ auth.onAuthStateChanged(async (user) => {
                 setTimeout(() => {
                     window.location.replace("../dashboard/employee.html");
                 }, 1500);
+                return;
             }
+
+            const adminName = userData.fullName || userData.name || user.displayName || user.email || 'Administrator';
+            const adminNameEl = document.getElementById('admin-profile-name') || document.querySelector('.sidebar-user-profile .user-name');
+            const adminRoleEl = document.getElementById('admin-profile-role') || document.querySelector('.sidebar-user-profile .user-role-tag');
+            const adminNavEl = document.getElementById('admin-navbar-user') || document.querySelector('.navbar .user-email');
+
+            if (adminNameEl) adminNameEl.textContent = adminName;
+            if (adminRoleEl) adminRoleEl.textContent = 'Admin Access';
+            if (adminNavEl) adminNavEl.textContent = `${adminName} (Administrator)`;
         }, (err) => {
             console.error("Admin user listener error:", err);
         });
@@ -1032,6 +1042,29 @@ function initUserProfilesListener() {
                         </button>
                         ${!item.isSelf ? `
                             <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
+                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            `;
+            profilesTableBody.appendChild(tr);
+        });
+
+        if (pendingBadge) {
+            pendingBadge.textContent = pendingCount;
+            pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
+    }, (error) => {
+        console.error("Firestore Listener Error:", error.message);
+    });
+}
+
+// Call listener once DOM Content is Loaded
+document.addEventListener('DOMContentLoaded', initUserProfilesListener);
+
+// Function to Promote or Demote User Role
 window.changeUserRole = async function(userId, newRole, userName, triggerBtn = null) {
     if (!userId) return;
 
@@ -1039,6 +1072,12 @@ window.changeUserRole = async function(userId, newRole, userName, triggerBtn = n
     const ok = await window.showGTrackConfirm(
         isDemote ? "Demote to Employee?" : "Elevate to Administrator?",
         isDemote 
+            ? `Revoke Administrator privileges from ${userName}? Their account will immediately revert to standard Employee access.`
+            : `Grant full Administrator privileges to ${userName}?`,
+        isDemote ? "Yes, Demote to Employee" : "Yes, Promote to Admin",
+        "Cancel",
+        isDemote,
+        triggerBtn
     );
     if (!ok) return;
 
@@ -1046,6 +1085,22 @@ window.changeUserRole = async function(userId, newRole, userName, triggerBtn = n
         await db.collection("users").doc(userId).update({
             role: newRole
         });
+
+        // Clean up or update role elevation requests in RTDB
+        const roleSnap = await database.ref('roleElevationRequests').once('value');
+        if (roleSnap.exists()) {
+            const updates = [];
+            roleSnap.forEach((child) => {
+                const r = child.val();
+                if (r.userId === userId || r.userEmail === userName) {
+                    updates.push(database.ref(`roleElevationRequests/${child.key}`).remove());
+                }
+            });
+            if (updates.length > 0) {
+                await Promise.all(updates);
+            }
+        }
+
         window.showGTrackToast(
             'success',
             'Role Updated',
