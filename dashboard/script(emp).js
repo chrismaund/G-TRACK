@@ -1379,17 +1379,35 @@ window.openTransferModal = function(itemId) {
     const modal = document.getElementById('emp-transfer-modal');
     const itemIdInput = document.getElementById('transfer-item-id');
     const itemNameEl = document.getElementById('transfer-item-name');
+    const itemDescEl = document.getElementById('transfer-item-desc');
     const itemPropNoEl = document.getElementById('transfer-item-propno');
     const itemCurLocEl = document.getElementById('transfer-item-curloc');
+    const itemCustodianEl = document.getElementById('transfer-item-custodian');
+    const conditionBadgeEl = document.getElementById('transfer-item-condition-badge');
     const newCustodianInput = document.getElementById('transfer-new-custodian');
     const reasonInput = document.getElementById('transfer-reason');
     const alertBox = document.getElementById('transfer-alert');
 
     if (itemIdInput) itemIdInput.value = item.id;
-    if (itemNameEl) itemNameEl.textContent = `${item.article || 'Equipment'} - ${item.description || ''}`;
+    if (itemNameEl) itemNameEl.textContent = item.article || 'Equipment Article';
+    if (itemDescEl) itemDescEl.textContent = item.description || 'No additional description provided.';
     if (itemPropNoEl) itemPropNoEl.textContent = item.propertyNo || 'N/A';
-    if (itemCurLocEl) itemCurLocEl.textContent = item.location || 'Not Specified';
+    if (itemCurLocEl) itemCurLocEl.textContent = item.location || currentEmployeeDept || 'GSO';
+    if (itemCustodianEl) itemCustodianEl.textContent = item.accountablePerson || currentEmployeeName || 'Not Assigned';
     
+    if (conditionBadgeEl) {
+        const cond = (item.condition || 'Serviceable').toUpperCase();
+        conditionBadgeEl.textContent = item.condition || 'Serviceable';
+        conditionBadgeEl.className = 'badge';
+        if (cond === 'UNSERVICEABLE') {
+            conditionBadgeEl.classList.add('unserviceable-badge');
+        } else if (cond === 'FOR DISPOSAL') {
+            conditionBadgeEl.classList.add('disposal-badge');
+        } else {
+            conditionBadgeEl.classList.add('serviceable-badge');
+        }
+    }
+
     // Reset custom select
     window.selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', '', 'Select Destination Department');
     

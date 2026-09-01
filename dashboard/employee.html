@@ -573,13 +573,35 @@
 
                 <input type="hidden" id="transfer-item-id">
 
-                <!-- Selected Equipment Item Summary -->
-                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                    <div style="font-size: 10.5px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Selected Equipment</div>
-                    <div id="transfer-item-name" style="font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">-</div>
-                    <div style="display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #94a3b8;">
-                        <div>Property No: <strong id="transfer-item-propno" style="color: #38bdf8;">-</strong></div>
-                        <div>Current Location: <strong id="transfer-item-curloc" style="color: #cbd5e1;">-</strong></div>
+                <!-- Selected Equipment Item Summary (Enhanced Spacious Design) -->
+                <div class="selected-equipment-card" style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 16px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.75px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-boxes"></i> Selected Equipment
+                        </span>
+                        <span id="transfer-item-condition-badge" class="badge serviceable-badge" style="font-size: 10.5px; padding: 2px 8px; border-radius: 6px;">Serviceable</span>
+                    </div>
+
+                    <!-- Article & Description -->
+                    <div style="margin-bottom: 12px;">
+                        <div id="transfer-item-name" style="font-size: 15px; font-weight: 800; color: #ffffff; line-height: 1.35; margin-bottom: 4px; letter-spacing: -0.2px;">-</div>
+                        <div id="transfer-item-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.4; max-height: 48px; overflow-y: auto;">-</div>
+                    </div>
+
+                    <!-- 2-Column Info Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(11, 15, 25, 0.6); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div>
+                            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Property No.</span>
+                            <span id="transfer-item-propno" style="font-size: 12px; font-weight: 700; color: #38bdf8; font-family: monospace; display: block; word-break: break-all;">-</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Current Office</span>
+                            <span id="transfer-item-curloc" style="font-size: 12px; font-weight: 700; color: #f1f5f9; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</span>
+                        </div>
+                        <div style="grid-column: span 2; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 6px; margin-top: 2px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Current Custodian</span>
+                            <span id="transfer-item-custodian" style="font-size: 12px; font-weight: 600; color: #cbd5e1; display: block;">-</span>
+                        </div>
                     </div>
                 </div>
 
