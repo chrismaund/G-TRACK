@@ -1600,10 +1600,28 @@ async function renderAdminRequestsPanel() {
                             <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || d.user || 'Staff')}</span>
                         </div>
                         <div class="req-data-row">
+                            <span class="req-data-label">Staff Email</span>
+                            <span class="req-data-val">${sanitizeText(d.user || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
                             <span class="req-data-label">Request Type</span>
-                            <span class="req-data-val">Inventory Masterlist Export</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Inventory Masterlist Copy</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Status Details</span>
+                            <span class="req-data-val" style="color: #cbd5e1;">${isPending ? 'Awaiting Admin Authorization' : (status === 'Completed' ? 'Approved & Ready for Download' : 'Declined')}</span>
                         </div>
                     </div>
+                    ${isPending ? `
+                        <div class="req-actions">
+                            <button onclick="approveMasterlistRequest('${item.id}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                                <i class="fas fa-check"></i> Approve Copy
+                            </button>
+                            <button onclick="rejectMasterlistRequest('${item.id}')" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                        </div>
+                    ` : ''}
                 `;
             }
 
@@ -1784,6 +1802,96 @@ window.adminClearRequestsLogs = async function(e) {
 };
 
 window.dismissAllMasterlistRequests = window.adminClearRequestsLogs;
+
+function buildMasterlistCSVString() {
+    const headers = ["Article", "Description", "Property No", "Location", "Accountable Person", "Condition", "Acquisition Date", "Acquisition Cost", "Account Group", "Remarks"];
+    const rows = (inventoryData || []).map(item => [
+        `"${(item.article || '').replace(/"/g, '""')}"`,
+        `"${(item.description || '').replace(/"/g, '""')}"`,
+        `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
+        `"${(item.location || '').replace(/"/g, '""')}"`,
+        `"${(item.accountablePerson || '').replace(/"/g, '""')}"`,
+        `"${(item.condition || '').replace(/"/g, '""')}"`,
+        `"${(item.dateAcquired || '').replace(/"/g, '""')}"`,
+        `"${(item.unitValue || '').replace(/"/g, '""')}"`,
+        `"${(item.account || '').replace(/"/g, '""')}"`,
+        `"${(item.remarks || '').replace(/"/g, '""')}"`
+    ].join(","));
+    return [headers.join(","), ...rows].join("\n");
+}
+
+window.approveMasterlistRequest = async function(reqId) {
+    const ok = await window.showGTrackConfirm(
+        "Approve Masterlist Request?",
+        "Authorize this staff member to download the current inventory masterlist copy?",
+        "Approve Request",
+        "Cancel"
+    );
+    if (!ok) return;
+
+    try {
+        const compiledCSVString = buildMasterlistCSVString();
+        await database.ref(`masterlistRequests/${reqId}`).update({
+            status: "Completed",
+            fulfilledTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            csvDataString: compiledCSVString
+        });
+
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('masterlist_requests').update({
+                    status: "completed",
+                    updated_at: new Date().toISOString()
+                }).eq('id', reqId);
+            } catch(err) {
+                console.warn("Supabase masterlist approve update skipped:", err);
+            }
+        }
+
+        window.showGTrackToast('success', 'Request Approved', 'Masterlist copy generated and ready for staff download.');
+        renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error approving masterlist request:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not approve masterlist request.');
+    }
+};
+
+window.rejectMasterlistRequest = async function(reqId) {
+    const ok = await window.showGTrackConfirm(
+        "Decline Masterlist Request?",
+        "Are you sure you want to decline this masterlist copy request?",
+        "Decline Request",
+        "Cancel",
+        true
+    );
+    if (!ok) return;
+
+    try {
+        await database.ref(`masterlistRequests/${reqId}`).update({
+            status: "Rejected",
+            rejectedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('masterlist_requests').update({
+                    status: "rejected",
+                    updated_at: new Date().toISOString()
+                }).eq('id', reqId);
+            } catch(err) {
+                console.warn("Supabase masterlist decline update skipped:", err);
+            }
+        }
+
+        window.showGTrackToast('info', 'Request Declined', 'Masterlist copy request was declined.');
+        renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error declining masterlist request:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not decline request.');
+    }
+};
 
 window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
     const ok = await window.showGTrackConfirm(

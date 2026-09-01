@@ -715,27 +715,27 @@
           <span style="font-size: 11.5px; color: #94a3b8;">Review, approve, reject, or manage institutional requests</span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <button type="button" id="admin-clear-requests-btn" onclick="adminClearRequestsLogs(event)" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; transition: color 0.2s;" onmouseover="this.style.color='#f8fafc';" onmouseout="this.style.color='#94a3b8';" title="Clear Request Logs">
-          <i class="fas fa-sync-alt"></i> Clear
-        </button>
-        <button type="button" onclick="closeRequestsModal()" class="modal-close-btn" aria-label="Close pending requests drawer">&times;</button>
-      </div>
+      <button type="button" onclick="closeRequestsModal()" class="modal-close-btn" aria-label="Close pending requests drawer">&times;</button>
     </div>
 
     <!-- Request Filter Tabs -->
-    <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; flex-wrap: wrap;">
-      <button type="button" id="tab-btn-all" class="request-tab-btn active" onclick="filterRequestsTab('all', this)">
-        All Requests <span id="tab-count-all" class="tab-badge">0</span>
-      </button>
-      <button type="button" id="tab-btn-dept" class="request-tab-btn" onclick="filterRequestsTab('dept', this)">
-        <i class="fas fa-building"></i> Dept Transfers <span id="tab-count-dept" class="tab-badge">0</span>
-      </button>
-      <button type="button" id="tab-btn-transfer" class="request-tab-btn" onclick="filterRequestsTab('transfer', this)">
-        <i class="fas fa-exchange-alt"></i> Equipment Transfers <span id="tab-count-transfer" class="tab-badge">0</span>
-      </button>
-      <button type="button" id="tab-btn-masterlist" class="request-tab-btn" onclick="filterRequestsTab('masterlist', this)">
-        <i class="fas fa-file-export"></i> Masterlist Copies <span id="tab-count-masterlist" class="tab-badge">0</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <button type="button" id="tab-btn-all" class="request-tab-btn active" onclick="filterRequestsTab('all', this)">
+          All Requests <span id="tab-count-all" class="tab-badge">0</span>
+        </button>
+        <button type="button" id="tab-btn-dept" class="request-tab-btn" onclick="filterRequestsTab('dept', this)">
+          <i class="fas fa-building"></i> Dept Transfers <span id="tab-count-dept" class="tab-badge">0</span>
+        </button>
+        <button type="button" id="tab-btn-transfer" class="request-tab-btn" onclick="filterRequestsTab('transfer', this)">
+          <i class="fas fa-exchange-alt"></i> Equipment Transfers <span id="tab-count-transfer" class="tab-badge">0</span>
+        </button>
+        <button type="button" id="tab-btn-masterlist" class="request-tab-btn" onclick="filterRequestsTab('masterlist', this)">
+          <i class="fas fa-file-export"></i> Masterlist Copies <span id="tab-count-masterlist" class="tab-badge">0</span>
+        </button>
+      </div>
+      <button type="button" id="admin-clear-requests-btn" onclick="adminClearRequestsLogs(event)" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.color='#f8fafc'; this.style.borderColor='rgba(56,189,248,0.3)';" onmouseout="this.style.color='#94a3b8'; this.style.borderColor='rgba(255,255,255,0.1)';" title="Clear Request Logs">
+        <i class="fas fa-sync-alt"></i> Clear
       </button>
     </div>
 
