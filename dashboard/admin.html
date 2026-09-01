@@ -733,6 +733,9 @@
         <button type="button" id="tab-btn-masterlist" class="request-tab-btn" onclick="filterRequestsTab('masterlist', this)">
           <i class="fas fa-file-export"></i> Masterlist Copies <span id="tab-count-masterlist" class="tab-badge">0</span>
         </button>
+        <button type="button" id="tab-btn-role" class="request-tab-btn" onclick="filterRequestsTab('role', this)">
+          <i class="fas fa-user-shield"></i> Role Requests <span id="tab-count-role" class="tab-badge">0</span>
+        </button>
       </div>
       <button type="button" id="admin-clear-requests-btn" onclick="adminClearRequestsLogs(event)" style="flex-shrink: 0; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5; cursor: pointer; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.borderColor='rgba(239,68,68,0.4)';" onmouseout="this.style.background='rgba(239,68,68,0.12)'; this.style.borderColor='rgba(239,68,68,0.25)';" title="Clear All Request Logs with Confirmation">
         <i class="fas fa-trash-alt"></i> Clear Logs

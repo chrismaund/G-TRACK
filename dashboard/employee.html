@@ -535,6 +535,24 @@
                     </div>
                 </div>
 
+                <!-- Role & Privileges Section -->
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div>
+                            <span style="font-size: 12px; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+                                <i class="fas fa-user-shield" style="margin-right: 4px;"></i> Role &amp; Privileges
+                            </span>
+                            <span style="font-size: 11px; color: #94a3b8;">Account Type: <strong style="color: #ffffff;">Employee Staff</strong></span>
+                        </div>
+                        <button type="button" id="request-admin-role-btn" onclick="submitAdminRoleRequest(event)" class="add-eq-btn secondary-btn" style="padding: 5px 10px; font-size: 11px; height: auto; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" title="Request promotion to Administrator">
+                            <i class="fas fa-shield-alt"></i> Request Admin Access
+                        </button>
+                    </div>
+                    <div id="admin-role-request-status" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.25); color: #e9d5ff; margin-top: 8px;">
+                        <i class="fas fa-clock" style="margin-right: 4px;"></i> Admin access request is currently pending Administrator approval.
+                    </div>
+                </div>
+
                 <div class="modal-actions" style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
                     <button type="button" class="add-eq-btn secondary-btn" onclick="closeEmpProfileModal()">
                         Cancel

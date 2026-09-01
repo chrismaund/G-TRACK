@@ -41,10 +41,14 @@ let currentEmployeeCreatedAt = "";
 let currentEmployeeDept = "";
 
 // =========================================================================
-// AUTHENTICATION GUARD & SESSION PROTECTION (EMPLOYEE)
+// AUTHENTICATION GUARD & LIVE REAL-TIME SESSION/ROLE LISTENER (EMPLOYEE)
 // =========================================================================
+let userDocUnsubscribe = null;
+let roleElevationListener = null;
+
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
+        if (userDocUnsubscribe) userDocUnsubscribe();
         sessionStorage.clear();
         window.location.replace("../login/index.html");
         return;
@@ -54,54 +58,87 @@ auth.onAuthStateChanged(async (user) => {
     currentEmployeeUid = user.uid;
 
     try {
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        if (!userDoc.exists) {
-            auth.signOut();
-            window.location.replace("../login/index.html");
-            return;
-        }
+        // Real-time Firestore listener for live role promotions & department updates
+        if (userDocUnsubscribe) userDocUnsubscribe();
 
-        const userData = userDoc.data();
-        if (userData.role !== 'employee') {
-            auth.signOut();
-            window.location.replace("../login/index.html");
-            return;
-        }
+        userDocUnsubscribe = db.collection("users").doc(user.uid).onSnapshot((docSnap) => {
+            if (!docSnap.exists) {
+                auth.signOut();
+                window.location.replace("../login/index.html");
+                return;
+            }
 
-        if (userData.status === 'pending' || userData.status === 'rejected') {
-            auth.signOut();
-            window.location.replace("../login/index.html");
-            return;
-        }
+            const userData = docSnap.data();
 
-        currentEmployeeName = userData.fullName || userData.name || user.email;
-        currentEmployeeCreatedAt = userData.createdAt || "";
-        currentEmployeeDept = userData.department || "Staff Access";
+            // 1. LIVE ROLE ELEVATION DETECTION -> REDIRECT TO ADMIN DASHBOARD
+            if (userData.role === 'admin') {
+                window.showGTrackToast(
+                    'success',
+                    '🎉 Administrator Access Granted!',
+                    'Your account has been elevated to Administrator by the Admin. Transitioning to Admin Dashboard...',
+                    4500
+                );
+                setTimeout(() => {
+                    window.location.replace("../dashboard/admin.html");
+                }, 1600);
+                return;
+            }
 
-        // Update UI displays with employee info
-        const nameEl = document.getElementById('emp-profile-name');
-        const emailEl = document.getElementById('emp-profile-email');
-        const heroNameEl = document.getElementById('emp-hero-name');
-        const navbarEmailEl = document.querySelector('.navbar .user-email');
+            if (userData.role !== 'employee') {
+                auth.signOut();
+                window.location.replace("../login/index.html");
+                return;
+            }
 
-        if (nameEl) nameEl.textContent = currentEmployeeName;
-        if (emailEl) emailEl.textContent = currentEmployeeDept;
-        if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
-        if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
+            if (userData.status === 'pending' || userData.status === 'rejected') {
+                auth.signOut();
+                window.location.replace("../login/index.html");
+                return;
+            }
 
-        // Profile modal fields
-        const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
-        const modalEmail = document.getElementById('profile-email-input') || document.getElementById('profile-email-display');
-        const modalDept = document.getElementById('profile-dept-input');
-        const modalCreated = document.getElementById('profile-created-display');
+            const prevDept = currentEmployeeDept;
+            currentEmployeeName = userData.fullName || userData.name || user.email;
+            currentEmployeeCreatedAt = userData.createdAt || "";
+            currentEmployeeDept = userData.department || "Staff Access";
 
-        if (modalFullname) modalFullname.value = currentEmployeeName;
-        if (modalEmail) {
-            if (modalEmail.tagName === 'INPUT') modalEmail.value = currentEmployeeEmail;
-            else modalEmail.textContent = currentEmployeeEmail;
-        }
-        if (modalDept) modalDept.value = currentEmployeeDept;
-        if (modalCreated) modalCreated.textContent = currentEmployeeCreatedAt ? new Date(currentEmployeeCreatedAt).toLocaleDateString() : 'Active';
+            // Live notification if department was updated by Admin
+            if (prevDept && currentEmployeeDept && prevDept !== currentEmployeeDept) {
+                window.showGTrackToast(
+                    'success',
+                    '✅ Department Transfer Approved',
+                    `Your official municipal department is now set to ${currentEmployeeDept}.`
+                );
+            }
+
+            // Update UI displays with employee info
+            const nameEl = document.getElementById('emp-profile-name');
+            const emailEl = document.getElementById('emp-profile-email');
+            const heroNameEl = document.getElementById('emp-hero-name');
+            const navbarEmailEl = document.querySelector('.navbar .user-email');
+
+            if (nameEl) nameEl.textContent = currentEmployeeName;
+            if (emailEl) emailEl.textContent = currentEmployeeDept;
+            if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
+            if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
+
+            // Profile modal fields
+            const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
+            const modalEmail = document.getElementById('profile-email-input') || document.getElementById('profile-email-display');
+            const modalDept = document.getElementById('profile-dept-input');
+            const modalCreated = document.getElementById('profile-created-display');
+
+            if (modalFullname) modalFullname.value = currentEmployeeName;
+            if (modalEmail) {
+                if (modalEmail.tagName === 'INPUT') modalEmail.value = currentEmployeeEmail;
+                else modalEmail.textContent = currentEmployeeEmail;
+            }
+            if (modalDept) modalDept.value = currentEmployeeDept;
+            if (modalCreated) modalCreated.textContent = currentEmployeeCreatedAt ? new Date(currentEmployeeCreatedAt).toLocaleDateString() : 'Active';
+
+            checkAdminRoleRequestStatus(user.uid);
+        }, (err) => {
+            console.warn("User doc listener error:", err);
+        });
 
         renderHistory();
     } catch (e) {
@@ -1704,4 +1741,99 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
 
         modal.classList.add('open');
     });
+};
+
+// =========================================================================
+// ADMIN ROLE ELEVATION REQUEST WORKFLOW (EMPLOYEE)
+// =========================================================================
+function checkAdminRoleRequestStatus(uid) {
+    if (!uid) return;
+    const statusBox = document.getElementById('admin-role-request-status');
+    const reqBtn = document.getElementById('request-admin-role-btn');
+
+    database.ref('roleElevationRequests').orderByChild('userId').equalTo(uid).on('value', (snapshot) => {
+        let isPending = false;
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                const req = child.val();
+                if (req.status === 'Pending') isPending = true;
+            });
+        }
+
+        if (statusBox) {
+            statusBox.style.display = isPending ? 'block' : 'none';
+        }
+        if (reqBtn) {
+            reqBtn.disabled = isPending;
+            reqBtn.style.opacity = isPending ? '0.6' : '1';
+            reqBtn.innerHTML = isPending ? '<i class="fas fa-clock"></i> Access Request Pending' : '<i class="fas fa-shield-alt"></i> Request Admin Access';
+        }
+    });
+}
+
+window.submitAdminRoleRequest = async function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const ok = await window.showGTrackConfirm(
+        "Request Administrator Access?",
+        "Submit a formal request to elevate your account to Administrator? Current system Administrators will be notified to review and authorize your request.",
+        "Submit Request",
+        "Cancel"
+    );
+    if (!ok) return;
+
+    const reqBtn = document.getElementById('request-admin-role-btn');
+    if (reqBtn) {
+        reqBtn.disabled = true;
+        reqBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    try {
+        // Clean up any older pending requests first
+        const snap = await database.ref('roleElevationRequests').once('value');
+        if (snap.exists()) {
+            const cleanupPromises = [];
+            snap.forEach((child) => {
+                const req = child.val();
+                if (req.userId === user.uid || req.userEmail === user.email) {
+                    cleanupPromises.push(database.ref(`roleElevationRequests/${child.key}`).remove());
+                }
+            });
+            if (cleanupPromises.length > 0) {
+                await Promise.all(cleanupPromises);
+            }
+        }
+
+        const newReqRef = database.ref('roleElevationRequests').push();
+        const payload = {
+            id: newReqRef.key,
+            userId: user.uid,
+            userName: currentEmployeeName || user.displayName || user.email || 'Employee',
+            userEmail: currentEmployeeEmail || user.email,
+            department: currentEmployeeDept || 'Staff',
+            currentRole: 'employee',
+            requestedRole: 'admin',
+            status: 'Pending',
+            requestedAt: new Date().toISOString()
+        };
+
+        await newReqRef.set(payload);
+
+        window.showGTrackToast('success', 'Request Sent', 'Your Administrator access request has been sent for Admin approval.');
+        checkAdminRoleRequestStatus(user.uid);
+
+    } catch (err) {
+        console.error("Error submitting role elevation request:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not submit admin role request.');
+        if (reqBtn) {
+            reqBtn.disabled = false;
+            reqBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Request Admin Access';
+        }
+    }
 };

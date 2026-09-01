@@ -1350,6 +1350,11 @@ function initRequestsListener() {
     database.ref('deptTransferRequests').on('value', () => {
         renderAdminRequestsPanel();
     });
+
+    // 4. Listen for Role Elevation Requests (Employee to Admin)
+    database.ref('roleElevationRequests').on('value', () => {
+        renderAdminRequestsPanel();
+    });
 }
 
 async function renderAdminRequestsPanel() {
@@ -1357,10 +1362,11 @@ async function renderAdminRequestsPanel() {
     const badgeEl = document.getElementById('pending-requests-badge');
 
     try {
-        const [transfersSnap, masterlistSnap, deptTransfersSnap] = await Promise.all([
+        const [transfersSnap, masterlistSnap, deptTransfersSnap, roleSnap] = await Promise.all([
             database.ref('equipmentTransfers').once('value'),
             database.ref('masterlistRequests').once('value'),
-            database.ref('deptTransferRequests').once('value')
+            database.ref('deptTransferRequests').once('value'),
+            database.ref('roleElevationRequests').once('value')
         ]);
 
         const allCards = [];
@@ -1368,6 +1374,7 @@ async function renderAdminRequestsPanel() {
         let countDept = 0;
         let countTransfer = 0;
         let countMasterlist = 0;
+        let countRole = 0;
 
         // 1. Process Equipment Transfers
         if (transfersSnap.exists()) {
@@ -1449,6 +1456,44 @@ async function renderAdminRequestsPanel() {
             });
         }
 
+        // 4. Process Role Elevation Requests (Employee -> Admin)
+        if (roleSnap.exists()) {
+            const seenRoleUsers = new Set();
+            const rawRoleList = [];
+            roleSnap.forEach((child) => {
+                rawRoleList.push({ id: child.key, req: child.val() });
+            });
+
+            rawRoleList.sort((a, b) => {
+                const tA = a.req.requestedAt ? new Date(a.req.requestedAt).getTime() : 0;
+                const tB = b.req.requestedAt ? new Date(b.req.requestedAt).getTime() : 0;
+                return tB - tA;
+            });
+
+            rawRoleList.forEach(({ id, req }) => {
+                const isPending = req.status === 'Pending' || req.status === 'pending';
+                const userKey = (req.userId || req.userEmail || id).trim();
+
+                if (isPending) {
+                    if (seenRoleUsers.has(userKey)) {
+                        database.ref(`roleElevationRequests/${id}`).remove();
+                        return;
+                    }
+                    seenRoleUsers.add(userKey);
+                    pendingTotal++;
+                    countRole++;
+                }
+
+                allCards.push({
+                    id: id,
+                    type: 'role_elevation',
+                    data: req,
+                    time: req.requestedAt ? new Date(req.requestedAt).getTime() : 0,
+                    isPending: isPending
+                });
+            });
+        }
+
         // Update Notification Badge
         if (badgeEl) {
             badgeEl.textContent = pendingTotal;
@@ -1460,11 +1505,13 @@ async function renderAdminRequestsPanel() {
         const tabCountDept = document.getElementById('tab-count-dept');
         const tabCountTransfer = document.getElementById('tab-count-transfer');
         const tabCountMasterlist = document.getElementById('tab-count-masterlist');
+        const tabCountRole = document.getElementById('tab-count-role');
 
         if (tabCountAll) tabCountAll.textContent = pendingTotal;
         if (tabCountDept) tabCountDept.textContent = countDept;
         if (tabCountTransfer) tabCountTransfer.textContent = countTransfer;
         if (tabCountMasterlist) tabCountMasterlist.textContent = countMasterlist;
+        if (tabCountRole) tabCountRole.textContent = countRole;
 
         if (!modalContainer) return;
 
@@ -1476,6 +1523,8 @@ async function renderAdminRequestsPanel() {
             filtered = allCards.filter(c => c.type === 'transfer');
         } else if (currentRequestTab === 'masterlist') {
             filtered = allCards.filter(c => c.type === 'masterlist');
+        } else if (currentRequestTab === 'role') {
+            filtered = allCards.filter(c => c.type === 'role_elevation');
         }
 
         if (filtered.length === 0) {
@@ -1598,6 +1647,46 @@ async function renderAdminRequestsPanel() {
                                 <i class="fas fa-check"></i> Approve Transfer
                             </button>
                             <button onclick="rejectEquipmentTransfer('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+            } else if (item.type === 'role_elevation') {
+                cardEl.innerHTML = `
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+                            <i class="fas fa-user-shield"></i> Admin Role Elevation Request
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Name</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || 'Staff Member')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Email</span>
+                            <span class="req-data-val">${sanitizeText(d.userEmail || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Department</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.department || 'Not Assigned')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Requested Privilege</span>
+                            <span class="req-data-val" style="color: #c084fc; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> Administrator Role</span>
+                        </div>
+                    </div>
+                    ${isPending ? `
+                        <div class="req-actions">
+                            <button onclick="approveAdminRole('${item.id}', '${d.userId}', '${sanitizeText(d.userName)}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);">
+                                <i class="fas fa-user-shield"></i> Approve Admin Access
+                            </button>
+                            <button onclick="rejectAdminRole('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
@@ -1840,7 +1929,8 @@ window.adminClearRequestsLogs = async function(e) {
         await Promise.all([
             database.ref('masterlistRequests').set(null),
             database.ref('equipmentTransfers').set(null),
-            database.ref('deptTransferRequests').set(null)
+            database.ref('deptTransferRequests').set(null),
+            database.ref('roleElevationRequests').set(null)
         ]);
 
         // 2. Clear from Supabase if connected
@@ -2091,6 +2181,64 @@ window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
         renderAdminRequestsPanel();
     } catch (err) {
         window.showGTrackToast('error', 'Error', "Error rejecting transfer: " + err.message);
+    }
+};
+
+window.approveAdminRole = async function(reqId, userId, userName, triggerBtn = null) {
+    const ok = await window.showGTrackConfirm(
+        "Authorize Administrator Access?",
+        `Elevate ${userName || 'this user'} to Administrator role? They will be granted full administrative authority.`,
+        "Authorize Admin Role",
+        "Cancel",
+        false,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        if (userId) {
+            await db.collection("users").doc(userId).update({
+                role: 'admin'
+            });
+        }
+
+        await database.ref(`roleElevationRequests/${reqId}`).update({
+            status: 'Approved',
+            approvedAt: new Date().toISOString()
+        });
+
+        window.showGTrackToast('success', 'Admin Access Granted', `${userName || 'User'} has been elevated to Administrator.`);
+        renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error approving admin role:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not elevate user role.');
+    }
+};
+
+window.rejectAdminRole = async function(reqId, triggerBtn = null) {
+    const ok = await window.showGTrackConfirm(
+        "Decline Administrator Access?",
+        "Are you sure you want to decline this admin elevation request?",
+        "Decline Request",
+        "Cancel",
+        true,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        await database.ref(`roleElevationRequests/${reqId}`).update({
+            status: 'Rejected',
+            rejectedAt: new Date().toISOString()
+        });
+
+        window.showGTrackToast('info', 'Request Declined', 'Admin role elevation request was declined.');
+        renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error declining role request:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not decline request.');
     }
 };
 
