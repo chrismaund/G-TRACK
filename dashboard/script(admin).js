@@ -1716,34 +1716,74 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
     });
 };
 
-window.dismissAllMasterlistRequests = async function() {
-    const ok = await window.showGTrackConfirm(
-        "Clear Masterlist Notifications?",
-        "Are you sure you want to mark all pending masterlist requests as handled?",
-        "Clear All",
-        "Cancel"
-    );
-    if (!ok) return;
+window.adminClearRequestsLogs = async function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    const btn = document.getElementById('admin-clear-requests-btn') || (e && e.currentTarget ? e.currentTarget : null);
+    const icon = btn ? btn.querySelector('i') : null;
+    if (icon) icon.classList.add('fa-spin');
+    if (btn) btn.style.pointerEvents = 'none';
 
     try {
-        const snap = await database.ref('masterlistRequests').once('value');
-        if (snap.exists()) {
-            const updates = {};
-            snap.forEach((child) => {
-                const val = child.val();
-                if (val.status === 'Pending' || val.status === 'pending') {
-                    updates[`${child.key}/status`] = 'Handled';
-                }
-            });
-            if (Object.keys(updates).length > 0) {
-                await database.ref('masterlistRequests').update(updates);
+        // 1. Clear all masterlist request logs from Firebase Realtime Database
+        await database.ref('masterlistRequests').remove();
+
+        // 2. Clear from Supabase if connected
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('masterlist_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            } catch (err) {
+                console.warn("Supabase masterlist clear skipped:", err);
             }
         }
-        window.showGTrackToast('success', 'Cleared', 'Masterlist requests marked as handled.');
-    } catch (e) {
-        window.showGTrackToast('error', 'Error', e.message);
+
+        // 3. Clean up resolved (Approved / Rejected) transfer records
+        const [transfersSnap, deptSnap] = await Promise.all([
+            database.ref('equipmentTransfers').once('value'),
+            database.ref('deptTransferRequests').once('value')
+        ]);
+
+        const deletePromises = [];
+        if (transfersSnap.exists()) {
+            transfersSnap.forEach((child) => {
+                const status = (child.val().status || '').toLowerCase();
+                if (status === 'approved' || status === 'rejected' || status === 'handled') {
+                    deletePromises.push(database.ref(`equipmentTransfers/${child.key}`).remove());
+                }
+            });
+        }
+
+        if (deptSnap.exists()) {
+            deptSnap.forEach((child) => {
+                const status = (child.val().status || '').toLowerCase();
+                if (status === 'approved' || status === 'rejected' || status === 'handled') {
+                    deletePromises.push(database.ref(`deptTransferRequests/${child.key}`).remove());
+                }
+            });
+        }
+
+        if (deletePromises.length > 0) {
+            await Promise.all(deletePromises);
+        }
+
+        window.showGTrackToast('success', 'Logs Cleared', 'Request logs have been successfully cleared.');
+        await renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error clearing request logs:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not clear request logs.');
+    } finally {
+        setTimeout(() => {
+            if (icon) icon.classList.remove('fa-spin');
+            if (btn) btn.style.pointerEvents = 'auto';
+        }, 450);
     }
 };
+
+window.dismissAllMasterlistRequests = window.adminClearRequestsLogs;
 
 window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
     const ok = await window.showGTrackConfirm(

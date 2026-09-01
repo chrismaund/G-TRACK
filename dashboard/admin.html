@@ -131,7 +131,9 @@
         <div id="pending-requests-wrapper" class="sidebar-stack-wrapper">
             <div class="sidebar-section-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Pending Requests</span>
-                <button type="button" onclick="dismissAllMasterlistRequests()" title="Clear Handled Requests" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; font-weight: 600; cursor: pointer; padding: 0;">Clear Handled</button>
+                <button type="button" id="sidebar-clear-history-btn" onclick="adminClearRequestsLogs(event)" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: color 0.2s;" title="Clear Request Logs">
+                    <i class="fas fa-sync-alt"></i> Clear
+                </button>
             </div>
             
             <div id="pending-requests-log" class="sidebar-section-body">
@@ -713,9 +715,9 @@
           <span style="font-size: 11.5px; color: #94a3b8;">Review, approve, reject, or manage institutional requests</span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <button type="button" onclick="dismissAllMasterlistRequests()" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto;" title="Mark masterlist requests as handled">
-          <i class="fas fa-check-double"></i> Clear Masterlist Logs
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button type="button" id="admin-clear-requests-btn" onclick="adminClearRequestsLogs(event)" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; transition: color 0.2s;" onmouseover="this.style.color='#f8fafc';" onmouseout="this.style.color='#94a3b8';" title="Clear Request Logs">
+          <i class="fas fa-sync-alt"></i> Clear
         </button>
         <button type="button" onclick="closeRequestsModal()" class="modal-close-btn" aria-label="Close pending requests drawer">&times;</button>
       </div>
