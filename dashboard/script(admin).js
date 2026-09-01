@@ -892,13 +892,16 @@ function initUserProfilesListener() {
 
         profilesTableBody.innerHTML = '';
         let pendingCount = 0;
+        const employeeUsers = [];
 
         if (snapshot.empty) {
             profilesTableBody.innerHTML = `
                 <tr>
                     <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+                        <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
                         No registered staff user accounts found.
                     </td>
+                </tr>
             `;
             if (pendingBadge) pendingBadge.style.display = 'none';
             return;
@@ -944,6 +947,8 @@ function initUserProfilesListener() {
         });
 
         if (employeeUsers.length === 0) {
+            profilesTableBody.innerHTML = `
+                <tr>
                     <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
                         <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
                         No registered staff user accounts found.
