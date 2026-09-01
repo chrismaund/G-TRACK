@@ -294,6 +294,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         regSuccessMessage.style.display = 'block';
                     }
                     registerForm.reset();
+                    const textSpan = document.getElementById('deptSelectText');
+                    const trigger = document.getElementById('deptSelectTrigger');
+                    const hiddenInput = document.getElementById('regDepartment');
+                    if (textSpan) textSpan.textContent = 'Select Municipal Department';
+                    if (trigger) trigger.classList.remove('selected');
+                    if (hiddenInput) hiddenInput.value = '';
+                    document.querySelectorAll('#deptOptionsList .custom-option').forEach(o => o.classList.remove('selected'));
+
                     return auth.signOut(); // Keep signed out until approved
                 })
                 .catch((error) => {
