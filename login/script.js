@@ -16,6 +16,48 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// =========================================================================
+// CUSTOM DEPARTMENT DROPDOWN CONTROLS
+// =========================================================================
+window.toggleDeptDropdown = function(e) {
+    if (e) e.stopPropagation();
+    const wrapper = document.getElementById('deptSelectWrapper');
+    if (wrapper) {
+        wrapper.classList.toggle('open');
+    }
+};
+
+window.selectDeptOption = function(value, label) {
+    const hiddenInput = document.getElementById('regDepartment');
+    const textSpan = document.getElementById('deptSelectText');
+    const trigger = document.getElementById('deptSelectTrigger');
+    const wrapper = document.getElementById('deptSelectWrapper');
+
+    if (hiddenInput) hiddenInput.value = value;
+    if (textSpan) textSpan.textContent = label;
+    if (trigger) trigger.classList.add('selected');
+
+    // Update selected class on options
+    const options = document.querySelectorAll('.custom-option');
+    options.forEach(opt => {
+        if (opt.getAttribute('data-value') === value) {
+            opt.classList.add('selected');
+        } else {
+            opt.classList.remove('selected');
+        }
+    });
+
+    if (wrapper) wrapper.classList.remove('open');
+};
+
+// Dismiss custom dropdown on click outside
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('deptSelectWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        wrapper.classList.remove('open');
+    }
+});
+
 window.switchRole = function(role) {
     const tabAdmin = document.getElementById('tabAdmin');
     const tabEmployee = document.getElementById('tabEmployee');

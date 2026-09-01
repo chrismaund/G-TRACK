@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=2.2">
+    <link rel="stylesheet" href="style.css?v=2.3">
 </head>
 <body>
 
@@ -122,39 +122,127 @@
 
                             <div class="input-group">
                                 <label for="regDepartment">Department / Office Location</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-building input-icon"></i>
-                                    <select id="regDepartment" required>
-                                        <option value="" disabled selected>Select Municipal Department</option>
-                                        <option value="ACCOUNTING">ACCOUNTING - Municipal Accounting Office</option>
-                                        <option value="ADMIN">ADMIN - Municipal Administrator's Office</option>
-                                        <option value="AGRI">AGRI - Municipal Agriculture Office</option>
-                                        <option value="ASSESSOR">ASSESSOR - Municipal Assessor's Office</option>
-                                        <option value="BFP">BFP - Bureau of Fire Protection</option>
-                                        <option value="CCTV/IT">CCTV/IT - CCTV / Information Technology Unit</option>
-                                        <option value="COMELEC">COMELEC - Commission on Elections</option>
-                                        <option value="DILG">DILG - Dept. of the Interior &amp; Local Govt.</option>
-                                        <option value="GSO">GSO - General Services Office</option>
-                                        <option value="HRMO">HRMO - Human Resource &amp; Management Office</option>
-                                        <option value="LIGA">LIGA - Liga ng mga Barangay</option>
-                                        <option value="MBO">MBO - Municipal Budget Office</option>
-                                        <option value="MCR">MCR - Municipal Civil Registry</option>
-                                        <option value="MDRRMO">MDRRMO - Disaster Risk Reduction &amp; Management</option>
-                                        <option value="MENRO">MENRO - Environment &amp; Natural Resources Office</option>
-                                        <option value="MEO">MEO - Municipal Engineering Office</option>
-                                        <option value="MHO">MHO - Municipal Health Office</option>
-                                        <option value="MPDO">MPDO - Planning &amp; Development Office</option>
-                                        <option value="MSWDO">MSWDO - Social Welfare &amp; Development Office</option>
-                                        <option value="MTC">MTC - Municipal Trial Court</option>
-                                        <option value="MTO">MTO - Municipal Treasurer's Office</option>
-                                        <option value="OMM">OMM - Office of the Municipal Mayor</option>
-                                        <option value="OMVM">OMVM - Office of the Municipal Vice-Mayor</option>
-                                        <option value="PNP">PNP - Philippine National Police</option>
-                                        <option value="SB">SB - Sangguniang Bayan Office</option>
-                                        <option value="SSB">SSB - Secretary to the Sangguniang Bayan Office</option>
-                                        <option value="TOURISM/CULTURAL">TOURISM/CULTURAL - Tourism &amp; Cultural Affairs</option>
-                                        <option value="TRAFFIC">TRAFFIC - Municipal Traffic Management Office</option>
-                                    </select>
+                                <div class="custom-select-wrapper" id="deptSelectWrapper">
+                                    <input type="hidden" id="regDepartment" required>
+                                    <div class="custom-select-trigger" id="deptSelectTrigger" onclick="toggleDeptDropdown(event)">
+                                        <i class="fas fa-building input-icon"></i>
+                                        <span class="custom-select-text" id="deptSelectText">Select Municipal Department</span>
+                                        <i class="fas fa-chevron-down select-chevron" id="deptChevron"></i>
+                                    </div>
+                                    <div class="custom-select-options" id="deptSelectOptions">
+                                        <div class="custom-option" data-value="ACCOUNTING" onclick="selectDeptOption('ACCOUNTING', 'ACCOUNTING - Municipal Accounting Office')">
+                                            <span class="opt-code">ACCOUNTING</span>
+                                            <span class="opt-name">Municipal Accounting Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="ADMIN" onclick="selectDeptOption('ADMIN', 'ADMIN - Municipal Administrator\'s Office')">
+                                            <span class="opt-code">ADMIN</span>
+                                            <span class="opt-name">Municipal Administrator's Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="AGRI" onclick="selectDeptOption('AGRI', 'AGRI - Municipal Agriculture Office')">
+                                            <span class="opt-code">AGRI</span>
+                                            <span class="opt-name">Municipal Agriculture Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="ASSESSOR" onclick="selectDeptOption('ASSESSOR', 'ASSESSOR - Municipal Assessor\'s Office')">
+                                            <span class="opt-code">ASSESSOR</span>
+                                            <span class="opt-name">Municipal Assessor's Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="BFP" onclick="selectDeptOption('BFP', 'BFP - Bureau of Fire Protection')">
+                                            <span class="opt-code">BFP</span>
+                                            <span class="opt-name">Bureau of Fire Protection</span>
+                                        </div>
+                                        <div class="custom-option" data-value="CCTV/IT" onclick="selectDeptOption('CCTV/IT', 'CCTV/IT - CCTV / IT Unit')">
+                                            <span class="opt-code">CCTV/IT</span>
+                                            <span class="opt-name">CCTV / Information Technology Unit</span>
+                                        </div>
+                                        <div class="custom-option" data-value="COMELEC" onclick="selectDeptOption('COMELEC', 'COMELEC - Commission on Elections')">
+                                            <span class="opt-code">COMELEC</span>
+                                            <span class="opt-name">Commission on Elections</span>
+                                        </div>
+                                        <div class="custom-option" data-value="DILG" onclick="selectDeptOption('DILG', 'DILG - Dept. of the Interior & Local Govt.')">
+                                            <span class="opt-code">DILG</span>
+                                            <span class="opt-name">Dept. of the Interior &amp; Local Govt.</span>
+                                        </div>
+                                        <div class="custom-option" data-value="GSO" onclick="selectDeptOption('GSO', 'GSO - General Services Office')">
+                                            <span class="opt-code">GSO</span>
+                                            <span class="opt-name">General Services Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="HRMO" onclick="selectDeptOption('HRMO', 'HRMO - Human Resource & Management Office')">
+                                            <span class="opt-code">HRMO</span>
+                                            <span class="opt-name">Human Resource &amp; Management Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="LIGA" onclick="selectDeptOption('LIGA', 'LIGA - Liga ng mga Barangay')">
+                                            <span class="opt-code">LIGA</span>
+                                            <span class="opt-name">Liga ng mga Barangay</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MBO" onclick="selectDeptOption('MBO', 'MBO - Municipal Budget Office')">
+                                            <span class="opt-code">MBO</span>
+                                            <span class="opt-name">Municipal Budget Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MCR" onclick="selectDeptOption('MCR', 'MCR - Municipal Civil Registry')">
+                                            <span class="opt-code">MCR</span>
+                                            <span class="opt-name">Municipal Civil Registry</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MDRRMO" onclick="selectDeptOption('MDRRMO', 'MDRRMO - Disaster Risk Reduction & Management')">
+                                            <span class="opt-code">MDRRMO</span>
+                                            <span class="opt-name">Disaster Risk Reduction &amp; Management</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MENRO" onclick="selectDeptOption('MENRO', 'MENRO - Environment & Natural Resources Office')">
+                                            <span class="opt-code">MENRO</span>
+                                            <span class="opt-name">Environment &amp; Natural Resources</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MEO" onclick="selectDeptOption('MEO', 'MEO - Municipal Engineering Office')">
+                                            <span class="opt-code">MEO</span>
+                                            <span class="opt-name">Municipal Engineering Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MHO" onclick="selectDeptOption('MHO', 'MHO - Municipal Health Office')">
+                                            <span class="opt-code">MHO</span>
+                                            <span class="opt-name">Municipal Health Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MPDO" onclick="selectDeptOption('MPDO', 'MPDO - Planning & Development Office')">
+                                            <span class="opt-code">MPDO</span>
+                                            <span class="opt-name">Planning &amp; Development Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MSWDO" onclick="selectDeptOption('MSWDO', 'MSWDO - Social Welfare & Development Office')">
+                                            <span class="opt-code">MSWDO</span>
+                                            <span class="opt-name">Social Welfare &amp; Development Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MTC" onclick="selectDeptOption('MTC', 'MTC - Municipal Trial Court')">
+                                            <span class="opt-code">MTC</span>
+                                            <span class="opt-name">Municipal Trial Court</span>
+                                        </div>
+                                        <div class="custom-option" data-value="MTO" onclick="selectDeptOption('MTO', 'MTO - Municipal Treasurer\'s Office')">
+                                            <span class="opt-code">MTO</span>
+                                            <span class="opt-name">Municipal Treasurer's Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="OMM" onclick="selectDeptOption('OMM', 'OMM - Office of the Municipal Mayor')">
+                                            <span class="opt-code">OMM</span>
+                                            <span class="opt-name">Office of the Municipal Mayor</span>
+                                        </div>
+                                        <div class="custom-option" data-value="OMVM" onclick="selectDeptOption('OMVM', 'OMVM - Office of the Municipal Vice-Mayor')">
+                                            <span class="opt-code">OMVM</span>
+                                            <span class="opt-name">Office of the Municipal Vice-Mayor</span>
+                                        </div>
+                                        <div class="custom-option" data-value="PNP" onclick="selectDeptOption('PNP', 'PNP - Philippine National Police')">
+                                            <span class="opt-code">PNP</span>
+                                            <span class="opt-name">Philippine National Police</span>
+                                        </div>
+                                        <div class="custom-option" data-value="SB" onclick="selectDeptOption('SB', 'SB - Sangguniang Bayan Office')">
+                                            <span class="opt-code">SB</span>
+                                            <span class="opt-name">Sangguniang Bayan Office</span>
+                                        </div>
+                                        <div class="custom-option" data-value="SSB" onclick="selectDeptOption('SSB', 'SSB - Secretary to the Sangguniang Bayan')">
+                                            <span class="opt-code">SSB</span>
+                                            <span class="opt-name">Secretary to the Sangguniang Bayan</span>
+                                        </div>
+                                        <div class="custom-option" data-value="TOURISM/CULTURAL" onclick="selectDeptOption('TOURISM/CULTURAL', 'TOURISM/CULTURAL - Tourism & Cultural Affairs')">
+                                            <span class="opt-code">TOURISM</span>
+                                            <span class="opt-name">Tourism &amp; Cultural Affairs</span>
+                                        </div>
+                                        <div class="custom-option" data-value="TRAFFIC" onclick="selectDeptOption('TRAFFIC', 'TRAFFIC - Municipal Traffic Management Office')">
+                                            <span class="opt-code">TRAFFIC</span>
+                                            <span class="opt-name">Municipal Traffic Management Office</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -196,6 +284,6 @@
 <!-- Firebase Auth & Firestore -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="script.js?v=2.2"></script>
+<script src="script.js?v=2.3"></script>
 </body>
 </html>
