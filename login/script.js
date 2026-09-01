@@ -150,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const fullName = document.getElementById('regFullName').value.trim();
             const email = document.getElementById('regEmail').value.trim().toLowerCase();
+            const department = (document.getElementById('regDepartment')?.value || '').trim();
             const password = document.getElementById('regPassword').value;
 
             if (regErrorMessage) regErrorMessage.style.display = 'none';
@@ -167,6 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!emailRegex.test(email)) {
                 if (regErrorMessage) {
                     regErrorMessage.textContent = 'Please enter a valid email address.';
+                    regErrorMessage.style.display = 'block';
+                }
+                return;
+            }
+
+            if (!department) {
+                if (regErrorMessage) {
+                    regErrorMessage.textContent = 'Please select your municipal department / office.';
                     regErrorMessage.style.display = 'block';
                 }
                 return;
@@ -190,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         uid: user.uid,
                         fullName: fullName,
                         email: email,
+                        department: department,
                         role: "employee",
                         status: "pending",
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()

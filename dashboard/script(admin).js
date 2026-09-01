@@ -959,6 +959,7 @@ function initUserProfilesListener() {
                 });
             }
 
+            const deptName = user.department || 'N/A';
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.6)';
             tr.innerHTML = `
@@ -966,6 +967,11 @@ function initUserProfilesListener() {
                     <i class="far fa-user" style="color: #94a3b8; margin-right: 6px;"></i> ${sanitizeText(user.fullName || user.name || 'N/A')}
                 </td>
                 <td style="padding: 12px 14px; color: #cbd5e1;">${sanitizeText(user.email || 'N/A')}</td>
+                <td style="padding: 12px 14px;">
+                    <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+                        <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(deptName)}
+                    </span>
+                </td>
                 <td style="padding: 12px 14px;">${statusBadge}</td>
                 <td style="padding: 12px 14px; color: #94a3b8; font-size: 11.5px;">
                     <i class="far fa-calendar-alt" style="margin-right: 4px; color: #64748b;"></i> ${sanitizeText(dateCreatedStr)}

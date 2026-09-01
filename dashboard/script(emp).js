@@ -72,6 +72,7 @@ auth.onAuthStateChanged(async (user) => {
 
         currentEmployeeName = userData.fullName || userData.name || user.email;
         currentEmployeeCreatedAt = userData.createdAt || "";
+        const currentEmployeeDept = userData.department || "Staff Access";
 
         // Update UI displays with employee info
         const nameEl = document.getElementById('emp-profile-name');
@@ -80,13 +81,14 @@ auth.onAuthStateChanged(async (user) => {
         const navbarEmailEl = document.querySelector('.navbar .user-email');
 
         if (nameEl) nameEl.textContent = currentEmployeeName;
-        if (emailEl) emailEl.textContent = currentEmployeeEmail;
+        if (emailEl) emailEl.textContent = currentEmployeeDept;
         if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
-        if (navbarEmailEl) navbarEmailEl.textContent = currentEmployeeEmail;
+        if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
 
         // Profile modal fields
         const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
         const modalEmail = document.getElementById('profile-email-input') || document.getElementById('profile-email-display');
+        const modalDept = document.getElementById('profile-dept-input');
         const modalCreated = document.getElementById('profile-created-display');
 
         if (modalFullname) modalFullname.value = currentEmployeeName;
@@ -94,6 +96,7 @@ auth.onAuthStateChanged(async (user) => {
             if (modalEmail.tagName === 'INPUT') modalEmail.value = currentEmployeeEmail;
             else modalEmail.textContent = currentEmployeeEmail;
         }
+        if (modalDept) modalDept.value = currentEmployeeDept;
         if (modalCreated) modalCreated.textContent = currentEmployeeCreatedAt ? new Date(currentEmployeeCreatedAt).toLocaleDateString() : 'Active';
 
         renderHistory();
