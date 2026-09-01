@@ -1321,15 +1321,21 @@ function initRequestsListener() {
     database.ref('masterlistRequests').on('value', (snapshot) => {
         renderAdminRequestsPanel();
     });
+
+    // 3. Listen for Department Transfer Requests
+    database.ref('deptTransferRequests').on('value', (snapshot) => {
+        renderAdminRequestsPanel();
+    });
 }
 
 async function renderAdminRequestsPanel() {
     if (!pendingRequestsLog) return;
 
     try {
-        const [transfersSnap, masterlistSnap] = await Promise.all([
+        const [transfersSnap, masterlistSnap, deptTransfersSnap] = await Promise.all([
             database.ref('equipmentTransfers').once('value'),
-            database.ref('masterlistRequests').once('value')
+            database.ref('masterlistRequests').once('value'),
+            database.ref('deptTransferRequests').once('value')
         ]);
 
         const allCards = [];
@@ -1345,6 +1351,22 @@ async function renderAdminRequestsPanel() {
                 allCards.push({
                     id: reqId,
                     type: 'transfer',
+                    data: req,
+                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0
+                });
+            });
+        }
+
+        // Process Department Transfer Requests
+        if (deptTransfersSnap.exists()) {
+            deptTransfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqId = child.key;
+                if (req.status === 'Pending') pendingCount++;
+
+                allCards.push({
+                    id: reqId,
+                    type: 'dept_transfer',
                     data: req,
                     time: req.createdAt ? new Date(req.createdAt).getTime() : 0
                 });
@@ -1396,7 +1418,7 @@ async function renderAdminRequestsPanel() {
                 cardEl.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
                         <span style="font-weight: 700; color: #38bdf8; font-size: 11.5px;">
-                            <i class="fas fa-exchange-alt"></i> Transfer Request
+                            <i class="fas fa-exchange-alt"></i> Equipment Transfer
                         </span>
                         <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : (t.status === 'Approved' ? 'background: rgba(34,197,94,0.2); color: #86efac;' : 'background: rgba(239,68,68,0.2); color: #fca5a5;')}">
                             ${sanitizeText(t.status || 'Pending')}
@@ -1416,6 +1438,35 @@ async function renderAdminRequestsPanel() {
                                 <i class="fas fa-check"></i> Approve
                             </button>
                             <button onclick="rejectEquipmentTransfer('${item.id}')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                Reject
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+            } else if (item.type === 'dept_transfer') {
+                const d = item.data;
+                const isPending = d.status === 'Pending';
+                cardEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                        <span style="font-weight: 700; color: #a855f7; font-size: 11.5px;">
+                            <i class="fas fa-building"></i> Dept Transfer Request
+                        </span>
+                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : (d.status === 'Approved' ? 'background: rgba(34,197,94,0.2); color: #86efac;' : 'background: rgba(239,68,68,0.2); color: #fca5a5;')}">
+                            ${sanitizeText(d.status || 'Pending')}
+                        </span>
+                    </div>
+                    <div style="font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${sanitizeText(d.userName || 'Staff Member')}</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${sanitizeText(d.userEmail || '')}</div>
+                    <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; margin-bottom: 6px; color: #cbd5e1;">
+                        <div><strong>Current Office:</strong> ${sanitizeText(d.originDepartment || '-')}</div>
+                        <div><strong>Requested Office:</strong> <span style="color: #38bdf8; font-weight: 700;">${sanitizeText(d.targetDepartment || '-')}</span></div>
+                    </div>
+                    ${isPending ? `
+                        <div style="display: flex; gap: 6px; margin-top: 6px;">
+                            <button onclick="approveDeptTransfer('${item.id}', '${d.userId}', '${d.targetDepartment}')" style="flex: 1; background: #0284c7; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button onclick="rejectDeptTransfer('${item.id}')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
                                 Reject
                             </button>
                         </div>
@@ -1445,6 +1496,40 @@ async function renderAdminRequestsPanel() {
         console.error("Error rendering admin requests panel:", e);
     }
 }
+
+window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
+    if (!confirm(`Approve department transfer to ${targetDepartment}?`)) return;
+
+    try {
+        await database.ref(`deptTransferRequests/${reqId}`).update({
+            status: 'Approved',
+            approvedAt: new Date().toISOString()
+        });
+
+        if (userId) {
+            await db.collection("users").doc(userId).update({
+                department: targetDepartment
+            });
+        }
+    } catch (err) {
+        console.error("Error approving dept transfer:", err);
+        alert("Error approving department transfer: " + err.message);
+    }
+};
+
+window.rejectDeptTransfer = async function(reqId) {
+    if (!confirm("Reject this department transfer request?")) return;
+
+    try {
+        await database.ref(`deptTransferRequests/${reqId}`).update({
+            status: 'Rejected',
+            rejectedAt: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error("Error rejecting dept transfer:", err);
+        alert("Error rejecting department transfer: " + err.message);
+    }
+};
 
 window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian) {
     if (!confirm(`Approve transfer of this equipment to ${newDept} (Custodian: ${newCustodian})?`)) return;

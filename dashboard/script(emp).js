@@ -1026,34 +1026,45 @@ if (profileForm) {
                 passwordUpdated = true;
             }
 
-            // 2. If name or department changed, update Firestore Profile record
+            // 2. If name changed, update Firestore Profile record
             const updatePayload = {};
-            if (newName !== currentEmployeeName) {
+            if (newName && newName !== currentEmployeeName) {
                 updatePayload.fullName = newName;
                 nameUpdated = true;
-            }
-            if (newDept && newDept !== (currentEmployeeDept || '')) {
-                updatePayload.department = newDept;
-                deptUpdated = true;
             }
 
             if (Object.keys(updatePayload).length > 0) {
                 if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
                 await db.collection("users").doc(user.uid).update(updatePayload);
-                
                 if (nameUpdated) currentEmployeeName = newName;
-                if (deptUpdated) currentEmployeeDept = newDept;
 
-                // Live-update navbar, sidebar & hero displays immediately
+                // Live-update displays
                 const nameEl = document.getElementById('emp-profile-name');
                 const heroNameEl = document.getElementById('emp-hero-name');
-                const emailEl = document.getElementById('emp-profile-email');
                 const navbarEmailEl = document.querySelector('.navbar .user-email');
 
                 if (nameEl) nameEl.textContent = currentEmployeeName;
                 if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
-                if (emailEl) emailEl.textContent = currentEmployeeDept;
-                if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
+                if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept || 'GSO'})`;
+            }
+
+            // 3. If department change is requested, queue a Department Transfer Request for Admin Approval
+            let deptTransferRequested = false;
+            if (newDept && newDept !== (currentEmployeeDept || '')) {
+                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting transfer request...';
+                
+                const transferReqRef = database.ref('deptTransferRequests').push();
+                await transferReqRef.set({
+                    id: transferReqRef.key,
+                    userId: user.uid,
+                    userName: currentEmployeeName || user.email,
+                    userEmail: currentEmployeeEmail || user.email,
+                    originDepartment: currentEmployeeDept || 'Not Assigned',
+                    targetDepartment: newDept,
+                    status: 'Pending',
+                    createdAt: new Date().toISOString()
+                });
+                deptTransferRequested = true;
             }
 
             // Success feedback
@@ -1062,12 +1073,12 @@ if (profileForm) {
             if (confPassInput) confPassInput.value = '';
 
             let successMessage = "Profile updated successfully!";
-            if (deptUpdated && nameUpdated && passwordUpdated) {
-                successMessage = "Your profile name, department, and password were all successfully updated!";
-            } else if (deptUpdated && nameUpdated) {
-                successMessage = "Your name and department were successfully updated!";
-            } else if (deptUpdated) {
-                successMessage = `Your assigned department was successfully updated to ${newDept}!`;
+            if (deptTransferRequested && nameUpdated && passwordUpdated) {
+                successMessage = `Name and password updated, and your Department Transfer Request to ${newDept} has been sent for Admin approval!`;
+            } else if (deptTransferRequested && nameUpdated) {
+                successMessage = `Name updated, and your Department Transfer Request to ${newDept} has been sent for Admin approval!`;
+            } else if (deptTransferRequested) {
+                successMessage = `Your Department Transfer Request to ${newDept} has been submitted for Admin approval!`;
             } else if (passwordUpdated && nameUpdated) {
                 successMessage = "Your profile name and password have been securely updated!";
             } else if (passwordUpdated) {
@@ -1080,7 +1091,7 @@ if (profileForm) {
 
             setTimeout(() => {
                 window.closeEmpProfileModal();
-            }, 1600);
+            }, 1800);
 
         } catch (error) {
             console.error("Profile change error:", error);
