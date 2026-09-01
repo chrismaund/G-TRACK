@@ -22,24 +22,45 @@ const inventoryRef = database.ref('inventoryData');
 const requestsRef = database.ref('masterlistRequests');
 
 // =========================================================================
-// AUTHENTICATION GUARD & SESSION PROTECTION (ADMIN)
+// AUTHENTICATION GUARD & LIVE SESSION/ROLE PROTECTION (ADMIN)
 // =========================================================================
+let adminDocUnsubscribe = null;
+
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
-        // No active Firebase session -> Redirect to login portal
+        if (adminDocUnsubscribe) adminDocUnsubscribe();
         sessionStorage.clear();
         window.location.replace("../login/index.html");
         return;
     }
 
     try {
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            console.warn("Unauthorized access detected. Non-admin account trying to access Admin dashboard.");
-            await auth.signOut();
-            sessionStorage.clear();
-            window.location.replace("../login/index.html");
-        }
+        if (adminDocUnsubscribe) adminDocUnsubscribe();
+
+        adminDocUnsubscribe = db.collection("users").doc(user.uid).onSnapshot((docSnap) => {
+            if (!docSnap.exists) {
+                auth.signOut();
+                sessionStorage.clear();
+                window.location.replace("../login/index.html");
+                return;
+            }
+
+            const userData = docSnap.data();
+            if (userData.role !== 'admin') {
+                console.warn("User role is not admin. Transitioning to Employee Dashboard...");
+                window.showGTrackToast(
+                    'info',
+                    'Access Updated',
+                    'Your role has been set to standard Employee. Transitioning to Employee Dashboard...',
+                    3500
+                );
+                setTimeout(() => {
+                    window.location.replace("../dashboard/employee.html");
+                }, 1500);
+            }
+        }, (err) => {
+            console.error("Admin user listener error:", err);
+        });
     } catch (err) {
         console.error("Auth verification error:", err);
     }
@@ -875,18 +896,16 @@ function initUserProfilesListener() {
             return;
         }
 
-        const employeeUsers = [];
-
         snapshot.forEach((doc) => {
             const user = doc.data();
             const userId = doc.id;
 
+            // Exclude currently logged in main admin to prevent self-lockout
+            if (auth.currentUser && userId === auth.currentUser.uid) return;
+
             // Standardize role and status checks (fallback to lowercase defaults)
             const userRole = (user.role || 'employee').toLowerCase();
             const userStatus = (user.status || 'pending').toLowerCase();
-
-            // Filter for employee role manually to prevent query mismatch issues
-            if (userRole !== 'employee') return;
 
             if (userStatus === 'pending') pendingCount++;
 
@@ -921,9 +940,9 @@ function initUserProfilesListener() {
         if (employeeUsers.length === 0) {
             profilesTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+                    <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
                         <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
-                        No registered employee accounts found.
+                        No registered staff user accounts found.
                     </td>
                 </tr>
             `;
@@ -937,9 +956,15 @@ function initUserProfilesListener() {
         employeeUsers.forEach((item) => {
             const user = item.data;
             const userId = item.id;
+            const userRole = item.role;
             const userStatus = item.status;
 
-            // Status styling
+            // Role and Status styling
+            let roleBadge = '<span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 600;">Employee</span>';
+            if (userRole === 'admin') {
+                roleBadge = '<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Admin</span>';
+            }
+
             let statusBadge = '<span style="background: rgba(234, 179, 8, 0.15); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Pending</span>';
             if (userStatus === 'approved') statusBadge = '<span style="background: rgba(34, 197, 94, 0.15); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Approved</span>';
             if (userStatus === 'rejected') statusBadge = '<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Rejected</span>';
@@ -972,7 +997,12 @@ function initUserProfilesListener() {
                         <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(deptName)}
                     </span>
                 </td>
-                <td style="padding: 12px 14px;">${statusBadge}</td>
+                <td style="padding: 12px 14px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                        ${roleBadge}
+                        ${statusBadge}
+                    </div>
+                </td>
                 <td style="padding: 12px 14px; color: #94a3b8; font-size: 11.5px;">
                     <i class="far fa-calendar-alt" style="margin-right: 4px; color: #64748b;"></i> ${sanitizeText(dateCreatedStr)}
                 </td>
@@ -980,12 +1010,21 @@ function initUserProfilesListener() {
                     <button class="kebab-menu-btn" onclick="toggleKebabMenu(event, '${userId}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Actions">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 145px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
+                    <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 165px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
+                        ${userRole === 'admin' ? `
+                            <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
+                                <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
+                            </button>
+                        ` : `
+                            <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
+                                <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
+                            </button>
+                        `}
                         ${userStatus === 'pending' ? `
                             <button onclick="updateUserStatus('${userId}', 'approved'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #4ade80; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                                 <i class="fas fa-check-circle" style="width: 14px;"></i> Approve
                             </button>
-                            <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                            <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                                 <i class="fas fa-ban" style="width: 14px;"></i> Reject
                             </button>
                         ` : `
@@ -1017,6 +1056,38 @@ function initUserProfilesListener() {
 
 // Call listener once DOM Content is Loaded
 document.addEventListener('DOMContentLoaded', initUserProfilesListener);
+
+// Function to Promote or Demote User Role
+window.changeUserRole = async function(userId, newRole, userName, triggerBtn = null) {
+    if (!userId) return;
+
+    const isDemote = newRole === 'employee';
+    const ok = await window.showGTrackConfirm(
+        isDemote ? "Demote to Employee?" : "Elevate to Administrator?",
+        isDemote 
+            ? `Revoke Administrator privileges from ${userName}? Their account will immediately revert to standard Employee access.`
+            : `Grant full Administrator privileges to ${userName}?`,
+        isDemote ? "Yes, Demote to Employee" : "Yes, Promote to Admin",
+        "Cancel",
+        isDemote,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        await db.collection("users").doc(userId).update({
+            role: newRole
+        });
+        window.showGTrackToast(
+            'success',
+            'Role Updated',
+            `${userName}'s role was successfully updated to ${newRole === 'admin' ? 'Administrator' : 'standard Employee'}.`
+        );
+    } catch (err) {
+        console.error("Error updating user role:", err);
+        window.showGTrackToast('error', 'Error', err.message || 'Could not update user role.');
+    }
+};
 
 // Function to Approve or Reject User Status
 function updateUserStatus(userId, newStatus) {
