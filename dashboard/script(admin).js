@@ -882,16 +882,13 @@ function initUserProfilesListener() {
 
         profilesTableBody.innerHTML = '';
         let pendingCount = 0;
-        const employeeUsers = [];
 
         if (snapshot.empty) {
             profilesTableBody.innerHTML = `
                 <tr>
                     <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
                         No registered staff user accounts found.
                     </td>
-                </tr>
             `;
             if (pendingBadge) pendingBadge.style.display = 'none';
             return;
@@ -902,7 +899,6 @@ function initUserProfilesListener() {
             const userId = doc.id;
             const isSelf = Boolean(auth.currentUser && userId === auth.currentUser.uid);
 
-            // Standardize role and status checks (fallback to lowercase defaults)
             const userRole = (user.role || 'employee').toLowerCase();
             const userStatus = (user.status || 'pending').toLowerCase();
 
@@ -938,8 +934,6 @@ function initUserProfilesListener() {
         });
 
         if (employeeUsers.length === 0) {
-            profilesTableBody.innerHTML = `
-                <tr>
                     <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
                         <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
                         No registered staff user accounts found.
@@ -996,7 +990,6 @@ function initUserProfilesListener() {
                     <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
                         <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(deptName)}
                     </span>
-                </td>
                 <td style="padding: 12px 14px;">
                     <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
                         ${roleBadge}
@@ -1039,29 +1032,6 @@ function initUserProfilesListener() {
                         </button>
                         ${!item.isSelf ? `
                             <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
-                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
-            `;
-            profilesTableBody.appendChild(tr);
-        });
-
-        if (pendingBadge) {
-            pendingBadge.textContent = pendingCount;
-            pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
-        }
-    }, (error) => {
-        console.error("Firestore Listener Error:", error.message);
-    });
-}
-
-// Call listener once DOM Content is Loaded
-document.addEventListener('DOMContentLoaded', initUserProfilesListener);
-
-// Function to Promote or Demote User Role
 window.changeUserRole = async function(userId, newRole, userName, triggerBtn = null) {
     if (!userId) return;
 
@@ -1069,12 +1039,6 @@ window.changeUserRole = async function(userId, newRole, userName, triggerBtn = n
     const ok = await window.showGTrackConfirm(
         isDemote ? "Demote to Employee?" : "Elevate to Administrator?",
         isDemote 
-            ? `Revoke Administrator privileges from ${userName}? Their account will immediately revert to standard Employee access.`
-            : `Grant full Administrator privileges to ${userName}?`,
-        isDemote ? "Yes, Demote to Employee" : "Yes, Promote to Admin",
-        "Cancel",
-        isDemote,
-        triggerBtn
     );
     if (!ok) return;
 

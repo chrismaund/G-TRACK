@@ -117,7 +117,7 @@ auth.onAuthStateChanged(async (user) => {
             const navbarEmailEl = document.querySelector('.navbar .user-email');
 
             if (nameEl) nameEl.textContent = currentEmployeeName;
-            if (emailEl) emailEl.textContent = currentEmployeeDept;
+            if (emailEl) emailEl.textContent = 'Staff Access';
             if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
             if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
 
