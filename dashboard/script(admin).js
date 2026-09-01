@@ -1486,8 +1486,8 @@ async function renderAdminRequestsPanel() {
                 const isPending = req.status === 'Pending' || req.status === 'pending';
                 if (isPending) {
                     pendingTotal++;
-                    countTransfer++;
                 }
+                countTransfer++;
 
                 allCards.push({
                     id: child.key,
@@ -1526,8 +1526,8 @@ async function renderAdminRequestsPanel() {
                     }
                     seenUsers.add(userKey);
                     pendingTotal++;
-                    countDept++;
                 }
+                countDept++;
 
                 allCards.push({
                     id: id,
@@ -1546,8 +1546,8 @@ async function renderAdminRequestsPanel() {
                 const isPending = req.status === 'Pending' || req.status === 'pending';
                 if (isPending) {
                     pendingTotal++;
-                    countMasterlist++;
                 }
+                countMasterlist++;
 
                 allCards.push({
                     id: child.key,
@@ -1584,8 +1584,8 @@ async function renderAdminRequestsPanel() {
                     }
                     seenRoleUsers.add(userKey);
                     pendingTotal++;
-                    countRole++;
                 }
+                countRole++;
 
                 allCards.push({
                     id: id,
@@ -1597,20 +1597,20 @@ async function renderAdminRequestsPanel() {
             });
         }
 
-        // Update Notification Badge
+        // Update Notification Badge (Only count PENDING items so sidebar only alerts when action is needed)
         if (badgeEl) {
             badgeEl.textContent = pendingTotal;
             badgeEl.style.display = pendingTotal > 0 ? 'inline-block' : 'none';
         }
 
-        // Update Tab Badges
+        // Update Tab Badges (Counts all request records under each category)
         const tabCountAll = document.getElementById('tab-count-all');
         const tabCountDept = document.getElementById('tab-count-dept');
         const tabCountTransfer = document.getElementById('tab-count-transfer');
         const tabCountMasterlist = document.getElementById('tab-count-masterlist');
         const tabCountRole = document.getElementById('tab-count-role');
 
-        if (tabCountAll) tabCountAll.textContent = pendingTotal;
+        if (tabCountAll) tabCountAll.textContent = allCards.length;
         if (tabCountDept) tabCountDept.textContent = countDept;
         if (tabCountTransfer) tabCountTransfer.textContent = countTransfer;
         if (tabCountMasterlist) tabCountMasterlist.textContent = countMasterlist;

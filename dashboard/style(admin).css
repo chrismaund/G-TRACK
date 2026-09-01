@@ -1178,8 +1178,8 @@ body,
 #requests-modal .modal-card { 
     position: fixed; 
     top: 0; 
-    left: -820px; 
-    width: 780px; 
+    left: -880px; 
+    width: 840px; 
     max-width: 95vw; 
     height: 100vh; 
     max-height: 100vh; 
