@@ -1740,64 +1740,51 @@ window.adminClearRequestsLogs = async function(e) {
         e.stopPropagation();
     }
 
+    const ok = await window.showGTrackConfirm(
+        "Clear All Request Logs?",
+        "Warning: This will permanently delete all request records (Department Transfers, Equipment Transfers, and Masterlist Copies) from the database. This action cannot be undone.",
+        "Yes, Clear Everything",
+        "Cancel",
+        true
+    );
+    if (!ok) return;
+
     const btn = document.getElementById('admin-clear-requests-btn') || (e && e.currentTarget ? e.currentTarget : null);
     const icon = btn ? btn.querySelector('i') : null;
-    if (icon) icon.classList.add('fa-spin');
+    if (icon) icon.className = 'fas fa-spinner fa-spin';
     if (btn) btn.style.pointerEvents = 'none';
 
     try {
-        // 1. Clear all masterlist request logs from Firebase Realtime Database
-        await database.ref('masterlistRequests').remove();
+        // 1. Completely clear all requests from Firebase Realtime Database
+        await Promise.all([
+            database.ref('masterlistRequests').remove(),
+            database.ref('equipmentTransfers').remove(),
+            database.ref('deptTransferRequests').remove()
+        ]);
 
         // 2. Clear from Supabase if connected
         if (supabaseClient) {
             try {
-                await supabaseClient.from('masterlist_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                await Promise.all([
+                    supabaseClient.from('masterlist_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                    supabaseClient.from('equipment_transfers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+                ]);
             } catch (err) {
-                console.warn("Supabase masterlist clear skipped:", err);
+                console.warn("Supabase requests clear fallback:", err);
             }
         }
 
-        // 3. Clean up resolved (Approved / Rejected) transfer records
-        const [transfersSnap, deptSnap] = await Promise.all([
-            database.ref('equipmentTransfers').once('value'),
-            database.ref('deptTransferRequests').once('value')
-        ]);
-
-        const deletePromises = [];
-        if (transfersSnap.exists()) {
-            transfersSnap.forEach((child) => {
-                const status = (child.val().status || '').toLowerCase();
-                if (status === 'approved' || status === 'rejected' || status === 'handled') {
-                    deletePromises.push(database.ref(`equipmentTransfers/${child.key}`).remove());
-                }
-            });
-        }
-
-        if (deptSnap.exists()) {
-            deptSnap.forEach((child) => {
-                const status = (child.val().status || '').toLowerCase();
-                if (status === 'approved' || status === 'rejected' || status === 'handled') {
-                    deletePromises.push(database.ref(`deptTransferRequests/${child.key}`).remove());
-                }
-            });
-        }
-
-        if (deletePromises.length > 0) {
-            await Promise.all(deletePromises);
-        }
-
-        window.showGTrackToast('success', 'Logs Cleared', 'Request logs have been successfully cleared.');
+        window.showGTrackToast('success', 'All Logs Cleared', 'All request logs have been completely deleted.');
         await renderAdminRequestsPanel();
 
     } catch (err) {
-        console.error("Error clearing request logs:", err);
-        window.showGTrackToast('error', 'Error', err.message || 'Could not clear request logs.');
+        console.error("Error clearing all request logs:", err);
+        window.showGTrackToast('error', 'Clear Error', err.message || 'Could not clear all request logs.');
     } finally {
         setTimeout(() => {
-            if (icon) icon.classList.remove('fa-spin');
+            if (icon) icon.className = 'fas fa-trash-alt';
             if (btn) btn.style.pointerEvents = 'auto';
-        }, 450);
+        }, 400);
     }
 };
 
