@@ -1389,18 +1389,38 @@ async function renderAdminRequestsPanel() {
             });
         }
 
-        // 2. Process Department Transfer Requests
+        // 2. Process Department Transfer Requests (with automatic deduplication)
         if (deptTransfersSnap.exists()) {
+            const seenUsers = new Set();
+            const rawDeptList = [];
             deptTransfersSnap.forEach((child) => {
-                const req = child.val();
+                rawDeptList.push({ id: child.key, req: child.val() });
+            });
+
+            // Sort newest first
+            rawDeptList.sort((a, b) => {
+                const tA = a.req.createdAt ? new Date(a.req.createdAt).getTime() : 0;
+                const tB = b.req.createdAt ? new Date(b.req.createdAt).getTime() : 0;
+                return tB - tA;
+            });
+
+            rawDeptList.forEach(({ id, req }) => {
                 const isPending = req.status === 'Pending' || req.status === 'pending';
+                const userKey = (req.userId || req.userEmail || id).trim();
+
                 if (isPending) {
+                    if (seenUsers.has(userKey)) {
+                        // Auto-purge redundant duplicate pending record from database
+                        database.ref(`deptTransferRequests/${id}`).remove();
+                        return;
+                    }
+                    seenUsers.add(userKey);
                     pendingTotal++;
                     countDept++;
                 }
 
                 allCards.push({
-                    id: child.key,
+                    id: id,
                     type: 'dept_transfer',
                     data: req,
                     time: req.createdAt ? new Date(req.createdAt).getTime() : 0,
@@ -1757,9 +1777,9 @@ window.adminClearRequestsLogs = async function(e) {
     try {
         // 1. Completely clear all requests from Firebase Realtime Database
         await Promise.all([
-            database.ref('masterlistRequests').remove(),
-            database.ref('equipmentTransfers').remove(),
-            database.ref('deptTransferRequests').remove()
+            database.ref('masterlistRequests').set(null),
+            database.ref('equipmentTransfers').set(null),
+            database.ref('deptTransferRequests').set(null)
         ]);
 
         // 2. Clear from Supabase if connected

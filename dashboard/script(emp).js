@@ -1053,41 +1053,41 @@ if (profileForm) {
             if (newDept && newDept !== (currentEmployeeDept || '')) {
                 if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting transfer request...';
                 
-                // Check if user already has a pending request in deptTransferRequests
-                let existingKey = null;
+                const userEmail = currentEmployeeEmail || user.email || '';
+                const userName = currentEmployeeName || user.displayName || user.email || 'Staff Member';
+
+                // Purge all existing pending department transfer requests from this user
                 try {
                     const snap = await database.ref('deptTransferRequests').once('value');
                     if (snap.exists()) {
+                        const cleanupPromises = [];
                         snap.forEach((child) => {
                             const val = child.val();
-                            if (val.userId === user.uid && val.status === 'Pending') {
-                                existingKey = child.key;
+                            if (val.userId === user.uid || (userEmail && val.userEmail === userEmail) || (userName && val.userName === userName)) {
+                                cleanupPromises.push(database.ref(`deptTransferRequests/${child.key}`).remove());
                             }
                         });
+                        if (cleanupPromises.length > 0) {
+                            await Promise.all(cleanupPromises);
+                        }
                     }
                 } catch(e) {
                     console.warn("Check existing dept requests fallback:", e);
                 }
 
+                const transferReqRef = database.ref('deptTransferRequests').push();
                 const payload = {
+                    id: transferReqRef.key,
                     userId: user.uid,
-                    userName: currentEmployeeName || user.email,
-                    userEmail: currentEmployeeEmail || user.email,
+                    userName: userName,
+                    userEmail: userEmail,
                     originDepartment: currentEmployeeDept || 'Not Assigned',
                     targetDepartment: newDept,
                     status: 'Pending',
                     createdAt: new Date().toISOString()
                 };
 
-                if (existingKey) {
-                    payload.id = existingKey;
-                    await database.ref(`deptTransferRequests/${existingKey}`).update(payload);
-                } else {
-                    const transferReqRef = database.ref('deptTransferRequests').push();
-                    payload.id = transferReqRef.key;
-                    await transferReqRef.set(payload);
-                }
-
+                await transferReqRef.set(payload);
                 deptTransferRequested = true;
             }
 
