@@ -1048,14 +1048,28 @@ if (profileForm) {
                 if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept || 'GSO'})`;
             }
 
-            // 3. If department change is requested, queue a Department Transfer Request for Admin Approval
+            // 3. If department change is requested, queue or update Department Transfer Request for Admin Approval
             let deptTransferRequested = false;
             if (newDept && newDept !== (currentEmployeeDept || '')) {
                 if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting transfer request...';
                 
-                const transferReqRef = database.ref('deptTransferRequests').push();
-                await transferReqRef.set({
-                    id: transferReqRef.key,
+                // Check if user already has a pending request in deptTransferRequests
+                let existingKey = null;
+                try {
+                    const snap = await database.ref('deptTransferRequests').once('value');
+                    if (snap.exists()) {
+                        snap.forEach((child) => {
+                            const val = child.val();
+                            if (val.userId === user.uid && val.status === 'Pending') {
+                                existingKey = child.key;
+                            }
+                        });
+                    }
+                } catch(e) {
+                    console.warn("Check existing dept requests fallback:", e);
+                }
+
+                const payload = {
                     userId: user.uid,
                     userName: currentEmployeeName || user.email,
                     userEmail: currentEmployeeEmail || user.email,
@@ -1063,7 +1077,17 @@ if (profileForm) {
                     targetDepartment: newDept,
                     status: 'Pending',
                     createdAt: new Date().toISOString()
-                });
+                };
+
+                if (existingKey) {
+                    payload.id = existingKey;
+                    await database.ref(`deptTransferRequests/${existingKey}`).update(payload);
+                } else {
+                    const transferReqRef = database.ref('deptTransferRequests').push();
+                    payload.id = transferReqRef.key;
+                    await transferReqRef.set(payload);
+                }
+
                 deptTransferRequested = true;
             }
 
@@ -1581,4 +1605,103 @@ window.submitEquipmentTransfer = async function(event) {
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Transfer Request';
         }
     }
+};
+
+// =========================================================================
+// SYSTEM TOAST NOTIFICATION & GLASSMORPHIIC CONFIRM MODAL
+// =========================================================================
+window.showGTrackToast = function(type, title, message, duration = 4000) {
+    const container = document.getElementById('gtrack-toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `gtrack-toast ${type || 'info'}`;
+    
+    let iconClass = 'fa-info-circle';
+    if (type === 'success') iconClass = 'fa-check-circle';
+    else if (type === 'error') iconClass = 'fa-exclamation-triangle';
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${sanitizeText(title || 'Notification')}</div>
+            <div class="toast-message">${sanitizeText(message || '')}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 20);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
+};
+
+window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', cancelText = 'Cancel', isDanger = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('gtrack-confirm-modal');
+        const titleEl = document.getElementById('confirm-modal-title');
+        const msgEl = document.getElementById('confirm-modal-message');
+        const actionBtn = document.getElementById('confirm-modal-action-btn');
+        const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
+        const iconWrapper = document.getElementById('confirm-modal-icon-wrapper');
+        const icon = document.getElementById('confirm-modal-icon');
+
+        if (!modal || !actionBtn || !cancelBtn) {
+            resolve(window.confirm(`${title}\n\n${message}`));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (actionBtn) {
+            actionBtn.textContent = confirmText;
+            if (isDanger) {
+                actionBtn.className = 'add-eq-btn';
+                actionBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else {
+                actionBtn.className = 'add-eq-btn btn-blue';
+                actionBtn.style.background = '';
+            }
+        }
+        if (cancelBtn) cancelBtn.textContent = cancelText;
+
+        if (iconWrapper && icon) {
+            if (isDanger) {
+                iconWrapper.style.color = '#ef4444';
+                iconWrapper.style.background = 'rgba(239, 68, 68, 0.15)';
+                iconWrapper.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                icon.className = 'fas fa-exclamation-triangle';
+            } else {
+                iconWrapper.style.color = '#38bdf8';
+                iconWrapper.style.background = 'rgba(56, 189, 248, 0.15)';
+                iconWrapper.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+                icon.className = 'fas fa-question-circle';
+            }
+        }
+
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            modal.classList.remove('open');
+            actionBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+        };
+
+        actionBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        modal.classList.add('open');
+    });
 };

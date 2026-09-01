@@ -1497,8 +1497,144 @@ async function renderAdminRequestsPanel() {
     }
 }
 
+// =========================================================================
+// SYSTEM TOAST NOTIFICATION & GLASSMORPHIIC CONFIRM MODAL
+// =========================================================================
+window.showGTrackToast = function(type, title, message, duration = 4000) {
+    const container = document.getElementById('gtrack-toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `gtrack-toast ${type || 'info'}`;
+    
+    let iconClass = 'fa-info-circle';
+    if (type === 'success') iconClass = 'fa-check-circle';
+    else if (type === 'error') iconClass = 'fa-exclamation-triangle';
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${sanitizeText(title || 'Notification')}</div>
+            <div class="toast-message">${sanitizeText(message || '')}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    
+    // Trigger slide animation
+    setTimeout(() => toast.classList.add('show'), 20);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
+};
+
+window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', cancelText = 'Cancel', isDanger = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('gtrack-confirm-modal');
+        const titleEl = document.getElementById('confirm-modal-title');
+        const msgEl = document.getElementById('confirm-modal-message');
+        const actionBtn = document.getElementById('confirm-modal-action-btn');
+        const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
+        const iconWrapper = document.getElementById('confirm-modal-icon-wrapper');
+        const icon = document.getElementById('confirm-modal-icon');
+
+        if (!modal || !actionBtn || !cancelBtn) {
+            resolve(window.confirm(`${title}\n\n${message}`));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (actionBtn) {
+            actionBtn.textContent = confirmText;
+            if (isDanger) {
+                actionBtn.className = 'add-eq-btn';
+                actionBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else {
+                actionBtn.className = 'add-eq-btn btn-blue';
+                actionBtn.style.background = '';
+            }
+        }
+        if (cancelBtn) cancelBtn.textContent = cancelText;
+
+        if (iconWrapper && icon) {
+            if (isDanger) {
+                iconWrapper.style.color = '#ef4444';
+                iconWrapper.style.background = 'rgba(239, 68, 68, 0.15)';
+                iconWrapper.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                icon.className = 'fas fa-exclamation-triangle';
+            } else {
+                iconWrapper.style.color = '#38bdf8';
+                iconWrapper.style.background = 'rgba(56, 189, 248, 0.15)';
+                iconWrapper.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+                icon.className = 'fas fa-question-circle';
+            }
+        }
+
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            modal.classList.remove('open');
+            actionBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+        };
+
+        actionBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        modal.classList.add('open');
+    });
+};
+
+window.dismissAllMasterlistRequests = async function() {
+    const ok = await window.showGTrackConfirm(
+        "Clear Masterlist Notifications?",
+        "Are you sure you want to mark all pending masterlist requests as handled?",
+        "Clear All",
+        "Cancel"
+    );
+    if (!ok) return;
+
+    try {
+        const snap = await database.ref('masterlistRequests').once('value');
+        if (snap.exists()) {
+            const updates = {};
+            snap.forEach((child) => {
+                const val = child.val();
+                if (val.status === 'Pending' || val.status === 'pending') {
+                    updates[`${child.key}/status`] = 'Handled';
+                }
+            });
+            if (Object.keys(updates).length > 0) {
+                await database.ref('masterlistRequests').update(updates);
+            }
+        }
+        window.showGTrackToast('success', 'Cleared', 'Masterlist requests marked as handled.');
+    } catch (e) {
+        window.showGTrackToast('error', 'Error', e.message);
+    }
+};
+
 window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
-    if (!confirm(`Approve department transfer to ${targetDepartment}?`)) return;
+    const ok = await window.showGTrackConfirm(
+        "Approve Department Transfer?",
+        `Authorize employee transfer to ${targetDepartment}?`,
+        "Approve Transfer",
+        "Cancel"
+    );
+    if (!ok) return;
 
     try {
         await database.ref(`deptTransferRequests/${reqId}`).update({
@@ -1511,28 +1647,43 @@ window.approveDeptTransfer = async function(reqId, userId, targetDepartment) {
                 department: targetDepartment
             });
         }
+        window.showGTrackToast('success', 'Transfer Approved', `Employee department successfully transferred to ${targetDepartment}.`);
     } catch (err) {
         console.error("Error approving dept transfer:", err);
-        alert("Error approving department transfer: " + err.message);
+        window.showGTrackToast('error', 'Transfer Error', err.message || 'Could not approve department transfer.');
     }
 };
 
 window.rejectDeptTransfer = async function(reqId) {
-    if (!confirm("Reject this department transfer request?")) return;
+    const ok = await window.showGTrackConfirm(
+        "Reject Department Transfer?",
+        "Are you sure you want to decline this department transfer request?",
+        "Reject Request",
+        "Cancel",
+        true
+    );
+    if (!ok) return;
 
     try {
         await database.ref(`deptTransferRequests/${reqId}`).update({
             status: 'Rejected',
             rejectedAt: new Date().toISOString()
         });
+        window.showGTrackToast('info', 'Request Declined', 'Department transfer request was declined.');
     } catch (err) {
         console.error("Error rejecting dept transfer:", err);
-        alert("Error rejecting department transfer: " + err.message);
+        window.showGTrackToast('error', 'Error', err.message);
     }
 };
 
 window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian) {
-    if (!confirm(`Approve transfer of this equipment to ${newDept} (Custodian: ${newCustodian})?`)) return;
+    const ok = await window.showGTrackConfirm(
+        "Approve Equipment Transfer?",
+        `Transfer this equipment to ${newDept} (Custodian: ${newCustodian})?`,
+        "Approve Transfer",
+        "Cancel"
+    );
+    if (!ok) return;
 
     try {
         // 1. Update Inventory in Supabase
@@ -1568,27 +1719,35 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
             approvedAt: new Date().toISOString()
         });
 
-        alert(`Transfer approved! Equipment location updated to ${newDept}.`);
+        window.showGTrackToast('success', 'Transfer Approved', `Equipment location updated to ${newDept}.`);
         renderTable();
         renderAdminRequestsPanel();
 
     } catch (err) {
         console.error("Error approving transfer:", err);
-        alert("Could not approve transfer: " + err.message);
+        window.showGTrackToast('error', 'Error', "Could not approve transfer: " + err.message);
     }
 };
 
 window.rejectEquipmentTransfer = async function(transferId) {
-    if (!confirm("Are you sure you want to reject this equipment transfer request?")) return;
+    const ok = await window.showGTrackConfirm(
+        "Reject Equipment Transfer?",
+        "Are you sure you want to decline this equipment transfer request?",
+        "Reject Request",
+        "Cancel",
+        true
+    );
+    if (!ok) return;
 
     try {
         await database.ref(`equipmentTransfers/${transferId}`).update({
             status: 'Rejected',
             rejectedAt: new Date().toISOString()
         });
+        window.showGTrackToast('info', 'Request Declined', 'Equipment transfer request was declined.');
         renderAdminRequestsPanel();
     } catch (err) {
-        alert("Error rejecting transfer: " + err.message);
+        window.showGTrackToast('error', 'Error', "Error rejecting transfer: " + err.message);
     }
 };
 

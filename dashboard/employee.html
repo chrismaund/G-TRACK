@@ -761,6 +761,29 @@
             </form>
         </div>
     </div>
+
+    <!-- SYSTEM TOAST CONTAINER -->
+    <div id="gtrack-toast-container" class="gtrack-toast-container"></div>
+
+    <!-- SYSTEM CONFIRMATION MODAL -->
+    <div id="gtrack-confirm-modal" class="modal-overlay">
+        <div class="gtrack-confirm-card">
+            <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
+                <div id="confirm-modal-icon-wrapper" style="width: 42px; height: 42px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                    <i id="confirm-modal-icon" class="fas fa-question-circle"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h4 id="confirm-modal-title" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 800; color: #ffffff;">Confirm Action</h4>
+                    <p id="confirm-modal-message" style="margin: 0; font-size: 12.5px; color: #94a3b8; line-height: 1.45;">Are you sure you want to proceed?</p>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px;">
+                <button type="button" id="confirm-modal-cancel-btn" class="add-eq-btn secondary-btn" style="padding: 7px 14px; font-size: 12px;">Cancel</button>
+                <button type="button" id="confirm-modal-action-btn" class="add-eq-btn btn-blue" style="padding: 7px 16px; font-size: 12px;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>

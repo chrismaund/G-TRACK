@@ -129,8 +129,9 @@
         </button>
 
         <div id="pending-requests-wrapper" class="sidebar-stack-wrapper">
-            <div class="sidebar-section-header">
+            <div class="sidebar-section-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Pending Requests</span>
+                <button type="button" onclick="dismissAllMasterlistRequests()" title="Clear Handled Requests" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; font-weight: 600; cursor: pointer; padding: 0;">Clear Handled</button>
             </div>
             
             <div id="pending-requests-log" class="sidebar-section-body">
@@ -878,6 +879,28 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- SYSTEM TOAST CONTAINER -->
+<div id="gtrack-toast-container" class="gtrack-toast-container"></div>
+
+<!-- SYSTEM CONFIRMATION MODAL -->
+<div id="gtrack-confirm-modal" class="modal-overlay">
+    <div class="gtrack-confirm-card">
+        <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
+            <div id="confirm-modal-icon-wrapper" style="width: 42px; height: 42px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                <i id="confirm-modal-icon" class="fas fa-question-circle"></i>
+            </div>
+            <div style="flex: 1;">
+                <h4 id="confirm-modal-title" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 800; color: #ffffff;">Confirm Action</h4>
+                <p id="confirm-modal-message" style="margin: 0; font-size: 12.5px; color: #94a3b8; line-height: 1.45;">Are you sure you want to proceed?</p>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px;">
+            <button type="button" id="confirm-modal-cancel-btn" class="add-eq-btn secondary-btn" style="padding: 7px 14px; font-size: 12px;">Cancel</button>
+            <button type="button" id="confirm-modal-action-btn" class="add-eq-btn btn-blue" style="padding: 7px 16px; font-size: 12px;">Confirm</button>
+        </div>
     </div>
 </div>
 
