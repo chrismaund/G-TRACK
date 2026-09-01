@@ -1064,6 +1064,9 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
 
     if (modal) {
         modal.classList.remove('hidden');
+        // Force reflow for smooth sliding transition
+        void modal.offsetWidth;
+        modal.classList.add('open');
         document.body.classList.add('modal-open');
     }
 };
@@ -1071,8 +1074,17 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
 window.closeAdminReassignModal = function() {
     const modal = document.getElementById('admin-reassign-modal');
     if (modal) {
-        modal.classList.add('hidden');
-        document.body.classList.remove('modal-open');
+        modal.classList.remove('open');
+        setTimeout(() => {
+            if (!modal.classList.contains('open')) {
+                modal.classList.add('hidden');
+            }
+        }, 350);
+        // Only remove modal-open from body if profiles drawer is not open
+        const profilesModal = document.getElementById('profiles-modal');
+        if (!profilesModal || !profilesModal.classList.contains('open')) {
+            document.body.classList.remove('modal-open');
+        }
     }
 };
 

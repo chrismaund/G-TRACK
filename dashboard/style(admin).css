@@ -1148,6 +1148,98 @@ body,
     left: 0; 
 }
 
+/* Admin Reassign Department Connected Sliding Drawer (Attaches to edge of User Profiles) */
+#admin-reassign-modal.modal-overlay { 
+    justify-content: flex-start; 
+    align-items: stretch; 
+    z-index: 1150; 
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#admin-reassign-modal.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#admin-reassign-modal .modal-card { 
+    position: fixed; 
+    top: 0; 
+    width: 440px; 
+    max-width: 90vw; 
+    height: 100vh; 
+    max-height: 100vh; 
+    background: #0b1120; 
+    border-left: 1px solid rgba(56, 189, 248, 0.35); 
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: none;
+    border-bottom: none;
+    border-radius: 0; 
+    box-shadow: 16px 0 48px rgba(0, 0, 0, 0.8), -8px 0 24px rgba(0, 0, 0, 0.5); 
+    padding: 24px 24px 28px 24px; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 1155; 
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; 
+    box-sizing: border-box; 
+    overflow-y: auto; 
+    scrollbar-width: none;
+    color: #f8fafc;
+}
+
+@media (min-width: 1260px) {
+    #admin-reassign-modal .modal-card {
+        left: 780px;
+        transform: translateX(-40px);
+        opacity: 0;
+    }
+    #admin-reassign-modal.open .modal-card {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 1259px) {
+    #admin-reassign-modal .modal-card {
+        left: auto;
+        right: -460px;
+        transform: none;
+        opacity: 1;
+    }
+    #admin-reassign-modal.open .modal-card {
+        right: 0;
+    }
+}
+
+#admin-reassign-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+}
+
+#admin-reassign-modal .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+#admin-reassign-modal .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: visible;
+}
+
 #profiles-modal .modal-header {
     display: flex;
     justify-content: space-between;
