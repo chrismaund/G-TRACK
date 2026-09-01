@@ -450,6 +450,11 @@ function renderTable() {
             <td><span class="badge ${badgeClass}">${sanitizeText(item.condition) || 'N/A'}</span></td>
             <td>${sanitizeText(item.account) || '-'}</td>
             <td class="text-muted">${sanitizeText(item.remarks) || '-'}</td>
+            <td class="actions-cell actions-cell-wrapper" style="text-align: center;">
+                <button class="action-btn edit-btn" onclick="openTransferModal('${item.id}')" title="Request Equipment Transfer">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+            </td>
         `;
         fragment.appendChild(tr);
     });
@@ -922,12 +927,14 @@ if (profileForm) {
         clearProfileAlerts();
 
         const nameInput = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
+        const deptSelect = document.getElementById('profile-dept-select');
         const oldPassInput = document.getElementById('profile-old-password');
         const newPassInput = document.getElementById('profile-new-password');
         const confPassInput = document.getElementById('profile-confirm-password');
         const saveBtn = document.getElementById('save-profile-btn');
 
         const newName = nameInput ? nameInput.value.trim() : '';
+        const newDept = deptSelect ? deptSelect.value.trim() : '';
         const currentPassword = oldPassInput ? oldPassInput.value : '';
         const newPassword = newPassInput ? newPassInput.value : '';
         const confirmPassword = confPassInput ? confPassInput.value : '';
@@ -987,6 +994,7 @@ if (profileForm) {
 
             let passwordUpdated = false;
             let nameUpdated = false;
+            let deptUpdated = false;
 
             // 1. If password change is requested, Re-authenticate with Firebase Auth (Google-style authorization)
             if (isPasswordChangeAttempt) {
@@ -1011,20 +1019,34 @@ if (profileForm) {
                 passwordUpdated = true;
             }
 
-            // 2. If name changed, update Firestore Profile record
+            // 2. If name or department changed, update Firestore Profile record
+            const updatePayload = {};
             if (newName !== currentEmployeeName) {
-                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
-                await db.collection("users").doc(user.uid).update({
-                    fullName: newName
-                });
-                currentEmployeeName = newName;
+                updatePayload.fullName = newName;
                 nameUpdated = true;
+            }
+            if (newDept && newDept !== (currentEmployeeDept || '')) {
+                updatePayload.department = newDept;
+                deptUpdated = true;
+            }
 
-                // Live-update navbar & hero displays immediately
+            if (Object.keys(updatePayload).length > 0) {
+                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
+                await db.collection("users").doc(user.uid).update(updatePayload);
+                
+                if (nameUpdated) currentEmployeeName = newName;
+                if (deptUpdated) currentEmployeeDept = newDept;
+
+                // Live-update navbar, sidebar & hero displays immediately
                 const nameEl = document.getElementById('emp-profile-name');
                 const heroNameEl = document.getElementById('emp-hero-name');
-                if (nameEl) nameEl.textContent = newName;
-                if (heroNameEl) heroNameEl.textContent = newName;
+                const emailEl = document.getElementById('emp-profile-email');
+                const navbarEmailEl = document.querySelector('.navbar .user-email');
+
+                if (nameEl) nameEl.textContent = currentEmployeeName;
+                if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
+                if (emailEl) emailEl.textContent = currentEmployeeDept;
+                if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (${currentEmployeeDept})`;
             }
 
             // Success feedback
@@ -1033,7 +1055,13 @@ if (profileForm) {
             if (confPassInput) confPassInput.value = '';
 
             let successMessage = "Profile updated successfully!";
-            if (passwordUpdated && nameUpdated) {
+            if (deptUpdated && nameUpdated && passwordUpdated) {
+                successMessage = "Your profile name, department, and password were all successfully updated!";
+            } else if (deptUpdated && nameUpdated) {
+                successMessage = "Your name and department were successfully updated!";
+            } else if (deptUpdated) {
+                successMessage = `Your assigned department was successfully updated to ${newDept}!`;
+            } else if (passwordUpdated && nameUpdated) {
                 successMessage = "Your profile name and password have been securely updated!";
             } else if (passwordUpdated) {
                 successMessage = "Your password has been changed successfully!";
@@ -1253,3 +1281,139 @@ if (nextPageBtn) {
 
 setupConditionDropdown();
 renderHistory();
+
+// =========================================================================
+// EQUIPMENT TRANSFER REQUEST (PTR WORKFLOW)
+// =========================================================================
+window.openTransferModal = function(itemId) {
+    const item = inventoryData.find(i => String(i.id) === String(itemId));
+    if (!item) {
+        alert("Selected equipment record could not be found.");
+        return;
+    }
+
+    const modal = document.getElementById('emp-transfer-modal');
+    const itemIdInput = document.getElementById('transfer-item-id');
+    const itemNameEl = document.getElementById('transfer-item-name');
+    const itemPropNoEl = document.getElementById('transfer-item-propno');
+    const itemCurLocEl = document.getElementById('transfer-item-curloc');
+    const targetDeptSelect = document.getElementById('transfer-target-dept');
+    const newCustodianInput = document.getElementById('transfer-new-custodian');
+    const reasonInput = document.getElementById('transfer-reason');
+    const alertBox = document.getElementById('transfer-alert');
+
+    if (itemIdInput) itemIdInput.value = item.id;
+    if (itemNameEl) itemNameEl.textContent = `${item.article || 'Equipment'} - ${item.description || ''}`;
+    if (itemPropNoEl) itemPropNoEl.textContent = item.propertyNo || 'N/A';
+    if (itemCurLocEl) itemCurLocEl.textContent = item.location || 'Not Specified';
+    if (targetDeptSelect) targetDeptSelect.value = '';
+    if (newCustodianInput) newCustodianInput.value = '';
+    if (reasonInput) reasonInput.value = '';
+    if (alertBox) alertBox.style.display = 'none';
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+};
+
+window.closeTransferModal = function() {
+    const modal = document.getElementById('emp-transfer-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+    }
+};
+
+window.submitEquipmentTransfer = async function(event) {
+    event.preventDefault();
+    const itemId = document.getElementById('transfer-item-id')?.value;
+    const targetDept = document.getElementById('transfer-target-dept')?.value;
+    const newCustodian = document.getElementById('transfer-new-custodian')?.value?.trim();
+    const reason = document.getElementById('transfer-reason')?.value?.trim();
+    const alertBox = document.getElementById('transfer-alert');
+    const submitBtn = document.getElementById('submit-transfer-btn');
+
+    const item = inventoryData.find(i => String(i.id) === String(itemId));
+    if (!item) {
+        alert("Invalid item selected.");
+        return;
+    }
+
+    if (!targetDept || !newCustodian || !reason) {
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+            alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please fill in all required transfer fields.';
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    const transferId = database.ref('equipmentTransfers').push().key;
+    const transferPayload = {
+        id: transferId,
+        itemId: item.id,
+        article: item.article || '',
+        description: item.description || '',
+        propertyNo: item.propertyNo || '',
+        originLocation: item.location || currentEmployeeDept || 'GSO',
+        targetDepartment: targetDept,
+        previousCustodian: item.accountablePerson || '',
+        newCustodian: newCustodian,
+        reason: reason,
+        requestedByEmail: currentEmployeeEmail || 'employee@gso.com',
+        requestedByName: currentEmployeeName || 'Employee',
+        requesterDepartment: currentEmployeeDept || '',
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+    };
+
+    try {
+        await database.ref(`equipmentTransfers/${transferId}`).set(transferPayload);
+        
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('equipment_transfers').insert([transferPayload]);
+            } catch(e) {
+                console.warn("Supabase equipment_transfers mirror skipped:", e);
+            }
+        }
+
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(34, 197, 94, 0.15)';
+            alertBox.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+            alertBox.style.color = '#4ade80';
+            alertBox.innerHTML = '<i class="fas fa-check-circle"></i> Transfer request submitted successfully! Awaiting Admin approval.';
+        }
+
+        setTimeout(() => {
+            window.closeTransferModal();
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Transfer Request';
+            }
+        }, 1500);
+
+    } catch (err) {
+        console.error("Failed to submit transfer request:", err);
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+            alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            alertBox.style.color = '#f87171';
+            alertBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${err.message || 'Could not submit request.'}`;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Transfer Request';
+        }
+    }
+};

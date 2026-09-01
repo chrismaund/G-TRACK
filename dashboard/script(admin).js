@@ -993,6 +993,9 @@ function initUserProfilesListener() {
                                 <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
                             </button>
                         `}
+                        <button onclick="adminChangeUserDepartment('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(deptName)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                            <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
+                        </button>
                         <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
                         <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                             <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
@@ -1032,6 +1035,257 @@ function updateUserStatus(userId, newStatus) {
         console.error("Error updating user status: ", error);
     });
 }
+
+// Function for Admin to Reassign an Employee's Department
+window.adminChangeUserDepartment = function(userId, userName, currentDept) {
+    const departments = [
+        "ACCOUNTING", "ADMIN", "AGRI", "ASSESSOR", "BFP", "CCTV/IT", "COMELEC",
+        "DILG", "GSO", "HRMO", "LIGA", "MBO", "MCR", "MDRRMO", "MENRO", "MEO",
+        "MHO", "MPDO", "MSWDO", "MTC", "MTO", "OMM", "OMVM", "PNP", "SB", "SSB",
+        "TOURISM/CULTURAL", "TRAFFIC"
+    ];
+
+    const promptMsg = `Reassign Department for ${userName}:\n\nCurrent Department: ${currentDept || 'None'}\n\nEnter Department Code (e.g. ACCOUNTING, MDRRMO, GSO, OMM):`;
+    const chosen = prompt(promptMsg, currentDept || "GSO");
+    if (!chosen) return;
+
+    const formatted = chosen.trim().toUpperCase();
+    if (!departments.includes(formatted)) {
+        alert(`"${chosen}" is not a recognized Pagbilao Municipal Department. Please enter one of the 28 official municipal codes.`);
+        return;
+    }
+
+    db.collection("users").doc(userId).update({
+        department: formatted
+    })
+    .then(() => {
+        alert(`Successfully reassigned ${userName} to ${formatted}!`);
+    })
+    .catch((err) => {
+        alert("Error reassigning department: " + err.message);
+    });
+};
+
+// =========================================================================
+// PENDING REQUESTS & EQUIPMENT TRANSFER APPROVAL WORKFLOW
+// =========================================================================
+const pendingRequestsWrapper = document.getElementById('pending-requests-wrapper');
+const pendingRequestsLog = document.getElementById('pending-requests-log');
+const pendingRequestsBadge = document.getElementById('pending-requests-badge');
+
+window.toggleRequestsStack = function(forceOpen) {
+    if (sidebarDrawer && !sidebarDrawer.classList.contains('expanded')) {
+        sidebarDrawer.classList.add('expanded');
+        document.body.classList.add('sidebar-expanded');
+        localStorage.setItem('gtrack_sidebar_expanded', 'true');
+    }
+
+    if (pendingRequestsWrapper) {
+        if (forceOpen === true) {
+            pendingRequestsWrapper.classList.add('open');
+        } else {
+            pendingRequestsWrapper.classList.toggle('open');
+        }
+    }
+};
+
+function initRequestsListener() {
+    // 1. Listen for Equipment Transfer Requests
+    database.ref('equipmentTransfers').on('value', (snapshot) => {
+        renderAdminRequestsPanel();
+    });
+
+    // 2. Listen for Masterlist Requests
+    database.ref('masterlistRequests').on('value', (snapshot) => {
+        renderAdminRequestsPanel();
+    });
+}
+
+async function renderAdminRequestsPanel() {
+    if (!pendingRequestsLog) return;
+
+    try {
+        const [transfersSnap, masterlistSnap] = await Promise.all([
+            database.ref('equipmentTransfers').once('value'),
+            database.ref('masterlistRequests').once('value')
+        ]);
+
+        const allCards = [];
+        let pendingCount = 0;
+
+        // Process Equipment Transfers
+        if (transfersSnap.exists()) {
+            transfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqId = child.key;
+                if (req.status === 'Pending') pendingCount++;
+
+                allCards.push({
+                    id: reqId,
+                    type: 'transfer',
+                    data: req,
+                    time: req.createdAt ? new Date(req.createdAt).getTime() : 0
+                });
+            });
+        }
+
+        // Process Masterlist Requests
+        if (masterlistSnap.exists()) {
+            masterlistSnap.forEach((child) => {
+                const req = child.val();
+                const reqId = child.key;
+                if (req.status === 'Pending') pendingCount++;
+
+                allCards.push({
+                    id: reqId,
+                    type: 'masterlist',
+                    data: req,
+                    time: req.requestedAt ? new Date(req.requestedAt).getTime() : 0
+                });
+            });
+        }
+
+        if (pendingRequestsBadge) {
+            pendingRequestsBadge.textContent = pendingCount;
+            pendingRequestsBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
+
+        if (allCards.length === 0) {
+            pendingRequestsLog.innerHTML = `
+                <div style="padding: 18px 12px; text-align: center; color: #64748b; font-size: 11.5px;">
+                    <i class="far fa-bell-slash" style="font-size: 16px; display: block; margin-bottom: 6px;"></i>
+                    No pending requests.
+                </div>
+            `;
+            return;
+        }
+
+        allCards.sort((a, b) => b.time - a.time);
+
+        pendingRequestsLog.innerHTML = '';
+        allCards.forEach((item) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'history-item-card';
+            cardEl.style.cssText = 'background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 12px;';
+
+            if (item.type === 'transfer') {
+                const t = item.data;
+                const isPending = t.status === 'Pending';
+                cardEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                        <span style="font-weight: 700; color: #38bdf8; font-size: 11.5px;">
+                            <i class="fas fa-exchange-alt"></i> Transfer Request
+                        </span>
+                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : (t.status === 'Approved' ? 'background: rgba(34,197,94,0.2); color: #86efac;' : 'background: rgba(239,68,68,0.2); color: #fca5a5;')}">
+                            ${sanitizeText(t.status || 'Pending')}
+                        </span>
+                    </div>
+                    <div style="font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${sanitizeText(t.article || 'Equipment')}</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">Prop #: ${sanitizeText(t.propertyNo || '-')}</div>
+                    <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 6px 8px; font-size: 11px; margin-bottom: 6px; color: #cbd5e1;">
+                        <div><strong>From:</strong> ${sanitizeText(t.originLocation || '-')}</div>
+                        <div><strong>To:</strong> <span style="color: #38bdf8; font-weight: 700;">${sanitizeText(t.targetDepartment || '-')}</span></div>
+                        <div><strong>New Custodian:</strong> ${sanitizeText(t.newCustodian || '-')}</div>
+                        <div style="margin-top: 2px; color: #94a3b8;"><em>"${sanitizeText(t.reason || '')}"</em></div>
+                    </div>
+                    ${isPending ? `
+                        <div style="display: flex; gap: 6px; margin-top: 6px;">
+                            <button onclick="approveEquipmentTransfer('${item.id}', '${t.itemId}', '${t.targetDepartment}', '${sanitizeText(t.newCustodian)}')" style="flex: 1; background: #0284c7; color: #fff; border: none; padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button onclick="rejectEquipmentTransfer('${item.id}')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                Reject
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+            } else {
+                const m = item.data;
+                const isPending = m.status === 'Pending' || m.status === 'pending';
+                cardEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: 700; color: #a78bfa; font-size: 11.5px;">
+                            <i class="fas fa-file-export"></i> Masterlist Copy
+                        </span>
+                        <span style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; ${isPending ? 'background: rgba(234,179,8,0.2); color: #fde047;' : 'background: rgba(34,197,94,0.2); color: #86efac;'}">
+                            ${sanitizeText(m.status || 'Pending')}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: #cbd5e1;">Requested by: <strong>${sanitizeText(m.userName || m.user || 'Staff')}</strong></div>
+                    <div style="font-size: 10.5px; color: #64748b;">${sanitizeText(m.time || '')}</div>
+                `;
+            }
+
+            pendingRequestsLog.appendChild(cardEl);
+        });
+
+    } catch (e) {
+        console.error("Error rendering admin requests panel:", e);
+    }
+}
+
+window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian) {
+    if (!confirm(`Approve transfer of this equipment to ${newDept} (Custodian: ${newCustodian})?`)) return;
+
+    try {
+        // 1. Update Inventory in Supabase
+        if (supabaseClient && itemId) {
+            try {
+                await supabaseClient.from('inventory').update({
+                    location: newDept,
+                    accountable_person: newCustodian
+                }).eq('id', itemId);
+            } catch(err) {
+                console.warn("Supabase item update fallback:", err);
+            }
+        }
+
+        // 2. Update Inventory in Firebase Realtime Database
+        if (itemId) {
+            await database.ref(`inventoryData/${itemId}`).update({
+                location: newDept,
+                accountablePerson: newCustodian
+            });
+        }
+
+        // 3. Update local array so UI updates instantly
+        const localItem = inventoryData.find(i => String(i.id) === String(itemId));
+        if (localItem) {
+            localItem.location = newDept;
+            localItem.accountablePerson = newCustodian;
+        }
+
+        // 4. Mark Transfer Request as Approved
+        await database.ref(`equipmentTransfers/${transferId}`).update({
+            status: 'Approved',
+            approvedAt: new Date().toISOString()
+        });
+
+        alert(`Transfer approved! Equipment location updated to ${newDept}.`);
+        renderTable();
+        renderAdminRequestsPanel();
+
+    } catch (err) {
+        console.error("Error approving transfer:", err);
+        alert("Could not approve transfer: " + err.message);
+    }
+};
+
+window.rejectEquipmentTransfer = async function(transferId) {
+    if (!confirm("Are you sure you want to reject this equipment transfer request?")) return;
+
+    try {
+        await database.ref(`equipmentTransfers/${transferId}`).update({
+            status: 'Rejected',
+            rejectedAt: new Date().toISOString()
+        });
+        renderAdminRequestsPanel();
+    } catch (err) {
+        alert("Error rejecting transfer: " + err.message);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', initRequestsListener);
 // =========================================================================
 // CSV EXPORT LOGIC
 // =========================================================================
