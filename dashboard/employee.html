@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=2.1">
+    <link rel="stylesheet" href="style(admin).css?v=2.5">
 </head>
 <body>
 
@@ -377,42 +377,140 @@
 
                 <!-- Municipal Department / Office (Transferrable / Reassignable) -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span>Municipal Department / Office</span>
                         <span style="font-size: 10.5px; color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                             <i class="fas fa-building" style="font-size: 10px;"></i> Assigned Office
                         </span>
                     </label>
-                    <select id="profile-dept-select" required style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; outline: none; cursor: pointer; font-family: inherit;">
-                        <option value="ACCOUNTING">Municipal Accounting Office (ACCOUNTING)</option>
-                        <option value="ADMIN">Municipal Administrator's Office (ADMIN)</option>
-                        <option value="AGRI">Municipal Agriculture Office (AGRI)</option>
-                        <option value="ASSESSOR">Municipal Assessor's Office (ASSESSOR)</option>
-                        <option value="BFP">Bureau of Fire Protection (BFP)</option>
-                        <option value="CCTV/IT">CCTV / IT Unit (CCTV/IT)</option>
-                        <option value="COMELEC">Commission on Elections (COMELEC)</option>
-                        <option value="DILG">Dept. of the Interior &amp; Local Govt. (DILG)</option>
-                        <option value="GSO">General Services Office (GSO)</option>
-                        <option value="HRMO">Human Resource &amp; Management Office (HRMO)</option>
-                        <option value="LIGA">Liga ng mga Barangay (LIGA)</option>
-                        <option value="MBO">Municipal Budget Office (MBO)</option>
-                        <option value="MCR">Municipal Civil Registry (MCR)</option>
-                        <option value="MDRRMO">Disaster Risk Reduction &amp; Management (MDRRMO)</option>
-                        <option value="MENRO">Environment &amp; Natural Resources (MENRO)</option>
-                        <option value="MEO">Municipal Engineering Office (MEO)</option>
-                        <option value="MHO">Municipal Health Office (MHO)</option>
-                        <option value="MPDO">Planning &amp; Development Office (MPDO)</option>
-                        <option value="MSWDO">Social Welfare &amp; Development Office (MSWDO)</option>
-                        <option value="MTC">Municipal Trial Court (MTC)</option>
-                        <option value="MTO">Municipal Treasurer's Office (MTO)</option>
-                        <option value="OMM">Office of the Municipal Mayor (OMM)</option>
-                        <option value="OMVM">Office of the Municipal Vice-Mayor (OMVM)</option>
-                        <option value="PNP">Philippine National Police (PNP)</option>
-                        <option value="SB">Sangguniang Bayan Office (SB)</option>
-                        <option value="SSB">Secretary to the Sangguniang Bayan (SSB)</option>
-                        <option value="TOURISM/CULTURAL">Tourism &amp; Cultural Affairs (TOURISM)</option>
-                        <option value="TRAFFIC">Municipal Traffic Management Office (TRAFFIC)</option>
-                    </select>
+                    <div class="custom-select-wrapper" id="profileDeptSelectWrapper">
+                        <input type="hidden" id="profile-dept-select" required>
+                        <div class="custom-select-trigger" id="profileDeptTrigger" onclick="toggleCustomDropdown(event, 'profileDeptSelectWrapper', 'profileDeptSearchInput')">
+                            <i class="fas fa-building input-icon"></i>
+                            <span class="custom-select-text" id="profileDeptText">Select Municipal Department</span>
+                            <i class="fas fa-chevron-down select-chevron"></i>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="dept-search-wrapper" onclick="event.stopPropagation()">
+                                <i class="fas fa-search dept-search-icon"></i>
+                                <input type="text" id="profileDeptSearchInput" placeholder="Type to search department..." oninput="filterCustomDropdownOptions(this.value, 'profileDeptOptionsList')" autocomplete="off">
+                            </div>
+                            <div class="dept-options-list" id="profileDeptOptionsList">
+                                <div class="custom-option" data-value="ACCOUNTING" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'ACCOUNTING', 'Municipal Accounting Office (ACCOUNTING)')">
+                                    <span class="opt-label">Municipal Accounting Office (ACCOUNTING)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="ADMIN" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'ADMIN', 'Municipal Administrator\'s Office (ADMIN)')">
+                                    <span class="opt-label">Municipal Administrator's Office (ADMIN)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="AGRI" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'AGRI', 'Municipal Agriculture Office (AGRI)')">
+                                    <span class="opt-label">Municipal Agriculture Office (AGRI)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="ASSESSOR" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'ASSESSOR', 'Municipal Assessor\'s Office (ASSESSOR)')">
+                                    <span class="opt-label">Municipal Assessor's Office (ASSESSOR)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="BFP" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'BFP', 'Bureau of Fire Protection (BFP)')">
+                                    <span class="opt-label">Bureau of Fire Protection (BFP)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="CCTV/IT" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'CCTV/IT', 'CCTV / IT Unit (CCTV/IT)')">
+                                    <span class="opt-label">CCTV / IT Unit (CCTV/IT)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="COMELEC" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'COMELEC', 'Commission on Elections (COMELEC)')">
+                                    <span class="opt-label">Commission on Elections (COMELEC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="DILG" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'DILG', 'Dept. of the Interior & Local Govt. (DILG)')">
+                                    <span class="opt-label">Dept. of the Interior &amp; Local Govt. (DILG)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="GSO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'GSO', 'General Services Office (GSO)')">
+                                    <span class="opt-label">General Services Office (GSO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="HRMO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'HRMO', 'Human Resource & Management Office (HRMO)')">
+                                    <span class="opt-label">Human Resource &amp; Management Office (HRMO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="LIGA" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'LIGA', 'Liga ng mga Barangay (LIGA)')">
+                                    <span class="opt-label">Liga ng mga Barangay (LIGA)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MBO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MBO', 'Municipal Budget Office (MBO)')">
+                                    <span class="opt-label">Municipal Budget Office (MBO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MCR" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MCR', 'Municipal Civil Registry (MCR)')">
+                                    <span class="opt-label">Municipal Civil Registry (MCR)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MDRRMO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MDRRMO', 'Disaster Risk Reduction & Management (MDRRMO)')">
+                                    <span class="opt-label">Disaster Risk Reduction &amp; Management (MDRRMO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MENRO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MENRO', 'Environment & Natural Resources (MENRO)')">
+                                    <span class="opt-label">Environment &amp; Natural Resources (MENRO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MEO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MEO', 'Municipal Engineering Office (MEO)')">
+                                    <span class="opt-label">Municipal Engineering Office (MEO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MHO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MHO', 'Municipal Health Office (MHO)')">
+                                    <span class="opt-label">Municipal Health Office (MHO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MPDO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MPDO', 'Planning & Development Office (MPDO)')">
+                                    <span class="opt-label">Planning &amp; Development Office (MPDO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MSWDO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MSWDO', 'Social Welfare & Development Office (MSWDO)')">
+                                    <span class="opt-label">Social Welfare &amp; Development Office (MSWDO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MTC" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MTC', 'Municipal Trial Court (MTC)')">
+                                    <span class="opt-label">Municipal Trial Court (MTC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MTO" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'MTO', 'Municipal Treasurer\'s Office (MTO)')">
+                                    <span class="opt-label">Municipal Treasurer's Office (MTO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="OMM" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'OMM', 'Office of the Municipal Mayor (OMM)')">
+                                    <span class="opt-label">Office of the Municipal Mayor (OMM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="OMVM" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'OMVM', 'Office of the Municipal Vice-Mayor (OMVM)')">
+                                    <span class="opt-label">Office of the Municipal Vice-Mayor (OMVM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="PNP" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'PNP', 'Philippine National Police (PNP)')">
+                                    <span class="opt-label">Philippine National Police (PNP)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="SB" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'SB', 'Sangguniang Bayan Office (SB)')">
+                                    <span class="opt-label">Sangguniang Bayan Office (SB)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="SSB" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'SSB', 'Secretary to the Sangguniang Bayan (SSB)')">
+                                    <span class="opt-label">Secretary to the Sangguniang Bayan (SSB)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="TOURISM/CULTURAL" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'TOURISM/CULTURAL', 'Tourism & Cultural Affairs (TOURISM)')">
+                                    <span class="opt-label">Tourism &amp; Cultural Affairs (TOURISM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="TRAFFIC" onclick="selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', 'TRAFFIC', 'Municipal Traffic Management Office (TRAFFIC)')">
+                                    <span class="opt-label">Municipal Traffic Management Office (TRAFFIC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; margin-bottom: 16px;">
@@ -450,23 +548,23 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- EQUIPMENT TRANSFER REQUEST MODAL (PTR WORKFLOW) -->
+    <!-- EQUIPMENT TRANSFER REQUEST MODAL (RIGHT-SLIDING DRAWER) -->
     <!-- ========================================================================= -->
-    <div id="emp-transfer-modal" class="modal-overlay hidden" style="z-index: 1050;">
-        <div class="modal-card" style="position: relative; max-width: 480px;">
-            <button type="button" onclick="closeTransferModal()" class="modal-close-btn" aria-label="Close transfer modal">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="modal-header" style="padding-right: 40px;">
+    <div id="emp-transfer-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;">
                         <i class="fas fa-exchange-alt"></i>
                     </div>
                     <div>
                         <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">Equipment Transfer Request</h3>
-                        <span style="font-size: 11.5px; color: #94a3b8;">Request equipment transfer to another department</span>
+                        <span style="font-size: 11px; color: #94a3b8;">Request equipment transfer to another department</span>
                     </div>
                 </div>
+                <button type="button" onclick="closeTransferModal()" class="modal-close-btn" aria-label="Close transfer drawer">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <form id="emp-transfer-form" class="modal-body" onsubmit="submitEquipmentTransfer(event)">
@@ -477,59 +575,156 @@
 
                 <!-- Selected Equipment Item Summary -->
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Selected Equipment</div>
-                    <div id="transfer-item-name" style="font-size: 13.5px; font-weight: 700; color: #f8fafc; margin-bottom: 2px;">-</div>
-                    <div style="display: flex; gap: 12px; font-size: 11.5px; color: #94a3b8;">
-                        <span>Property No: <strong id="transfer-item-propno" style="color: #38bdf8;">-</strong></span>
-                        <span>Current Location: <strong id="transfer-item-curloc" style="color: #cbd5e1;">-</strong></span>
+                    <div style="font-size: 10.5px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Selected Equipment</div>
+                    <div id="transfer-item-name" style="font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 3px;">-</div>
+                    <div style="display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #94a3b8;">
+                        <div>Property No: <strong id="transfer-item-propno" style="color: #38bdf8;">-</strong></div>
+                        <div>Current Location: <strong id="transfer-item-curloc" style="color: #cbd5e1;">-</strong></div>
                     </div>
                 </div>
 
                 <!-- Destination Municipal Department -->
                 <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="transfer-target-dept">Transfer To Department / Office <span style="color: #ef4444;">*</span></label>
-                    <select id="transfer-target-dept" required style="width: 100%; padding: 10px 12px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; outline: none; cursor: pointer; font-family: inherit;">
-                        <option value="" disabled selected>Select Destination Department</option>
-                        <option value="ACCOUNTING">Municipal Accounting Office (ACCOUNTING)</option>
-                        <option value="ADMIN">Municipal Administrator's Office (ADMIN)</option>
-                        <option value="AGRI">Municipal Agriculture Office (AGRI)</option>
-                        <option value="ASSESSOR">Municipal Assessor's Office (ASSESSOR)</option>
-                        <option value="BFP">Bureau of Fire Protection (BFP)</option>
-                        <option value="CCTV/IT">CCTV / IT Unit (CCTV/IT)</option>
-                        <option value="COMELEC">Commission on Elections (COMELEC)</option>
-                        <option value="DILG">Dept. of the Interior &amp; Local Govt. (DILG)</option>
-                        <option value="GSO">General Services Office (GSO)</option>
-                        <option value="HRMO">Human Resource &amp; Management Office (HRMO)</option>
-                        <option value="LIGA">Liga ng mga Barangay (LIGA)</option>
-                        <option value="MBO">Municipal Budget Office (MBO)</option>
-                        <option value="MCR">Municipal Civil Registry (MCR)</option>
-                        <option value="MDRRMO">Disaster Risk Reduction &amp; Management (MDRRMO)</option>
-                        <option value="MENRO">Environment &amp; Natural Resources (MENRO)</option>
-                        <option value="MEO">Municipal Engineering Office (MEO)</option>
-                        <option value="MHO">Municipal Health Office (MHO)</option>
-                        <option value="MPDO">Planning &amp; Development Office (MPDO)</option>
-                        <option value="MSWDO">Social Welfare &amp; Development Office (MSWDO)</option>
-                        <option value="MTC">Municipal Trial Court (MTC)</option>
-                        <option value="MTO">Municipal Treasurer's Office (MTO)</option>
-                        <option value="OMM">Office of the Municipal Mayor (OMM)</option>
-                        <option value="OMVM">Office of the Municipal Vice-Mayor (OMVM)</option>
-                        <option value="PNP">Philippine National Police (PNP)</option>
-                        <option value="SB">Sangguniang Bayan Office (SB)</option>
-                        <option value="SSB">Secretary to the Sangguniang Bayan (SSB)</option>
-                        <option value="TOURISM/CULTURAL">Tourism &amp; Cultural Affairs (TOURISM)</option>
-                        <option value="TRAFFIC">Municipal Traffic Management Office (TRAFFIC)</option>
-                    </select>
+                    <label for="transfer-target-dept" style="margin-bottom: 6px; display: block; font-size: 12px;">Transfer To Department / Office <span style="color: #ef4444;">*</span></label>
+                    <div class="custom-select-wrapper" id="transferDeptSelectWrapper">
+                        <input type="hidden" id="transfer-target-dept" required>
+                        <div class="custom-select-trigger" id="transferDeptTrigger" onclick="toggleCustomDropdown(event, 'transferDeptSelectWrapper', 'transferDeptSearchInput')">
+                            <i class="fas fa-building input-icon"></i>
+                            <span class="custom-select-text" id="transferDeptText">Select Destination Department</span>
+                            <i class="fas fa-chevron-down select-chevron"></i>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="dept-search-wrapper" onclick="event.stopPropagation()">
+                                <i class="fas fa-search dept-search-icon"></i>
+                                <input type="text" id="transferDeptSearchInput" placeholder="Type to search department..." oninput="filterCustomDropdownOptions(this.value, 'transferDeptOptionsList')" autocomplete="off">
+                            </div>
+                            <div class="dept-options-list" id="transferDeptOptionsList">
+                                <div class="custom-option" data-value="ACCOUNTING" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'ACCOUNTING', 'Municipal Accounting Office (ACCOUNTING)')">
+                                    <span class="opt-label">Municipal Accounting Office (ACCOUNTING)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="ADMIN" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'ADMIN', 'Municipal Administrator\'s Office (ADMIN)')">
+                                    <span class="opt-label">Municipal Administrator's Office (ADMIN)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="AGRI" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'AGRI', 'Municipal Agriculture Office (AGRI)')">
+                                    <span class="opt-label">Municipal Agriculture Office (AGRI)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="ASSESSOR" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'ASSESSOR', 'Municipal Assessor\'s Office (ASSESSOR)')">
+                                    <span class="opt-label">Municipal Assessor's Office (ASSESSOR)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="BFP" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'BFP', 'Bureau of Fire Protection (BFP)')">
+                                    <span class="opt-label">Bureau of Fire Protection (BFP)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="CCTV/IT" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'CCTV/IT', 'CCTV / IT Unit (CCTV/IT)')">
+                                    <span class="opt-label">CCTV / IT Unit (CCTV/IT)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="COMELEC" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'COMELEC', 'Commission on Elections (COMELEC)')">
+                                    <span class="opt-label">Commission on Elections (COMELEC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="DILG" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'DILG', 'Dept. of the Interior & Local Govt. (DILG)')">
+                                    <span class="opt-label">Dept. of the Interior &amp; Local Govt. (DILG)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="GSO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'GSO', 'General Services Office (GSO)')">
+                                    <span class="opt-label">General Services Office (GSO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="HRMO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'HRMO', 'Human Resource & Management Office (HRMO)')">
+                                    <span class="opt-label">Human Resource &amp; Management Office (HRMO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="LIGA" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'LIGA', 'Liga ng mga Barangay (LIGA)')">
+                                    <span class="opt-label">Liga ng mga Barangay (LIGA)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MBO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MBO', 'Municipal Budget Office (MBO)')">
+                                    <span class="opt-label">Municipal Budget Office (MBO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MCR" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MCR', 'Municipal Civil Registry (MCR)')">
+                                    <span class="opt-label">Municipal Civil Registry (MCR)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MDRRMO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MDRRMO', 'Disaster Risk Reduction & Management (MDRRMO)')">
+                                    <span class="opt-label">Disaster Risk Reduction &amp; Management (MDRRMO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MENRO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MENRO', 'Environment & Natural Resources (MENRO)')">
+                                    <span class="opt-label">Environment &amp; Natural Resources (MENRO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MEO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MEO', 'Municipal Engineering Office (MEO)')">
+                                    <span class="opt-label">Municipal Engineering Office (MEO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MHO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MHO', 'Municipal Health Office (MHO)')">
+                                    <span class="opt-label">Municipal Health Office (MHO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MPDO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MPDO', 'Planning & Development Office (MPDO)')">
+                                    <span class="opt-label">Planning &amp; Development Office (MPDO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MSWDO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MSWDO', 'Social Welfare & Development Office (MSWDO)')">
+                                    <span class="opt-label">Social Welfare &amp; Development Office (MSWDO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MTC" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MTC', 'Municipal Trial Court (MTC)')">
+                                    <span class="opt-label">Municipal Trial Court (MTC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="MTO" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'MTO', 'Municipal Treasurer\'s Office (MTO)')">
+                                    <span class="opt-label">Municipal Treasurer's Office (MTO)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="OMM" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'OMM', 'Office of the Municipal Mayor (OMM)')">
+                                    <span class="opt-label">Office of the Municipal Mayor (OMM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="OMVM" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'OMVM', 'Office of the Municipal Vice-Mayor (OMVM)')">
+                                    <span class="opt-label">Office of the Municipal Vice-Mayor (OMVM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="PNP" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'PNP', 'Philippine National Police (PNP)')">
+                                    <span class="opt-label">Philippine National Police (PNP)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="SB" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'SB', 'Sangguniang Bayan Office (SB)')">
+                                    <span class="opt-label">Sangguniang Bayan Office (SB)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="SSB" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'SSB', 'Secretary to the Sangguniang Bayan (SSB)')">
+                                    <span class="opt-label">Secretary to the Sangguniang Bayan (SSB)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="TOURISM/CULTURAL" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'TOURISM/CULTURAL', 'Tourism & Cultural Affairs (TOURISM)')">
+                                    <span class="opt-label">Tourism &amp; Cultural Affairs (TOURISM)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                                <div class="custom-option" data-value="TRAFFIC" onclick="selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', 'TRAFFIC', 'Municipal Traffic Management Office (TRAFFIC)')">
+                                    <span class="opt-label">Municipal Traffic Management Office (TRAFFIC)</span>
+                                    <i class="fas fa-check opt-check"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Receiving Custodian / Accountable Person -->
                 <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="transfer-new-custodian">New Receiving Custodian / Accountable Person <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="transfer-new-custodian" required placeholder="e.g. Maria Santos" style="width: 100%; padding: 10px 12px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; outline: none; font-family: inherit;">
+                    <label for="transfer-new-custodian" style="margin-bottom: 6px; display: block; font-size: 12px;">New Receiving Custodian / Accountable Person <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="transfer-new-custodian" required placeholder="e.g. Maria Santos" style="width: 100%; padding: 10px 12px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; outline: none; font-family: inherit; box-sizing: border-box;">
                 </div>
 
                 <!-- Transfer Reason / Justification -->
                 <div class="form-group" style="margin-bottom: 18px;">
-                    <label for="transfer-reason">Reason for Equipment Transfer <span style="color: #ef4444;">*</span></label>
+                    <label for="transfer-reason" style="margin-bottom: 6px; display: block; font-size: 12px;">Reason for Equipment Transfer <span style="color: #ef4444;">*</span></label>
                     <textarea id="transfer-reason" required rows="3" placeholder="State the reason for transfer (e.g. Office reassignment, inter-department loan, etc.)..." style="width: 100%; padding: 10px 12px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; outline: none; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                 </div>
 
@@ -544,7 +739,6 @@
             </form>
         </div>
     </div>
-
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -554,7 +748,7 @@
     <!-- Supabase JS SDK (For Masterlist & Requests) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="script(emp).js?v=2.1"></script>
+    <script src="script(emp).js?v=2.5"></script>
 
 </body>
 </html>

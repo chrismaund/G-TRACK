@@ -896,6 +896,9 @@ window.openEmpProfileModal = function() {
         if (emailInput.tagName === 'INPUT') emailInput.value = currentEmployeeEmail;
         else emailInput.textContent = currentEmployeeEmail;
     }
+    if (window.selectCustomDept) {
+        window.selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', currentEmployeeDept || '', currentEmployeeDept ? `${currentEmployeeDept}` : 'Select Municipal Department');
+    }
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
@@ -1283,7 +1286,88 @@ setupConditionDropdown();
 renderHistory();
 
 // =========================================================================
-// EQUIPMENT TRANSFER REQUEST (PTR WORKFLOW)
+// CUSTOM SEARCHABLE DEPARTMENT DROPDOWN HELPERS
+// =========================================================================
+window.toggleCustomDropdown = function(event, wrapperId, searchInputId) {
+    if (event) event.stopPropagation();
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const wasOpen = wrapper.classList.contains('open');
+
+    // Close any other open custom dropdowns
+    document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+        if (el !== wrapper) el.classList.remove('open');
+    });
+
+    if (wasOpen) {
+        wrapper.classList.remove('open');
+    } else {
+        wrapper.classList.add('open');
+        if (searchInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            if (searchInput) {
+                setTimeout(() => searchInput.focus(), 80);
+            }
+        }
+    }
+};
+
+window.filterCustomDropdownOptions = function(query, listId) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const options = list.querySelectorAll('.custom-option');
+    options.forEach(opt => {
+        const text = opt.textContent.toLowerCase();
+        opt.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+    });
+};
+
+window.selectCustomDept = function(hiddenInputId, textSpanId, triggerId, wrapperId, value, label) {
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const textSpan = document.getElementById(textSpanId);
+    const trigger = document.getElementById(triggerId);
+    const wrapper = document.getElementById(wrapperId);
+
+    if (hiddenInput) {
+        hiddenInput.value = value;
+        hiddenInput.dispatchEvent(new Event('change'));
+    }
+
+    if (textSpan) {
+        textSpan.textContent = label || value || 'Select Municipal Department';
+    }
+
+    if (trigger) {
+        if (value) trigger.classList.add('selected');
+        else trigger.classList.remove('selected');
+    }
+
+    if (wrapper) {
+        wrapper.classList.remove('open');
+        wrapper.querySelectorAll('.custom-option').forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
+};
+
+// Close dropdowns on outside click
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-select-wrapper')) {
+        document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+            el.classList.remove('open');
+        });
+    }
+});
+
+// =========================================================================
+// EQUIPMENT TRANSFER REQUEST (PTR WORKFLOW - RIGHT-SLIDING DRAWER)
 // =========================================================================
 window.openTransferModal = function(itemId) {
     const item = inventoryData.find(i => String(i.id) === String(itemId));
@@ -1297,7 +1381,6 @@ window.openTransferModal = function(itemId) {
     const itemNameEl = document.getElementById('transfer-item-name');
     const itemPropNoEl = document.getElementById('transfer-item-propno');
     const itemCurLocEl = document.getElementById('transfer-item-curloc');
-    const targetDeptSelect = document.getElementById('transfer-target-dept');
     const newCustodianInput = document.getElementById('transfer-new-custodian');
     const reasonInput = document.getElementById('transfer-reason');
     const alertBox = document.getElementById('transfer-alert');
@@ -1306,13 +1389,19 @@ window.openTransferModal = function(itemId) {
     if (itemNameEl) itemNameEl.textContent = `${item.article || 'Equipment'} - ${item.description || ''}`;
     if (itemPropNoEl) itemPropNoEl.textContent = item.propertyNo || 'N/A';
     if (itemCurLocEl) itemCurLocEl.textContent = item.location || 'Not Specified';
-    if (targetDeptSelect) targetDeptSelect.value = '';
+    
+    // Reset custom select
+    window.selectCustomDept('transfer-target-dept', 'transferDeptText', 'transferDeptTrigger', 'transferDeptSelectWrapper', '', 'Select Destination Department');
+    
     if (newCustodianInput) newCustodianInput.value = '';
     if (reasonInput) reasonInput.value = '';
     if (alertBox) alertBox.style.display = 'none';
 
     if (modal) {
         modal.classList.remove('hidden');
+        // Force reflow for smooth right-slide transition
+        void modal.offsetWidth;
+        modal.classList.add('open');
         document.body.classList.add('modal-open');
     }
 };
@@ -1320,7 +1409,12 @@ window.openTransferModal = function(itemId) {
 window.closeTransferModal = function() {
     const modal = document.getElementById('emp-transfer-modal');
     if (modal) {
-        modal.classList.add('hidden');
+        modal.classList.remove('open');
+        setTimeout(() => {
+            if (!modal.classList.contains('open')) {
+                modal.classList.add('hidden');
+            }
+        }, 350);
         document.body.classList.remove('modal-open');
     }
 };
