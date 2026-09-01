@@ -1148,17 +1148,17 @@ body,
     left: 0; 
 }
 
-/* Admin Reassign Department Connected Sliding Drawer (Attaches to edge of User Profiles) */
+/* Admin Reassign Department Right-Sized Floating Connected Card */
 #admin-reassign-modal.modal-overlay { 
     justify-content: flex-start; 
-    align-items: stretch; 
+    align-items: flex-start; 
     z-index: 1150; 
     opacity: 0;
     pointer-events: none;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: opacity 0.25s ease;
 }
 
 #admin-reassign-modal.modal-overlay.open {
@@ -1168,33 +1168,29 @@ body,
 
 #admin-reassign-modal .modal-card { 
     position: fixed; 
-    top: 0; 
-    width: 440px; 
+    top: 90px; 
+    width: 390px; 
     max-width: 90vw; 
-    height: 100vh; 
-    max-height: 100vh; 
-    background: #0b1120; 
-    border-left: 1px solid rgba(56, 189, 248, 0.35); 
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
-    border-top: none;
-    border-bottom: none;
-    border-radius: 0; 
-    box-shadow: 16px 0 48px rgba(0, 0, 0, 0.8), -8px 0 24px rgba(0, 0, 0, 0.5); 
-    padding: 24px 24px 28px 24px; 
+    height: auto; 
+    max-height: calc(100vh - 40px); 
+    background: #0f172a; 
+    border: 1px solid rgba(56, 189, 248, 0.4); 
+    border-radius: 12px; 
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(56, 189, 248, 0.2); 
+    padding: 20px 22px 22px 22px; 
     display: flex; 
     flex-direction: column; 
     z-index: 1155; 
-    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; 
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, top 0.2s ease; 
     box-sizing: border-box; 
-    overflow-y: auto; 
-    scrollbar-width: none;
+    overflow: visible !important; 
     color: #f8fafc;
 }
 
-@media (min-width: 1260px) {
+@media (min-width: 1200px) {
     #admin-reassign-modal .modal-card {
-        left: 780px;
-        transform: translateX(-40px);
+        left: 790px;
+        transform: translateX(-24px);
         opacity: 0;
     }
     #admin-reassign-modal.open .modal-card {
@@ -1203,15 +1199,17 @@ body,
     }
 }
 
-@media (max-width: 1259px) {
+@media (max-width: 1199px) {
     #admin-reassign-modal .modal-card {
         left: auto;
-        right: -460px;
-        transform: none;
-        opacity: 1;
+        right: 20px;
+        top: 80px;
+        transform: translateY(-10px);
+        opacity: 0;
     }
     #admin-reassign-modal.open .modal-card {
-        right: 0;
+        transform: translateY(0);
+        opacity: 1;
     }
 }
 
@@ -1220,14 +1218,14 @@ body,
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 14px;
-    margin-bottom: 18px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
     flex-shrink: 0;
 }
 
 #admin-reassign-modal .modal-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: #ffffff;
     letter-spacing: -0.2px;
@@ -1237,7 +1235,7 @@ body,
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: visible;
+    overflow: visible !important;
 }
 
 #profiles-modal .modal-header {

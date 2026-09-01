@@ -993,7 +993,7 @@ function initUserProfilesListener() {
                                 <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
                             </button>
                         `}
-                        <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                        <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                             <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
                         </button>
                         <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
@@ -1039,7 +1039,7 @@ function updateUserStatus(userId, newStatus) {
 // =========================================================================
 // ADMIN REASSIGN EMPLOYEE DEPARTMENT MODAL LOGIC
 // =========================================================================
-window.openAdminReassignModal = function(userId, userName, userEmail, currentDept) {
+window.openAdminReassignModal = function(userId, userName, userEmail, currentDept, clickEvent) {
     const modal = document.getElementById('admin-reassign-modal');
     const userIdInput = document.getElementById('reassign-user-id');
     const nameEl = document.getElementById('reassign-staff-name');
@@ -1047,6 +1047,7 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
     const currentDeptEl = document.getElementById('reassign-staff-current-dept');
     const alertBox = document.getElementById('admin-reassign-alert');
     const saveBtn = document.getElementById('save-reassign-btn');
+    const modalCard = modal ? modal.querySelector('.modal-card') : null;
 
     if (userIdInput) userIdInput.value = userId;
     if (nameEl) nameEl.textContent = userName || 'Staff Member';
@@ -1057,6 +1058,17 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
     if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-check"></i> Reassign Department';
+    }
+
+    // Dynamically align card vertically to the clicked row
+    if (modalCard) {
+        if (clickEvent && clickEvent.clientY && window.innerWidth >= 1200) {
+            let targetTop = clickEvent.clientY - 60;
+            targetTop = Math.max(30, Math.min(window.innerHeight - 420, targetTop));
+            modalCard.style.top = `${targetTop}px`;
+        } else {
+            modalCard.style.top = '90px';
+        }
     }
 
     // Reset dropdown to current or placeholder
