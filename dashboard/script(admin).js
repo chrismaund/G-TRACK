@@ -1090,11 +1090,22 @@ window.toggleAdminCustomDropdown = function(event, wrapperId, searchInputId) {
         wrapper.classList.remove('open');
     } else {
         wrapper.classList.add('open');
+
+        // Reset search input and show all 28 options
         if (searchInputId) {
             const searchInput = document.getElementById(searchInputId);
             if (searchInput) {
-                setTimeout(() => searchInput.focus(), 80);
+                searchInput.value = '';
+                setTimeout(() => searchInput.focus(), 60);
             }
+        }
+
+        const optionsList = wrapper.querySelector('.dept-options-list');
+        if (optionsList) {
+            optionsList.querySelectorAll('.custom-option').forEach(opt => {
+                opt.style.display = 'flex';
+            });
+            optionsList.scrollTop = 0;
         }
     }
 };
@@ -1133,13 +1144,22 @@ window.selectAdminCustomDept = function(hiddenInputId, textSpanId, triggerId, wr
 
     if (wrapper) {
         wrapper.classList.remove('open');
-        wrapper.querySelectorAll('.custom-option').forEach(opt => {
-            if (opt.getAttribute('data-value') === value) {
-                opt.classList.add('selected');
-            } else {
-                opt.classList.remove('selected');
-            }
-        });
+
+        // Clear search input and restore all options visibility for next open
+        const searchInput = wrapper.querySelector('.dept-search-wrapper input');
+        if (searchInput) searchInput.value = '';
+
+        const optionsList = wrapper.querySelector('.dept-options-list');
+        if (optionsList) {
+            optionsList.querySelectorAll('.custom-option').forEach(opt => {
+                opt.style.display = 'flex';
+                if (opt.getAttribute('data-value') === value) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+        }
     }
 };
 
