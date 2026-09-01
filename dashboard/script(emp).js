@@ -39,16 +39,18 @@ let currentEmployeeName = "";
 let currentEmployeeUid = "";
 let currentEmployeeCreatedAt = "";
 let currentEmployeeDept = "";
+let isMyAssignmentsActive = false;
 
 // =========================================================================
 // AUTHENTICATION GUARD & LIVE REAL-TIME SESSION/ROLE LISTENER (EMPLOYEE)
 // =========================================================================
 let userDocUnsubscribe = null;
-let roleElevationListener = null;
+let currentRoleElevationQuery = null;
 
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
         if (userDocUnsubscribe) userDocUnsubscribe();
+        if (currentRoleElevationQuery) currentRoleElevationQuery.off();
         sessionStorage.clear();
         window.location.replace("../login/index.html");
         return;
@@ -1274,7 +1276,6 @@ window.openRequestHistory = function() {
 };
 
 // Helper: Toggle My Assigned Items filter
-let isMyAssignmentsActive = false;
 window.toggleMyAssignmentsFilter = function() {
     isMyAssignmentsActive = !isMyAssignmentsActive;
     const btn = document.getElementById('my-assignments-btn');
@@ -1751,7 +1752,12 @@ function checkAdminRoleRequestStatus(uid) {
     const statusBox = document.getElementById('admin-role-request-status');
     const reqBtn = document.getElementById('request-admin-role-btn');
 
-    database.ref('roleElevationRequests').orderByChild('userId').equalTo(uid).on('value', (snapshot) => {
+    if (currentRoleElevationQuery) {
+        currentRoleElevationQuery.off();
+    }
+
+    currentRoleElevationQuery = database.ref('roleElevationRequests').orderByChild('userId').equalTo(uid);
+    currentRoleElevationQuery.on('value', (snapshot) => {
         let isPending = false;
         if (snapshot.exists()) {
             snapshot.forEach((child) => {
