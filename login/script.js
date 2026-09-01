@@ -22,9 +22,29 @@ const db = firebase.firestore();
 window.toggleDeptDropdown = function(e) {
     if (e) e.stopPropagation();
     const wrapper = document.getElementById('deptSelectWrapper');
+    const searchInput = document.getElementById('deptSearchInput');
     if (wrapper) {
+        const willOpen = !wrapper.classList.contains('open');
         wrapper.classList.toggle('open');
+        if (willOpen && searchInput) {
+            searchInput.value = '';
+            window.filterDeptOptions('');
+            setTimeout(() => searchInput.focus(), 50);
+        }
     }
+};
+
+window.filterDeptOptions = function(query) {
+    const q = (query || '').toLowerCase().trim();
+    const options = document.querySelectorAll('.dept-options-list .custom-option');
+    options.forEach(opt => {
+        const text = (opt.textContent || '').toLowerCase();
+        if (!q || text.includes(q)) {
+            opt.style.display = 'flex';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
 };
 
 window.selectDeptOption = function(value, label) {
