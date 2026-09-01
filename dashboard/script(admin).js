@@ -1732,12 +1732,15 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
             }
         }
 
-        // Anchor confirmation popup directly adjacent to the clicked button (No searching/delay)
+        // Anchor confirmation popup directly adjacent to the clicked button (Instant, zero flash)
         if (card) {
-            if (anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
-                const rect = anchorEl.getBoundingClientRect();
+            let targetEl = anchorEl;
+            if (targetEl && targetEl.target) targetEl = targetEl.target;
+            if (targetEl && targetEl.currentTarget) targetEl = targetEl.currentTarget;
+
+            if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
+                const rect = targetEl.getBoundingClientRect();
                 const cardWidth = Math.min(360, window.innerWidth - 32);
-                card.style.position = 'fixed';
                 card.style.width = `${cardWidth}px`;
                 card.style.maxWidth = '94vw';
 
@@ -1764,16 +1767,18 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
                     }
                 }
 
+                card.style.top = `${Math.round(top)}px`;
+                card.style.left = `${Math.round(left)}px`;
+                card.style.transform = 'scale(0.95)';
+            } else {
+                const cardWidth = Math.min(380, window.innerWidth - 32);
+                const left = Math.round((window.innerWidth - cardWidth) / 2);
+                const top = Math.round(Math.max(40, (window.innerHeight - 180) / 2));
+                card.style.width = `${cardWidth}px`;
+                card.style.maxWidth = '92vw';
                 card.style.top = `${top}px`;
                 card.style.left = `${left}px`;
-                card.style.margin = '0';
-            } else {
-                card.style.position = 'relative';
-                card.style.top = '';
-                card.style.left = '';
-                card.style.margin = 'auto';
-                card.style.width = '380px';
-                card.style.maxWidth = '92vw';
+                card.style.transform = 'scale(0.95)';
             }
         }
 
@@ -1798,12 +1803,6 @@ window.showGTrackConfirm = function(title, message, confirmText = 'Confirm', can
             actionBtn.removeEventListener('click', handleConfirm);
             cancelBtn.removeEventListener('click', handleCancel);
             modal.removeEventListener('click', handleOverlayClick);
-            if (card) {
-                card.style.position = '';
-                card.style.top = '';
-                card.style.left = '';
-                card.style.margin = '';
-            }
         };
 
         actionBtn.addEventListener('click', handleConfirm);
