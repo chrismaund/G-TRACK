@@ -1098,19 +1098,19 @@ if (profileForm) {
                 // Purge all existing pending department transfer requests from this user
                 try {
                     const snap = await database.ref('deptTransferRequests').once('value');
-                    if (snap.exists()) {
+                    if (snap && snap.exists()) {
                         const cleanupPromises = [];
-                        snap.forEach((child) => {
+                        snap.forEach(function(child) {
                             const val = child.val();
-                            if (val.userId === user.uid || (userEmail && val.userEmail === userEmail) || (userName && val.userName === userName)) {
-                                cleanupPromises.push(database.ref(`deptTransferRequests/${child.key}`).remove());
+                            if (val && (val.userId === user.uid || (userEmail && val.userEmail === userEmail) || (userName && val.userName === userName))) {
+                                cleanupPromises.push(database.ref('deptTransferRequests/' + child.key).remove());
                             }
                         });
                         if (cleanupPromises.length > 0) {
                             await Promise.all(cleanupPromises);
                         }
                     }
-                } catch(e) {
+                } catch (e) {
                     console.warn("Check existing dept requests fallback:", e);
                 }
 
