@@ -25,11 +25,29 @@ window.toggleDeptDropdown = function(e) {
     const searchInput = document.getElementById('deptSearchInput');
     if (wrapper) {
         const willOpen = !wrapper.classList.contains('open');
-        wrapper.classList.toggle('open');
-        if (willOpen && searchInput) {
-            searchInput.value = '';
-            window.filterDeptOptions('');
-            setTimeout(() => searchInput.focus(), 50);
+        
+        if (willOpen) {
+            const trigger = wrapper.querySelector('.custom-select-trigger') || wrapper;
+            const rect = trigger.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            const estimatedMenuHeight = 250;
+
+            if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
+                wrapper.classList.add('drop-up');
+            } else {
+                wrapper.classList.remove('drop-up');
+            }
+
+            wrapper.classList.add('open');
+            if (searchInput) {
+                searchInput.value = '';
+                window.filterDeptOptions('');
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        } else {
+            wrapper.classList.remove('open');
+            wrapper.classList.remove('drop-up');
         }
     }
 };
@@ -67,7 +85,10 @@ window.selectDeptOption = function(value, label) {
         }
     });
 
-    if (wrapper) wrapper.classList.remove('open');
+    if (wrapper) {
+        wrapper.classList.remove('open');
+        wrapper.classList.remove('drop-up');
+    }
 };
 
 // Dismiss custom dropdown on click outside

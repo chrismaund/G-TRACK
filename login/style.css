@@ -361,6 +361,18 @@ body {
     transform: translateY(0);
 }
 
+/* Responsive Drop-Up direction when bottom space is tight */
+.custom-select-wrapper.drop-up .custom-select-options {
+    top: auto;
+    bottom: calc(100% + 6px);
+    transform: translateY(6px);
+    box-shadow: 0 -20px 40px -8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.custom-select-wrapper.drop-up.open .custom-select-options {
+    transform: translateY(0);
+}
+
 .dept-search-wrapper {
     position: relative;
     width: 100%;

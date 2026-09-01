@@ -1301,12 +1301,29 @@ window.toggleCustomDropdown = function(event, wrapperId, searchInputId) {
 
     // Close any other open custom dropdowns
     document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
-        if (el !== wrapper) el.classList.remove('open');
+        if (el !== wrapper) {
+            el.classList.remove('open');
+            el.classList.remove('drop-up');
+        }
     });
 
     if (wasOpen) {
         wrapper.classList.remove('open');
+        wrapper.classList.remove('drop-up');
     } else {
+        // Calculate viewport space: if bottom space is tight, flip upwards!
+        const trigger = wrapper.querySelector('.custom-select-trigger') || wrapper;
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedMenuHeight = 260;
+
+        if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
+            wrapper.classList.add('drop-up');
+        } else {
+            wrapper.classList.remove('drop-up');
+        }
+
         wrapper.classList.add('open');
         
         // Reset search input and show all 28 options
@@ -1362,6 +1379,7 @@ window.selectCustomDept = function(hiddenInputId, textSpanId, triggerId, wrapper
 
     if (wrapper) {
         wrapper.classList.remove('open');
+        wrapper.classList.remove('drop-up');
         
         // Clear search input and restore all options visibility for next open
         const searchInput = wrapper.querySelector('.dept-search-wrapper input');
