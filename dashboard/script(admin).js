@@ -882,13 +882,14 @@ function initUserProfilesListener() {
 
         profilesTableBody.innerHTML = '';
         let pendingCount = 0;
+        const employeeUsers = [];
 
         if (snapshot.empty) {
             profilesTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+                    <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
                         <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
-                        No registered employee accounts found.
+                        No registered staff user accounts found.
                     </td>
                 </tr>
             `;
@@ -899,9 +900,7 @@ function initUserProfilesListener() {
         snapshot.forEach((doc) => {
             const user = doc.data();
             const userId = doc.id;
-
-            // Exclude currently logged in main admin to prevent self-lockout
-            if (auth.currentUser && userId === auth.currentUser.uid) return;
+            const isSelf = Boolean(auth.currentUser && userId === auth.currentUser.uid);
 
             // Standardize role and status checks (fallback to lowercase defaults)
             const userRole = (user.role || 'employee').toLowerCase();
@@ -933,7 +932,8 @@ function initUserProfilesListener() {
                 data: user,
                 role: userRole,
                 status: userStatus,
-                createdTime: createdTime
+                createdTime: createdTime,
+                isSelf: isSelf
             });
         });
 
@@ -989,7 +989,7 @@ function initUserProfilesListener() {
             tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.6)';
             tr.innerHTML = `
                 <td style="padding: 12px 14px; font-weight: 600; color: #f8fafc;">
-                    <i class="far fa-user" style="color: #94a3b8; margin-right: 6px;"></i> ${sanitizeText(user.fullName || user.name || 'N/A')}
+                    <i class="far fa-user" style="color: #94a3b8; margin-right: 6px;"></i> ${sanitizeText(user.fullName || user.name || 'N/A')} ${item.isSelf ? '<span style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 4px; margin-left: 4px;">(You)</span>' : ''}
                 </td>
                 <td style="padding: 12px 14px; color: #cbd5e1;">${sanitizeText(user.email || 'N/A')}</td>
                 <td style="padding: 12px 14px;">
@@ -1011,34 +1011,38 @@ function initUserProfilesListener() {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 165px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
-                        ${userRole === 'admin' ? `
-                            <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
-                                <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
-                            </button>
-                        ` : `
-                            <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
-                                <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
-                            </button>
-                        `}
-                        ${userStatus === 'pending' ? `
-                            <button onclick="updateUserStatus('${userId}', 'approved'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #4ade80; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                <i class="fas fa-check-circle" style="width: 14px;"></i> Approve
-                            </button>
-                            <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                <i class="fas fa-ban" style="width: 14px;"></i> Reject
-                            </button>
-                        ` : `
-                            <button onclick="updateUserStatus('${userId}', '${userStatus === 'approved' ? 'rejected' : 'approved'}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: ${userStatus === 'approved' ? '#fbbf24' : '#4ade80'}; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
-                            </button>
-                        `}
+                        ${!item.isSelf ? `
+                            ${userRole === 'admin' ? `
+                                <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
+                                    <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
+                                </button>
+                            ` : `
+                                <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
+                                    <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
+                                </button>
+                            `}
+                            ${userStatus === 'pending' ? `
+                                <button onclick="updateUserStatus('${userId}', 'approved'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #4ade80; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                    <i class="fas fa-check-circle" style="width: 14px;"></i> Approve
+                                </button>
+                                <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                    <i class="fas fa-ban" style="width: 14px;"></i> Reject
+                                </button>
+                            ` : `
+                                <button onclick="updateUserStatus('${userId}', '${userStatus === 'approved' ? 'rejected' : 'approved'}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: ${userStatus === 'approved' ? '#fbbf24' : '#4ade80'}; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                    <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
+                                </button>
+                            `}
+                        ` : ''}
                         <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                             <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
                         </button>
-                        <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
-                        <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                            <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
-                        </button>
+                        ${!item.isSelf ? `
+                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
+                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
+                            </button>
+                        ` : ''}
                     </div>
                 </td>
             `;
