@@ -473,15 +473,22 @@ function renderTable() {
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    if (pageIndicator) {
-        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    const firstPageBtn = document.getElementById('first-page-btn');
+    const lastPageBtn = document.getElementById('last-page-btn');
+    const jumpPageInput = document.getElementById('jump-page-input');
+    const totalPagesSpan = document.getElementById('total-pages-span');
+
+    if (jumpPageInput) {
+        jumpPageInput.value = currentPage;
+        jumpPageInput.max = totalPages;
     }
-    if (prevPageBtn) {
-        prevPageBtn.disabled = (currentPage <= 1);
+    if (totalPagesSpan) {
+        totalPagesSpan.textContent = totalPages;
     }
-    if (nextPageBtn) {
-        nextPageBtn.disabled = (currentPage >= totalPages);
-    }
+    if (firstPageBtn) firstPageBtn.disabled = (currentPage <= 1);
+    if (prevPageBtn) prevPageBtn.disabled = (currentPage <= 1);
+    if (nextPageBtn) nextPageBtn.disabled = (currentPage >= totalPages);
+    if (lastPageBtn) lastPageBtn.disabled = (currentPage >= totalPages);
 
     if (filteredData.length === 0) {
         const noDataMessage = isMyAssignmentsActive
@@ -489,6 +496,12 @@ function renderTable() {
             : `No inventory records found matching your search.`;
 
         tableBody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">${noDataMessage}</td></tr>`;
+        if (jumpPageInput) jumpPageInput.value = 1;
+        if (totalPagesSpan) totalPagesSpan.textContent = 1;
+        if (firstPageBtn) firstPageBtn.disabled = true;
+        if (prevPageBtn) prevPageBtn.disabled = true;
+        if (nextPageBtn) nextPageBtn.disabled = true;
+        if (lastPageBtn) lastPageBtn.disabled = true;
         calculateMetrics();
         return;
     }
@@ -1387,6 +1400,19 @@ if (clearSearchBtn) {
     });
 }
 
+const firstPageBtn = document.getElementById('first-page-btn');
+const lastPageBtn = document.getElementById('last-page-btn');
+const jumpPageInput = document.getElementById('jump-page-input');
+
+if (firstPageBtn) {
+    firstPageBtn.addEventListener('click', () => {
+        if (currentPage !== 1) {
+            currentPage = 1;
+            renderTable();
+        }
+    });
+}
+
 if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -1401,6 +1427,42 @@ if (nextPageBtn) {
         currentPage++;
         renderTable();
     });
+}
+
+if (lastPageBtn) {
+    lastPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
+        if (currentPage !== totalPages) {
+            currentPage = totalPages;
+            renderTable();
+        }
+    });
+}
+
+if (jumpPageInput) {
+    const handleJump = () => {
+        const val = parseInt(jumpPageInput.value, 10);
+        const totalPages = parseInt(document.getElementById('total-pages-span')?.textContent, 10) || 1;
+        if (!isNaN(val)) {
+            const targetPage = Math.max(1, Math.min(val, totalPages));
+            if (targetPage !== currentPage) {
+                currentPage = targetPage;
+                renderTable();
+            } else {
+                jumpPageInput.value = currentPage;
+            }
+        } else {
+            jumpPageInput.value = currentPage;
+        }
+    };
+    jumpPageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleJump();
+            jumpPageInput.blur();
+        }
+    });
+    jumpPageInput.addEventListener('change', handleJump);
 }
 
 setupConditionDropdown();
@@ -2084,12 +2146,31 @@ function renderAccountingView() {
     if (accountingCurrentPage > totalPages) accountingCurrentPage = totalPages;
     if (accountingCurrentPage < 1) accountingCurrentPage = 1;
 
-    if (pageIndicatorEl) pageIndicatorEl.textContent = `Page ${accountingCurrentPage} of ${totalPages}`;
+    const firstPageBtnEl = document.getElementById('accounting-first-page-btn');
+    const lastPageBtnEl = document.getElementById('accounting-last-page-btn');
+    const jumpPageInputEl = document.getElementById('accounting-jump-page-input');
+    const totalPagesSpanEl = document.getElementById('accounting-total-pages-span');
+
+    if (jumpPageInputEl) {
+        jumpPageInputEl.value = accountingCurrentPage;
+        jumpPageInputEl.max = totalPages;
+    }
+    if (totalPagesSpanEl) {
+        totalPagesSpanEl.textContent = totalPages;
+    }
+    if (firstPageBtnEl) firstPageBtnEl.disabled = (accountingCurrentPage <= 1);
     if (prevPageBtnEl) prevPageBtnEl.disabled = (accountingCurrentPage <= 1);
     if (nextPageBtnEl) nextPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
+    if (lastPageBtnEl) lastPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
 
     if (filtered.length === 0) {
         tableBodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">No property records match your search or filter.</td></tr>`;
+        if (jumpPageInputEl) jumpPageInputEl.value = 1;
+        if (totalPagesSpanEl) totalPagesSpanEl.textContent = 1;
+        if (firstPageBtnEl) firstPageBtnEl.disabled = true;
+        if (prevPageBtnEl) prevPageBtnEl.disabled = true;
+        if (nextPageBtnEl) nextPageBtnEl.disabled = true;
+        if (lastPageBtnEl) lastPageBtnEl.disabled = true;
         return;
     }
 
@@ -2325,6 +2406,19 @@ window.exportCOARPCPPEReport = function() {
         });
     }
 
+    const firstPageBtn = document.getElementById('accounting-first-page-btn');
+    const lastPageBtn = document.getElementById('accounting-last-page-btn');
+    const jumpPageInput = document.getElementById('accounting-jump-page-input');
+
+    if (firstPageBtn) {
+        firstPageBtn.addEventListener('click', () => {
+            if (accountingCurrentPage !== 1) {
+                accountingCurrentPage = 1;
+                renderAccountingView();
+            }
+        });
+    }
+
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
             if (accountingCurrentPage > 1) {
@@ -2339,5 +2433,41 @@ window.exportCOARPCPPEReport = function() {
             accountingCurrentPage++;
             renderAccountingView();
         });
+    }
+
+    if (lastPageBtn) {
+        lastPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(inventoryData.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
+            if (accountingCurrentPage !== totalPages) {
+                accountingCurrentPage = totalPages;
+                renderAccountingView();
+            }
+        });
+    }
+
+    if (jumpPageInput) {
+        const handleJump = () => {
+            const val = parseInt(jumpPageInput.value, 10);
+            const totalPages = parseInt(document.getElementById('accounting-total-pages-span')?.textContent, 10) || 1;
+            if (!isNaN(val)) {
+                const targetPage = Math.max(1, Math.min(val, totalPages));
+                if (targetPage !== accountingCurrentPage) {
+                    accountingCurrentPage = targetPage;
+                    renderAccountingView();
+                } else {
+                    jumpPageInput.value = accountingCurrentPage;
+                }
+            } else {
+                jumpPageInput.value = accountingCurrentPage;
+            }
+        };
+        jumpPageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleJump();
+                jumpPageInput.blur();
+            }
+        });
+        jumpPageInput.addEventListener('change', handleJump);
     }
 })();

@@ -389,21 +389,31 @@ function renderTable() {
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    if (pageIndicator) {
-        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    const firstPageBtn = document.getElementById('first-page-btn');
+    const lastPageBtn = document.getElementById('last-page-btn');
+    const jumpPageInput = document.getElementById('jump-page-input');
+    const totalPagesSpan = document.getElementById('total-pages-span');
+
+    if (jumpPageInput) {
+        jumpPageInput.value = currentPage;
+        jumpPageInput.max = totalPages;
     }
-    if (prevPageBtn) {
-        prevPageBtn.disabled = (currentPage <= 1);
+    if (totalPagesSpan) {
+        totalPagesSpan.textContent = totalPages;
     }
-    if (nextPageBtn) {
-        nextPageBtn.disabled = (currentPage >= totalPages);
-    }
+    if (firstPageBtn) firstPageBtn.disabled = (currentPage <= 1);
+    if (prevPageBtn) prevPageBtn.disabled = (currentPage <= 1);
+    if (nextPageBtn) nextPageBtn.disabled = (currentPage >= totalPages);
+    if (lastPageBtn) lastPageBtn.disabled = (currentPage >= totalPages);
 
     if (filteredData.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="${isDeleteSelectionMode ? 15 : 14}" style="text-align: center; color: #94a3b8; padding: 20px;">No inventory records found.</td></tr>`;
-        if (pageIndicator) pageIndicator.textContent = 'Page 1 of 1';
+        if (jumpPageInput) jumpPageInput.value = 1;
+        if (totalPagesSpan) totalPagesSpan.textContent = 1;
+        if (firstPageBtn) firstPageBtn.disabled = true;
         if (prevPageBtn) prevPageBtn.disabled = true;
         if (nextPageBtn) nextPageBtn.disabled = true;
+        if (lastPageBtn) lastPageBtn.disabled = true;
         calculateMetrics();
         return;
     }
@@ -2556,6 +2566,19 @@ if (clearSearchBtn) {
     });
 }
 
+const firstPageBtn = document.getElementById('first-page-btn');
+const lastPageBtn = document.getElementById('last-page-btn');
+const jumpPageInput = document.getElementById('jump-page-input');
+
+if (firstPageBtn) {
+    firstPageBtn.addEventListener('click', () => {
+        if (currentPage !== 1) {
+            currentPage = 1;
+            renderTable();
+        }
+    });
+}
+
 if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -2570,6 +2593,42 @@ if (nextPageBtn) {
         currentPage++;
         renderTable();
     });
+}
+
+if (lastPageBtn) {
+    lastPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
+        if (currentPage !== totalPages) {
+            currentPage = totalPages;
+            renderTable();
+        }
+    });
+}
+
+if (jumpPageInput) {
+    const handleJump = () => {
+        const val = parseInt(jumpPageInput.value, 10);
+        const totalPages = parseInt(document.getElementById('total-pages-span')?.textContent, 10) || 1;
+        if (!isNaN(val)) {
+            const targetPage = Math.max(1, Math.min(val, totalPages));
+            if (targetPage !== currentPage) {
+                currentPage = targetPage;
+                renderTable();
+            } else {
+                jumpPageInput.value = currentPage;
+            }
+        } else {
+            jumpPageInput.value = currentPage;
+        }
+    };
+    jumpPageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleJump();
+            jumpPageInput.blur();
+        }
+    });
+    jumpPageInput.addEventListener('change', handleJump);
 }
 
 // =========================================================================
