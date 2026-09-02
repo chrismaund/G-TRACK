@@ -275,9 +275,7 @@ function calculateMetrics() {
 
     sessionStorage.setItem('gtrack_total_articles', String(totalArticles));
 
-    if (typeof renderHomeDashboard === 'function') {
-        renderHomeDashboard();
-    }
+    renderHomeDashboard();
 }
 
 function updateAccountDropdown() {
@@ -391,21 +389,38 @@ function renderTable() {
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    if (pageIndicator) {
-        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    const firstPageBtn = document.getElementById('first-page-btn');
+    const lastPageBtn = document.getElementById('last-page-btn');
+    const pageSelectEl = document.getElementById('page-select');
+    const pageTotalCountEl = document.getElementById('page-total-count');
+
+    if (pageSelectEl) {
+        if (pageSelectEl.options.length !== totalPages) {
+            pageSelectEl.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                pageSelectEl.appendChild(opt);
+            }
+        }
+        pageSelectEl.value = currentPage;
     }
-    if (prevPageBtn) {
-        prevPageBtn.disabled = (currentPage <= 1);
-    }
-    if (nextPageBtn) {
-        nextPageBtn.disabled = (currentPage >= totalPages);
-    }
+    if (pageTotalCountEl) pageTotalCountEl.textContent = totalPages;
+
+    if (firstPageBtn) firstPageBtn.disabled = (currentPage <= 1);
+    if (prevPageBtn) prevPageBtn.disabled = (currentPage <= 1);
+    if (nextPageBtn) nextPageBtn.disabled = (currentPage >= totalPages);
+    if (lastPageBtn) lastPageBtn.disabled = (currentPage >= totalPages);
 
     if (filteredData.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="${isDeleteSelectionMode ? 15 : 14}" style="text-align: center; color: #94a3b8; padding: 20px;">No inventory records found.</td></tr>`;
-        if (pageIndicator) pageIndicator.textContent = 'Page 1 of 1';
+        if (pageSelectEl) pageSelectEl.innerHTML = '<option value="1">1</option>';
+        if (pageTotalCountEl) pageTotalCountEl.textContent = '1';
+        if (firstPageBtn) firstPageBtn.disabled = true;
         if (prevPageBtn) prevPageBtn.disabled = true;
         if (nextPageBtn) nextPageBtn.disabled = true;
+        if (lastPageBtn) lastPageBtn.disabled = true;
         calculateMetrics();
         return;
     }
@@ -2558,6 +2573,19 @@ if (clearSearchBtn) {
     });
 }
 
+const firstPageBtn = document.getElementById('first-page-btn');
+const lastPageBtn = document.getElementById('last-page-btn');
+const pageSelectEl = document.getElementById('page-select');
+
+if (firstPageBtn) {
+    firstPageBtn.addEventListener('click', () => {
+        if (currentPage !== 1) {
+            currentPage = 1;
+            renderTable();
+        }
+    });
+}
+
 if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -2571,6 +2599,26 @@ if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
         currentPage++;
         renderTable();
+    });
+}
+
+if (lastPageBtn) {
+    lastPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
+        if (currentPage !== totalPages) {
+            currentPage = totalPages;
+            renderTable();
+        }
+    });
+}
+
+if (pageSelectEl) {
+    pageSelectEl.addEventListener('change', (e) => {
+        const targetPage = parseInt(e.target.value, 10);
+        if (targetPage && targetPage !== currentPage) {
+            currentPage = targetPage;
+            renderTable();
+        }
     });
 }
 
@@ -3143,7 +3191,7 @@ let departmentAllocationChartInstance = null;
  * Switches the active Admin view between Home, Masterlist Table, and Analytics Dashboard.
  * @param {'home'|'masterlist'|'analytics'} viewName 
  */
-function switchAdminView(viewName) {
+window.switchAdminView = function(viewName) {
     activeAdminView = viewName;
     const homeView = document.getElementById('home-view');
     const masterlistView = document.getElementById('masterlist-view');
@@ -3193,13 +3241,12 @@ function switchAdminView(viewName) {
             renderHomeDashboard();
         }, 30);
     }
-}
-window.switchAdminView = switchAdminView;
+};
 
 /**
  * Renders executive overview numbers on the Admin Homepage.
  */
-function renderHomeDashboard() {
+window.renderHomeDashboard = function() {
     const homeTotalArticlesEl = document.getElementById('home-stat-total-articles');
     const homeServiceableEl = document.getElementById('home-stat-serviceable');
     const homeAlertsEl = document.getElementById('home-stat-alerts');
@@ -3222,8 +3269,7 @@ function renderHomeDashboard() {
     if (homeServiceableEl) homeServiceableEl.textContent = serviceableCount.toLocaleString();
     if (homeAlertsEl) homeAlertsEl.textContent = alertsCount.toLocaleString();
     if (homeValuationEl) homeValuationEl.textContent = `₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-}
-window.renderHomeDashboard = renderHomeDashboard;
+};
 
 /**
  * Parses an acquisition date string and calculates the item's age in years.

@@ -473,15 +473,29 @@ function renderTable() {
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    if (pageIndicator) {
-        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    const firstPageBtn = document.getElementById('first-page-btn');
+    const lastPageBtn = document.getElementById('last-page-btn');
+    const pageSelectEl = document.getElementById('page-select');
+    const pageTotalCountEl = document.getElementById('page-total-count');
+
+    if (pageSelectEl) {
+        if (pageSelectEl.options.length !== totalPages) {
+            pageSelectEl.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                pageSelectEl.appendChild(opt);
+            }
+        }
+        pageSelectEl.value = currentPage;
     }
-    if (prevPageBtn) {
-        prevPageBtn.disabled = (currentPage <= 1);
-    }
-    if (nextPageBtn) {
-        nextPageBtn.disabled = (currentPage >= totalPages);
-    }
+    if (pageTotalCountEl) pageTotalCountEl.textContent = totalPages;
+
+    if (firstPageBtn) firstPageBtn.disabled = (currentPage <= 1);
+    if (prevPageBtn) prevPageBtn.disabled = (currentPage <= 1);
+    if (nextPageBtn) nextPageBtn.disabled = (currentPage >= totalPages);
+    if (lastPageBtn) lastPageBtn.disabled = (currentPage >= totalPages);
 
     if (filteredData.length === 0) {
         const noDataMessage = isMyAssignmentsActive
@@ -489,6 +503,12 @@ function renderTable() {
             : `No inventory records found matching your search.`;
 
         tableBody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">${noDataMessage}</td></tr>`;
+        if (pageSelectEl) pageSelectEl.innerHTML = '<option value="1">1</option>';
+        if (pageTotalCountEl) pageTotalCountEl.textContent = '1';
+        if (firstPageBtn) firstPageBtn.disabled = true;
+        if (prevPageBtn) prevPageBtn.disabled = true;
+        if (nextPageBtn) nextPageBtn.disabled = true;
+        if (lastPageBtn) lastPageBtn.disabled = true;
         calculateMetrics();
         return;
     }
@@ -550,7 +570,7 @@ function renderTable() {
  * Switches the active Employee view between Home and Directory (Masterlist).
  * @param {'home'|'directory'} viewName 
  */
-function switchEmpView(viewName) {
+window.switchEmpView = function(viewName) {
     activeEmpView = viewName;
     const homeView = document.getElementById('home-view');
     const directoryView = document.getElementById('directory-view');
@@ -589,17 +609,14 @@ function switchEmpView(viewName) {
         }, 30);
     } else if (viewName === 'accounting') {
         setTimeout(() => {
-            if (typeof renderAccountingView === 'function') {
-                renderAccountingView();
-            }
+            renderAccountingView();
         }, 30);
     } else {
         setTimeout(() => {
             calculateMetrics();
         }, 30);
     }
-}
-window.switchEmpView = switchEmpView;
+};
 
 // =========================================================================
 // SIDEBAR COLLAPSE, EXPAND & MOBILE DRAWER CONTROLS
@@ -1390,6 +1407,19 @@ if (clearSearchBtn) {
     });
 }
 
+const firstPageBtn = document.getElementById('first-page-btn');
+const lastPageBtn = document.getElementById('last-page-btn');
+const pageSelectEl = document.getElementById('page-select');
+
+if (firstPageBtn) {
+    firstPageBtn.addEventListener('click', () => {
+        if (currentPage !== 1) {
+            currentPage = 1;
+            renderTable();
+        }
+    });
+}
+
 if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
@@ -1403,6 +1433,26 @@ if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
         currentPage++;
         renderTable();
+    });
+}
+
+if (lastPageBtn) {
+    lastPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
+        if (currentPage !== totalPages) {
+            currentPage = totalPages;
+            renderTable();
+        }
+    });
+}
+
+if (pageSelectEl) {
+    pageSelectEl.addEventListener('change', (e) => {
+        const targetPage = parseInt(e.target.value, 10);
+        if (targetPage && targetPage !== currentPage) {
+            currentPage = targetPage;
+            renderTable();
+        }
     });
 }
 
@@ -2087,12 +2137,38 @@ function renderAccountingView() {
     if (accountingCurrentPage > totalPages) accountingCurrentPage = totalPages;
     if (accountingCurrentPage < 1) accountingCurrentPage = 1;
 
-    if (pageIndicatorEl) pageIndicatorEl.textContent = `Page ${accountingCurrentPage} of ${totalPages}`;
+    const firstPageBtnEl = document.getElementById('accounting-first-page-btn');
+    const lastPageBtnEl = document.getElementById('accounting-last-page-btn');
+    const pageSelectEl = document.getElementById('accounting-page-select');
+    const pageTotalCountEl = document.getElementById('accounting-page-total-count');
+
+    if (pageSelectEl) {
+        if (pageSelectEl.options.length !== totalPages) {
+            pageSelectEl.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                pageSelectEl.appendChild(opt);
+            }
+        }
+        pageSelectEl.value = accountingCurrentPage;
+    }
+    if (pageTotalCountEl) pageTotalCountEl.textContent = totalPages;
+
+    if (firstPageBtnEl) firstPageBtnEl.disabled = (accountingCurrentPage <= 1);
     if (prevPageBtnEl) prevPageBtnEl.disabled = (accountingCurrentPage <= 1);
     if (nextPageBtnEl) nextPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
+    if (lastPageBtnEl) lastPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
 
     if (filtered.length === 0) {
         tableBodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">No property records match your search or filter.</td></tr>`;
+        if (pageSelectEl) pageSelectEl.innerHTML = '<option value="1">1</option>';
+        if (pageTotalCountEl) pageTotalCountEl.textContent = '1';
+        if (firstPageBtnEl) firstPageBtnEl.disabled = true;
+        if (prevPageBtnEl) prevPageBtnEl.disabled = true;
+        if (nextPageBtnEl) nextPageBtnEl.disabled = true;
+        if (lastPageBtnEl) lastPageBtnEl.disabled = true;
         return;
     }
 
@@ -2137,7 +2213,6 @@ function renderAccountingView() {
 
     tableBodyEl.appendChild(fragment);
 }
-window.renderAccountingView = renderAccountingView;
 
 /**
  * Filter the Accounting table by clicking an Account Group card.
@@ -2329,6 +2404,19 @@ window.exportCOARPCPPEReport = function() {
         });
     }
 
+    const firstPageBtn = document.getElementById('accounting-first-page-btn');
+    const lastPageBtn = document.getElementById('accounting-last-page-btn');
+    const pageSelectEl = document.getElementById('accounting-page-select');
+
+    if (firstPageBtn) {
+        firstPageBtn.addEventListener('click', () => {
+            if (accountingCurrentPage !== 1) {
+                accountingCurrentPage = 1;
+                renderAccountingView();
+            }
+        });
+    }
+
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
             if (accountingCurrentPage > 1) {
@@ -2342,6 +2430,26 @@ window.exportCOARPCPPEReport = function() {
         nextPageBtn.addEventListener('click', () => {
             accountingCurrentPage++;
             renderAccountingView();
+        });
+    }
+
+    if (lastPageBtn) {
+        lastPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(inventoryData.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
+            if (accountingCurrentPage !== totalPages) {
+                accountingCurrentPage = totalPages;
+                renderAccountingView();
+            }
+        });
+    }
+
+    if (pageSelectEl) {
+        pageSelectEl.addEventListener('change', (e) => {
+            const targetPage = parseInt(e.target.value, 10);
+            if (targetPage && targetPage !== accountingCurrentPage) {
+                accountingCurrentPage = targetPage;
+                renderAccountingView();
+            }
         });
     }
 })();
