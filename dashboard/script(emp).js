@@ -1931,19 +1931,38 @@ function renderAccountingView() {
         Object.keys(groupStats).sort().forEach(groupName => {
             const stat = groupStats[groupName];
             const pctTallied = stat.count > 0 ? Math.round((stat.talliedCount / stat.count) * 100) : 0;
+            const isSelected = (selectedGroup === groupName);
+
             const card = document.createElement('div');
-            card.style.background = 'rgba(15, 23, 42, 0.6)';
-            card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            card.style.background = isSelected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.6)';
+            card.style.border = isSelected ? '1.5px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)';
             card.style.borderRadius = '10px';
             card.style.padding = '12px 14px';
             card.style.display = 'flex';
             card.style.flexDirection = 'column';
             card.style.gap = '6px';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'all 0.2s ease';
+            card.title = `Click to filter table by ${groupName}`;
+
+            card.onmouseenter = () => {
+                if (!isSelected) card.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+            };
+            card.onmouseleave = () => {
+                if (!isSelected) card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+            };
+            card.onclick = () => {
+                window.filterByAccountingGroup(isSelected ? 'All' : groupName);
+            };
+
             card.innerHTML = `
-                <div style="font-size: 11.5px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sanitizeText(groupName)}">
-                    ${sanitizeText(groupName)}
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: ${isSelected ? '#38bdf8' : '#f8fafc'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sanitizeText(groupName)}">
+                        ${sanitizeText(groupName)}
+                    </span>
+                    ${isSelected ? '<span style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56,189,248,0.2); padding: 1px 6px; border-radius: 4px;">ACTIVE</span>' : ''}
                 </div>
-                <div style="font-size: 15px; font-weight: 800; color: #38bdf8;">
+                <div style="font-size: 15px; font-weight: 800; color: ${isSelected ? '#ffffff' : '#38bdf8'};">
                     ₱${stat.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
@@ -1964,7 +1983,6 @@ function renderAccountingView() {
         const existingOpts = Array.from(groupFilterEl.options).map(o => o.value);
         const groupKeys = Object.keys(groupStats).sort();
         
-        // Only rebuild if options changed
         if (groupKeys.some(k => !existingOpts.includes(k))) {
             groupFilterEl.innerHTML = '<option value="All">All Account Groups</option>';
             groupKeys.forEach(grp => {
@@ -2039,11 +2057,12 @@ function renderAccountingView() {
         const unitCostVal = parseFloat(item.unitCost) || 0;
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
         const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+        const dateStr = item.date ? (new Date(item.date).toLocaleDateString() || item.date) : '-';
 
         const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(index * 0.02, 0.35)}s`;
         tr.innerHTML = `
-            <td class="text-muted">${sanitizeText(item.date) || '-'}</td>
+            <td class="text-muted">${sanitizeText(dateStr)}</td>
             <td class="text-muted font-bold">${sanitizeText(item.propertyNo) || '-'}</td>
             <td class="font-bold article-cell" title="${sanitizeText(item.article)} - ${sanitizeText(item.description)}">
                 ${sanitizeText(item.article) || '-'}<br>
@@ -2055,13 +2074,13 @@ function renderAccountingView() {
             <td>${sanitizeText(item.account) || '-'}</td>
             <td>${sanitizeText(item.accountablePerson) || '-'}</td>
             <td>
-                <span class="badge ${isTallied ? 'serviceable-badge' : 'unserviceable-badge'}" style="font-size: 11px;">
-                    ${isTallied ? '✅ Tallied' : '⏳ Pending'}
+                <span class="badge ${isTallied ? 'serviceable-badge' : 'unserviceable-badge'}" style="font-size: 11px;" title="${isTallied ? 'Reconciled by ' + (item.talliedBy || 'Accounting') + ' on ' + (item.talliedAt ? new Date(item.talliedAt).toLocaleDateString() : '') : 'Pending payment voucher check'}">
+                    ${isTallied ? '<i class="fas fa-check-circle"></i> Tallied' : '<i class="far fa-clock"></i> Pending'}
                 </span>
             </td>
             <td class="actions-cell actions-cell-wrapper" style="text-align: center; white-space: nowrap;">
-                <button type="button" class="action-btn" onclick="toggleAccountingTally('${item.id}')" title="${isTallied ? 'Reconciled with voucher. Click to mark Pending' : 'Click to verify and tally with Payment Voucher'}" style="background: ${isTallied ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)'}; color: ${isTallied ? '#4ade80' : '#38bdf8'}; border: 1px solid ${isTallied ? 'rgba(74, 222, 128, 0.3)' : 'rgba(56, 189, 248, 0.3)'}; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
-                    <i class="${isTallied ? 'fas fa-check-circle' : 'far fa-circle'}"></i> ${isTallied ? 'Tallied' : 'Verify'}
+                <button type="button" class="action-btn" onclick="toggleAccountingTally('${item.id}')" title="${isTallied ? 'Reconciled with voucher by ' + (item.talliedBy || 'Accounting') + '. Click to unmark.' : 'Click to verify and reconcile with payment voucher.'}" style="background: ${isTallied ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)'}; color: ${isTallied ? '#4ade80' : '#38bdf8'}; border: 1px solid ${isTallied ? 'rgba(74, 222, 128, 0.35)' : 'rgba(56, 189, 248, 0.35)'}; padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
+                    <i class="${isTallied ? 'fas fa-check-circle' : 'fas fa-check'}"></i> ${isTallied ? 'Tallied' : 'Verify'}
                 </button>
             </td>
         `;
@@ -2070,6 +2089,18 @@ function renderAccountingView() {
 
     tableBodyEl.appendChild(fragment);
 }
+
+/**
+ * Filter the Accounting table by clicking an Account Group card.
+ */
+window.filterByAccountingGroup = function(groupName) {
+    const groupFilterEl = document.getElementById('accounting-group-filter');
+    if (groupFilterEl) {
+        groupFilterEl.value = groupName;
+    }
+    accountingCurrentPage = 1;
+    renderAccountingView();
+};
 
 /**
  * Toggles an inventory item's payment voucher tally status.
