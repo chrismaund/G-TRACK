@@ -1271,6 +1271,10 @@ inventoryRef.on('value', (snapshot) => {
             else renderTable();
         }
     }
+});
+
+// 2. Initialize Supabase Realtime Sync
+if (supabaseClient) {
     fetchInventoryFromSupabase();
 
     supabaseClient
