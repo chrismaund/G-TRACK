@@ -313,17 +313,25 @@ function renderTable() {
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
-    const selectedAccount = accountFilter ? accountFilter.value || 'All Accounts' : 'All Accounts';
-    const selectedCondition = conditionFilter ? conditionFilter.value || 'All Conditions' : 'All Conditions';
+    const selectedAccount = accountFilter ? accountFilter.value : 'All Accounts';
+    const selectedCondition = conditionFilter ? conditionFilter.value : 'All Conditions';
+    const tallyFilterEl = document.getElementById('tally-filter');
+    const selectedTally = tallyFilterEl ? (tallyFilterEl.value || 'All') : 'All';
     const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     const filteredData = inventoryData.filter(item => {
         const matchesAccount = selectedAccount === 'All Accounts' || item.account === selectedAccount;
         
-        // Unified Case-Insensitive Condition Check
-        const itemCond = (item.condition || '').toLowerCase();
-        const filterCond = selectedCondition.toLowerCase();
-        const matchesCondition = selectedCondition === 'All Conditions' || itemCond === filterCond;
+        let matchesCondition = true;
+        if (selectedCondition !== 'All Conditions') {
+            const itemConditionUpper = (item.condition || '').toUpperCase();
+            matchesCondition = itemConditionUpper === selectedCondition.toUpperCase();
+        }
+
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+        let matchesTally = true;
+        if (selectedTally === 'Tallied') matchesTally = isTallied;
+        else if (selectedTally === 'Pending') matchesTally = !isTallied;
         
         // Omni-Field Deep Search across ALL information and attributes
         let matchesSearch = true;
@@ -374,7 +382,7 @@ function renderTable() {
             matchesSearch = searchTerms.every(term => searchBlob.includes(term));
         }
 
-        return matchesAccount && matchesCondition && matchesSearch;
+        return matchesAccount && matchesCondition && matchesTally && matchesSearch;
     });
 
     const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
@@ -412,6 +420,11 @@ function renderTable() {
         if (condUpper === 'UNSERVICEABLE') badgeClass = 'unserviceable-badge';
         if (condUpper === 'FOR DISPOSAL') badgeClass = 'disposal-badge';
 
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+        const tallyBadge = isTallied
+            ? `<span class="badge serviceable-badge" style="margin-left: 4px; font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px;" title="Voucher Verified • ${item.talliedBy ? 'by ' + item.talliedBy : 'Audited Legacy Record'}"><i class="fas fa-check"></i> Tallied</span>`
+            : `<span class="badge unserviceable-badge" style="margin-left: 4px; font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px;" title="Pending Accounting Office Voucher Verification"><i class="far fa-clock"></i> Pending Tally</span>`;
+
         const qtyVal = parseInt(item.qty, 10) || 0;
         const unitCostVal = parseFloat(item.unitCost) || 0;
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
@@ -433,7 +446,10 @@ function renderTable() {
             <td class="font-bold" title="₱${computedTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}">₱${computedTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
             <td title="${sanitizeText(item.location)}">${sanitizeText(item.location) || '-'}</td>
             <td title="${sanitizeText(item.accountablePerson)}">${sanitizeText(item.accountablePerson) || '-'}</td>
-            <td><span class="badge ${badgeClass}" title="${sanitizeText(item.condition)}">${sanitizeText(item.condition) || 'N/A'}</span></td>
+            <td>
+                <span class="badge ${badgeClass}" title="${sanitizeText(item.condition)}">${sanitizeText(item.condition) || 'N/A'}</span>
+                ${tallyBadge}
+            </td>
             <td title="${sanitizeText(item.account)}">${sanitizeText(item.account) || '-'}</td>
             <td class="text-muted remarks-cell" title="${sanitizeText(item.remarks)}">${sanitizeText(item.remarks) || '-'}</td>
             <td class="actions-cell actions-cell-wrapper">
@@ -484,6 +500,8 @@ function closeModal() {
     currentEditingId = null;
     const toast = document.getElementById('add-success-toast');
     if (toast) toast.style.display = 'none';
+    const tallyInfoBox = document.getElementById('item-modal-tally-info');
+    if (tallyInfoBox) tallyInfoBox.style.display = 'none';
 }
 
 if (addBtn) {
@@ -600,6 +618,23 @@ window.openEditModal = function(id) {
     if (document.getElementById('add-account')) document.getElementById('add-account').value = item.account || '';
     if (document.getElementById('add-condition')) document.getElementById('add-condition').value = item.condition || 'Serviceable';
     if (document.getElementById('add-remarks')) document.getElementById('add-remarks').value = item.remarks || '';
+
+    // Render Accounting Office Voucher Verification Status
+    const tallyInfoBox = document.getElementById('item-modal-tally-info');
+    const tallyInfoText = document.getElementById('item-modal-tally-text');
+    if (tallyInfoBox && tallyInfoText) {
+        tallyInfoBox.style.display = 'block';
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+        if (isTallied) {
+            tallyInfoBox.style.background = 'rgba(52, 211, 153, 0.08)';
+            tallyInfoBox.style.border = '1px solid rgba(52, 211, 153, 0.3)';
+            tallyInfoText.innerHTML = `<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Tallied & Reconciled</span> <span style="color: #94a3b8; font-size: 11.5px; font-weight: 500;">(${item.talliedBy ? 'by ' + item.talliedBy : 'Audited Legacy Record'}${item.talliedAt ? ' on ' + new Date(item.talliedAt).toLocaleDateString() : ''})</span>`;
+        } else {
+            tallyInfoBox.style.background = 'rgba(251, 191, 36, 0.08)';
+            tallyInfoBox.style.border = '1px solid rgba(251, 191, 36, 0.3)';
+            tallyInfoText.innerHTML = `<span style="color: #fbbf24;"><i class="far fa-clock"></i> Pending Voucher Verification</span> <span style="color: #94a3b8; font-size: 11.5px; font-weight: 500;">(Awaiting Accounting check against Disbursement Voucher)</span>`;
+        }
+    }
 
     openModal();
 };
@@ -2499,6 +2534,8 @@ function updateClearSearchVisibility() {
 
 if (accountFilter) accountFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (conditionFilter) conditionFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
+const tallyFilter = document.getElementById('tally-filter');
+if (tallyFilter) tallyFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (searchInput) {
     searchInput.addEventListener('input', () => {
         currentPage = 1;

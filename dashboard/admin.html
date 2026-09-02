@@ -368,6 +368,11 @@
                         <select class="filter-dropdown" id="condition-filter">
                             <option>All Conditions</option>
                         </select>
+                        <select class="filter-dropdown" id="tally-filter">
+                            <option value="All">All Voucher Status</option>
+                            <option value="Tallied">✅ Tallied with Voucher</option>
+                            <option value="Pending">⏳ Pending Tally</option>
+                        </select>
                     </div>
                     <div class="pagination-controls" id="pagination-controls">
                         <button class="page-btn" id="prev-page-btn" title="Previous Page"><i class="fas fa-chevron-left"></i></button>
@@ -649,6 +654,10 @@
         <div class="form-group full-width">
           <label for="add-remarks">Remarks</label>
           <textarea id="add-remarks" rows="2" placeholder="Additional notes or comments"></textarea>
+        </div>
+        <div id="item-modal-tally-info" class="form-group full-width" style="display: none; border-radius: 8px; padding: 10px 14px; margin-top: 4px;">
+          <span style="font-size: 11px; color: #94a3b8; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Accounting Office Voucher Status</span>
+          <span id="item-modal-tally-text" style="font-size: 12.5px; font-weight: 700; color: #f8fafc; margin-top: 2px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">-</span>
         </div>
       </div>
       <div class="modal-actions">
