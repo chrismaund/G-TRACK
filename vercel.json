@@ -1,5 +1,12 @@
 {
   "redirects": [
-    { "source": "/", "destination": "/login/index.html", "permanent": false }
-  ]
+    { "source": "/", "destination": "/login/index.html", "permanent": false },
+    { "source": "/dashboard/admin/index.html", "destination": "/dashboard/admin.html", "permanent": false },
+    { "source": "/dashboard/employee/index.html", "destination": "/dashboard/employee.html", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/dashboard/admin", "destination": "/dashboard/admin.html" },
+    { "source": "/dashboard/employee", "destination": "/dashboard/employee.html" }
+  ],
+  "cleanUrls": true
 }
