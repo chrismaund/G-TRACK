@@ -2416,9 +2416,11 @@ async function fetchInventoryFromSupabase() {
             return;
         }
         if (data && data.length > 0) {
-            inventoryData = data.map(mapSupabaseToInventoryItem);
-            updateAccountDropdown();
-            renderTable();
+            if (inventoryData.length === 0) {
+                inventoryData = data.map(mapSupabaseToInventoryItem);
+                updateAccountDropdown();
+                renderTable();
+            }
         }
     } catch (err) {
         console.warn("Supabase fetch notice (using Firebase data):", err);

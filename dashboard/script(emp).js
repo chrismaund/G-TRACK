@@ -1249,10 +1249,12 @@ async function fetchInventoryFromSupabase() {
         }
 
         if (data && data.length > 0) {
-            inventoryData = data.map(mapSupabaseToInventoryItem);
-            updateAccountDropdown();
-            if (activeEmpView === 'accounting') renderAccountingView();
-            else renderTable();
+            if (inventoryData.length === 0) {
+                inventoryData = data.map(mapSupabaseToInventoryItem);
+                updateAccountDropdown();
+                if (activeEmpView === 'accounting') renderAccountingView();
+                else renderTable();
+            }
         }
     } catch (e) {
         console.warn("Supabase fetch exception (using Firebase):", e);
