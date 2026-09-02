@@ -563,7 +563,7 @@ function renderTable() {
  * Switches the active Employee view between Home and Directory (Masterlist).
  * @param {'home'|'directory'} viewName 
  */
-window.switchEmpView = function(viewName) {
+function switchEmpView(viewName) {
     activeEmpView = viewName;
     const homeView = document.getElementById('home-view');
     const directoryView = document.getElementById('directory-view');
@@ -602,14 +602,17 @@ window.switchEmpView = function(viewName) {
         }, 30);
     } else if (viewName === 'accounting') {
         setTimeout(() => {
-            renderAccountingView();
+            if (typeof renderAccountingView === 'function') {
+                renderAccountingView();
+            }
         }, 30);
     } else {
         setTimeout(() => {
             calculateMetrics();
         }, 30);
     }
-};
+}
+window.switchEmpView = switchEmpView;
 
 // =========================================================================
 // SIDEBAR COLLAPSE, EXPAND & MOBILE DRAWER CONTROLS
@@ -2215,6 +2218,7 @@ function renderAccountingView() {
 
     tableBodyEl.appendChild(fragment);
 }
+window.renderAccountingView = renderAccountingView;
 
 /**
  * Filter the Accounting table by clicking an Account Group card.

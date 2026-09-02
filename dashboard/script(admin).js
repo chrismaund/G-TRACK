@@ -275,7 +275,9 @@ function calculateMetrics() {
 
     sessionStorage.setItem('gtrack_total_articles', String(totalArticles));
 
-    renderHomeDashboard();
+    if (typeof renderHomeDashboard === 'function') {
+        renderHomeDashboard();
+    }
 }
 
 function updateAccountDropdown() {
@@ -3200,7 +3202,7 @@ let departmentAllocationChartInstance = null;
  * Switches the active Admin view between Home, Masterlist Table, and Analytics Dashboard.
  * @param {'home'|'masterlist'|'analytics'} viewName 
  */
-window.switchAdminView = function(viewName) {
+function switchAdminView(viewName) {
     activeAdminView = viewName;
     const homeView = document.getElementById('home-view');
     const masterlistView = document.getElementById('masterlist-view');
@@ -3250,12 +3252,13 @@ window.switchAdminView = function(viewName) {
             renderHomeDashboard();
         }, 30);
     }
-};
+}
+window.switchAdminView = switchAdminView;
 
 /**
  * Renders executive overview numbers on the Admin Homepage.
  */
-window.renderHomeDashboard = function() {
+function renderHomeDashboard() {
     const homeTotalArticlesEl = document.getElementById('home-stat-total-articles');
     const homeServiceableEl = document.getElementById('home-stat-serviceable');
     const homeAlertsEl = document.getElementById('home-stat-alerts');
@@ -3278,7 +3281,8 @@ window.renderHomeDashboard = function() {
     if (homeServiceableEl) homeServiceableEl.textContent = serviceableCount.toLocaleString();
     if (homeAlertsEl) homeAlertsEl.textContent = alertsCount.toLocaleString();
     if (homeValuationEl) homeValuationEl.textContent = `₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-};
+}
+window.renderHomeDashboard = renderHomeDashboard;
 
 /**
  * Parses an acquisition date string and calculates the item's age in years.
