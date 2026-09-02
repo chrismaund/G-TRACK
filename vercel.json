@@ -1,12 +1,38 @@
 {
-  "redirects": [
-    { "source": "/", "destination": "/login/index.html", "permanent": false },
-    { "source": "/dashboard/admin/index.html", "destination": "/dashboard/admin.html", "permanent": false },
-    { "source": "/dashboard/employee/index.html", "destination": "/dashboard/employee.html", "permanent": false }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
-    { "source": "/dashboard/admin", "destination": "/dashboard/admin.html" },
-    { "source": "/dashboard/employee", "destination": "/dashboard/employee.html" }
+    {
+      "source": "/",
+      "destination": "/login/index.html"
+    }
   ],
-  "cleanUrls": true
+  "headers": [
+    {
+      "source": "/(.*)\\.css",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
 }
