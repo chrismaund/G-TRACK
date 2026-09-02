@@ -2474,9 +2474,8 @@ inventoryRef.on('value', (snapshot) => {
     }
 });
 
-// 2. Initialize Supabase Listeners & Realtime Sync if configured
+// 2. Initialize Supabase Listeners & Realtime Sync if configured (for background data sync only)
 if (supabaseClient) {
-    fetchInventoryFromSupabase();
     checkAndMigrateData();
 
     // Subscribe to public.inventory changes in Realtime

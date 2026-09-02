@@ -1304,10 +1304,8 @@ inventoryRef.on('value', (snapshot) => {
     }
 });
 
-// 2. Initialize Supabase Realtime Sync
+// 2. Initialize Supabase Realtime Sync (for background data sync only)
 if (supabaseClient) {
-    fetchInventoryFromSupabase();
-
     supabaseClient
         .channel('public:inventory_emp')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
