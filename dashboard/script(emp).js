@@ -138,7 +138,19 @@ auth.onAuthStateChanged(async (user) => {
             if (modalDept) modalDept.value = currentEmployeeDept;
             if (modalCreated) modalCreated.textContent = currentEmployeeCreatedAt ? new Date(currentEmployeeCreatedAt).toLocaleDateString() : 'Active';
 
+            // Accounting Office & COA Compliance Tools visibility toggle
+            const isAccountingOffice = (currentEmployeeDept || '').toLowerCase().includes('accounting');
+            const accountingSummary = document.getElementById('accounting-home-summary');
+            const tallyFilterEl = document.getElementById('tally-filter');
+            const coaExportBtn = document.getElementById('accounting-coa-btn');
+
+            if (accountingSummary) accountingSummary.style.display = isAccountingOffice ? 'block' : 'none';
+            if (tallyFilterEl) tallyFilterEl.style.display = isAccountingOffice ? 'inline-block' : 'none';
+            if (coaExportBtn) coaExportBtn.style.display = isAccountingOffice ? 'inline-flex' : 'none';
+
             checkAdminRoleRequestStatus(user.uid);
+            calculateMetrics();
+            renderTable();
         }, (err) => {
             console.warn("User doc listener error:", err);
         });
@@ -233,6 +245,7 @@ function buildCSVString() {
 const tableBody = document.getElementById('inventory-body');
 const accountFilter = document.getElementById('account-filter');
 const conditionFilter = document.getElementById('condition-filter');
+const tallyFilter = document.getElementById('tally-filter');
 const searchInput = document.getElementById('search-input');
 const clearSearchBtn = document.getElementById('clear-search-btn');
 
@@ -279,6 +292,23 @@ function calculateMetrics() {
     if (homeServiceable) homeServiceable.textContent = serviceableCount.toLocaleString();
     if (homeUnserviceable) homeUnserviceable.textContent = unserviceableCount.toLocaleString();
     if (homeQty) homeQty.textContent = totalQuantity.toLocaleString();
+
+    // Accounting Office Financial Tally & Valuation Metrics
+    const totalInventoryVal = inventoryData.reduce((sum, item) => {
+        const qty = parseInt(item.qty, 10) || 0;
+        const uCost = parseFloat(item.unitCost) || 0;
+        return sum + (parseFloat(item.totalCost) || (qty * uCost));
+    }, 0);
+    const talliedCount = inventoryData.filter(item => (item.tallyStatus === 'Tallied' || item.tallied === true)).length;
+    const pendingTallyCount = Math.max(0, totalArticles - talliedCount);
+
+    const accTotalValEl = document.getElementById('accounting-stat-total-val');
+    const accTalliedEl = document.getElementById('accounting-stat-tallied-count');
+    const accPendingEl = document.getElementById('accounting-stat-pending-count');
+
+    if (accTotalValEl) accTotalValEl.textContent = `₱${totalInventoryVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (accTalliedEl) accTalliedEl.textContent = `${talliedCount} Items (${totalArticles > 0 ? Math.round((talliedCount / totalArticles) * 100) : 0}%)`;
+    if (accPendingEl) accPendingEl.textContent = `${pendingTallyCount} Items`;
 }
 
 function updateAccountDropdown() {
@@ -366,7 +396,10 @@ function renderTable() {
 
     const selectedAccount = accountFilter ? accountFilter.value || 'All Accounts' : 'All Accounts';
     const selectedCondition = conditionFilter ? conditionFilter.value || 'All Conditions' : 'All Conditions';
+    const selectedTally = tallyFilter ? tallyFilter.value || 'All' : 'All';
     const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    const isAccountingOffice = (currentEmployeeDept || '').toLowerCase().includes('accounting');
 
     const filteredData = inventoryData.filter(item => {
         const matchesAccount = selectedAccount === 'All Accounts' || item.account === selectedAccount;
@@ -375,6 +408,12 @@ function renderTable() {
         const itemCond = (item.condition || '').toLowerCase();
         const filterCond = selectedCondition.toLowerCase();
         const matchesCondition = selectedCondition === 'All Conditions' || itemCond === filterCond;
+
+        // Tally Reconciliation Filter (Accounting Office)
+        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+        let matchesTally = true;
+        if (selectedTally === 'Tallied') matchesTally = isTallied;
+        else if (selectedTally === 'Pending') matchesTally = !isTallied;
         
         // Dedicated "My Assigned Items" Filter
         let matchesMyAssignments = true;
@@ -430,7 +469,7 @@ function renderTable() {
             matchesSearch = searchTerms.every(term => searchBlob.includes(term));
         }
 
-        return matchesAccount && matchesCondition && matchesMyAssignments && matchesSearch;
+        return matchesAccount && matchesCondition && matchesTally && matchesMyAssignments && matchesSearch;
     });
 
     const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
@@ -452,7 +491,7 @@ function renderTable() {
             ? `No property records assigned to <strong>"${sanitizeText(currentEmployeeName || 'you')}"</strong> found in the masterlist.`
             : `No inventory records found matching your search.`;
 
-        tableBody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">${noDataMessage}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="14" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">${noDataMessage}</td></tr>`;
         calculateMetrics();
         return;
     }
@@ -474,6 +513,7 @@ function renderTable() {
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
 
         const isUserAssigned = isMatchingAccountablePerson(item.accountablePerson, currentEmployeeName);
+        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
 
         const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(index * 0.02, 0.35)}s`;
@@ -494,7 +534,12 @@ function renderTable() {
             <td><span class="badge ${badgeClass}">${sanitizeText(item.condition) || 'N/A'}</span></td>
             <td>${sanitizeText(item.account) || '-'}</td>
             <td class="text-muted">${sanitizeText(item.remarks) || '-'}</td>
-            <td class="actions-cell actions-cell-wrapper" style="text-align: center;">
+            <td class="actions-cell actions-cell-wrapper" style="text-align: center; white-space: nowrap;">
+                ${isAccountingOffice ? `
+                    <button class="action-btn" onclick="toggleItemTallyStatus('${item.id}')" title="${isTallied ? 'Tallied with Payment Voucher (Click to mark Pending)' : 'Pending Voucher Tally (Click to verify & tally)'}" style="color: ${isTallied ? '#4ade80' : '#fbbf24'}; margin-right: 4px; background: none; border: none; cursor: pointer; font-size: 13px;">
+                        <i class="${isTallied ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
+                    </button>
+                ` : ''}
                 <button class="action-btn edit-btn" onclick="openTransferModal('${item.id}')" title="Request Equipment Transfer">
                     <i class="fas fa-exchange-alt"></i>
                 </button>
@@ -1323,6 +1368,7 @@ function updateClearSearchVisibility() {
 // Table Filter & Pagination Listeners
 if (accountFilter) accountFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (conditionFilter) conditionFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
+if (tallyFilter) tallyFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (searchInput) {
     searchInput.addEventListener('input', () => {
         currentPage = 1;
@@ -1842,4 +1888,155 @@ window.submitAdminRoleRequest = async function(event) {
             reqBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Request Admin Access';
         }
     }
+};
+
+// =========================================================================
+// MUNICIPAL ACCOUNTING OFFICE • FINANCIAL TALLYING & COA RPCPPE GENERATOR
+// =========================================================================
+
+/**
+ * Toggles an inventory property item's payment voucher tally status (Accounting Office exclusive).
+ */
+window.toggleItemTallyStatus = async function(itemId) {
+    if (!itemId) return;
+    const isAccountingOffice = (currentEmployeeDept || '').toLowerCase().includes('accounting');
+    if (!isAccountingOffice) {
+        window.showGTrackToast('error', 'Access Restricted', 'Only Accounting Office personnel are authorized to reconcile and tally property records against payment vouchers.');
+        return;
+    }
+
+    const item = inventoryData.find(i => i.id === itemId);
+    if (!item) return;
+
+    const currentStatus = (item.tallyStatus === 'Tallied' || item.tallied === true) ? 'Tallied' : 'Pending';
+    const newStatus = (currentStatus === 'Tallied') ? 'Pending' : 'Tallied';
+
+    try {
+        await database.ref(`inventoryData/${itemId}`).update({
+            tallyStatus: newStatus,
+            tallied: (newStatus === 'Tallied'),
+            talliedBy: (newStatus === 'Tallied') ? (currentEmployeeName || 'Accounting Staff') : null,
+            talliedAt: (newStatus === 'Tallied') ? new Date().toISOString() : null
+        });
+
+        // Instant optimistic update in local array for fluid UI feedback
+        item.tallyStatus = newStatus;
+        item.tallied = (newStatus === 'Tallied');
+        item.talliedBy = (newStatus === 'Tallied') ? (currentEmployeeName || 'Accounting Staff') : null;
+        item.talliedAt = (newStatus === 'Tallied') ? new Date().toISOString() : null;
+
+        calculateMetrics();
+        renderTable();
+
+        window.showGTrackToast(
+            'success',
+            newStatus === 'Tallied' ? '✅ Item Tallied with Voucher' : '⏳ Tally Marked Pending',
+            `Property item "${item.propertyNo || item.article}" ${newStatus === 'Tallied' ? 'has been successfully tallied and verified against the payment voucher.' : 'is now marked as pending voucher verification.'}`
+        );
+    } catch (err) {
+        console.error("Error updating tally status:", err);
+        window.showGTrackToast('error', 'Error', 'Failed to update voucher tally status.');
+    }
+};
+
+/**
+ * Generates and downloads the official COA RPCPPE (Report on the Physical Count of Property, Plant and Equipment)
+ * formatted strictly according to Philippine COA Local Government Accounting guidelines.
+ */
+window.exportCOARPCPPEReport = function() {
+    if (!inventoryData || inventoryData.length === 0) {
+        window.showGTrackToast('error', 'No Records', 'No inventory records found to generate the COA report.');
+        return;
+    }
+
+    // Group items by Account Group for COA Classification
+    const grouped = {};
+    let grandTotalQty = 0;
+    let grandTotalCost = 0;
+
+    inventoryData.forEach(item => {
+        const group = item.account || 'Unclassified PPE';
+        if (!grouped[group]) grouped[group] = [];
+        grouped[group].push(item);
+
+        const qty = parseInt(item.qty, 10) || 0;
+        const uCost = parseFloat(item.unitCost) || 0;
+        const tCost = parseFloat(item.totalCost) || (qty * uCost);
+
+        grandTotalQty += qty;
+        grandTotalCost += tCost;
+    });
+
+    const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    
+    // Build standard COA RPCPPE CSV format
+    const lines = [];
+    lines.push('REPUBLIC OF THE PHILIPPINES');
+    lines.push('MUNICIPAL GOVERNMENT OF GENERAL SERVICES & ASSET MANAGEMENT');
+    lines.push('MUNICIPAL ACCOUNTING OFFICE - PROPERTY, PLANT AND EQUIPMENT LEDGER');
+    lines.push('REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)');
+    lines.push(`"As of Date: ${reportDate}"`);
+    lines.push('Fund Cluster: 101 - General Fund');
+    lines.push('Accountable Officer: General Services Office (Custodian) / Verified by: Municipal Accounting Office');
+    lines.push('');
+    lines.push('Account Classification,Article,Description,Property No.,Unit of Measure,Unit Value (PHP),Qty (Property Card),Qty (Physical Count),Total Cost (PHP),Condition,Voucher Tally Status,Accountable Officer,Location,Remarks');
+
+    Object.keys(grouped).sort().forEach(groupName => {
+        lines.push(`"${groupName.toUpperCase()}",,,,,,,,,,,,,`);
+        let groupTotalQty = 0;
+        let groupTotalCost = 0;
+
+        grouped[groupName].forEach(item => {
+            const qty = parseInt(item.qty, 10) || 0;
+            const uCost = parseFloat(item.unitCost) || 0;
+            const tCost = parseFloat(item.totalCost) || (qty * uCost);
+            const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+            const tallyLabel = isTallied ? `Tallied (${item.talliedBy || 'Accounting'})` : 'Pending Tally';
+
+            groupTotalQty += qty;
+            groupTotalCost += tCost;
+
+            const row = [
+                `"${(groupName || '').replace(/"/g, '""')}"`,
+                `"${(item.article || '').replace(/"/g, '""')}"`,
+                `"${(item.description || '').replace(/"/g, '""')}"`,
+                `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
+                `"${(item.unit || 'Unit').replace(/"/g, '""')}"`,
+                uCost.toFixed(2),
+                qty,
+                qty,
+                tCost.toFixed(2),
+                `"${(item.condition || 'SERVICEABLE').replace(/"/g, '""')}"`,
+                `"${tallyLabel}"`,
+                `"${(item.accountablePerson || '').replace(/"/g, '""')}"`,
+                `"${(item.location || '').replace(/"/g, '""')}"`,
+                `"${(item.remarks || '').replace(/"/g, '""')}"`
+            ];
+            lines.push(row.join(','));
+        });
+
+        lines.push(`"SUBTOTAL - ${groupName.toUpperCase()}",,,,,,"${groupTotalQty}","${groupTotalQty}","${groupTotalCost.toFixed(2)}",,,,,`);
+        lines.push('');
+    });
+
+    lines.push(`"GRAND TOTAL - ALL PPE ACCOUNTS",,,,,,"${grandTotalQty}","${grandTotalQty}","${grandTotalCost.toFixed(2)}",,,,,`);
+    lines.push('');
+    lines.push('CERTIFICATION & SIGNATURES:');
+    lines.push(`"Prepared & Reconciled By:","${currentEmployeeName || 'Accounting Officer'}","Municipal Accounting Office","Date: ${reportDate}"`);
+    lines.push(`"Certified Correct (Physical Custody):","General Services Officer (GSO)","General Services Office","Date: ${reportDate}"`);
+    lines.push(`"Approved By:","Municipal Accountant / Local Chief Executive","Municipal Government","Date: ${reportDate}"`);
+    lines.push(`"Witnessed By:","Commission on Audit (COA) Representative","Audit Team","Date: ${reportDate}"`);
+
+    const csvContent = lines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `COA_RPCPPE_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.showGTrackToast('success', 'COA Report Generated', `Downloaded official COA RPCPPE compliance report (${filename}).`);
 };
