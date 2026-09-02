@@ -341,6 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             auth.signOut();
                             throw new Error("Unauthorized access. Account is not an Admin.");
                         }
+                        sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
+                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || 'Administrator');
+                        sessionStorage.setItem('gtrack_user_role', 'admin');
                         window.location.href = "../dashboard/admin.html";
                     } else {
                         if (userData.role !== 'employee') {
@@ -355,6 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             auth.signOut();
                             throw new Error("Your registration request was rejected by an administrator.");
                         }
+                        sessionStorage.setItem('gtrack_user_dept', userData.department || '');
+                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || '');
+                        sessionStorage.setItem('gtrack_user_role', 'employee');
                         window.location.href = "../dashboard/employee.html";
                     }
                 })

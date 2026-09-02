@@ -39,8 +39,22 @@ let currentEmployeeEmail = "";
 let currentEmployeeName = "";
 let currentEmployeeUid = "";
 let currentEmployeeCreatedAt = "";
-let currentEmployeeDept = "";
+let currentEmployeeDept = sessionStorage.getItem('gtrack_user_dept') || "";
 let isMyAssignmentsActive = false;
+
+// Instant zero-delay preload of department sidebar button from session cache
+(function preloadAccountingSidebarState() {
+    const cachedDept = sessionStorage.getItem('gtrack_user_dept') || '';
+    if (cachedDept.toLowerCase().includes('accounting')) {
+        const btn = document.getElementById('sidebar-accounting-btn');
+        if (btn) btn.style.display = 'flex';
+    }
+    const cachedName = sessionStorage.getItem('gtrack_user_name') || '';
+    if (cachedName) {
+        const heroNameEl = document.getElementById('emp-hero-name');
+        if (heroNameEl) heroNameEl.textContent = cachedName;
+    }
+})();
 
 // =========================================================================
 // AUTHENTICATION GUARD & LIVE REAL-TIME SESSION/ROLE LISTENER (EMPLOYEE)
@@ -103,6 +117,9 @@ auth.onAuthStateChanged(async (user) => {
             currentEmployeeName = userData.fullName || userData.name || user.email;
             currentEmployeeCreatedAt = userData.createdAt || "";
             currentEmployeeDept = userData.department || "Staff Access";
+
+            sessionStorage.setItem('gtrack_user_dept', currentEmployeeDept);
+            sessionStorage.setItem('gtrack_user_name', currentEmployeeName);
 
             // Live notification if department was updated by Admin
             if (prevDept && currentEmployeeDept && prevDept !== currentEmployeeDept) {
@@ -248,6 +265,16 @@ const serviceableItemsEl = document.getElementById('serviceable-items-count');
 const unserviceableItemsEl = document.getElementById('unserviceable-items-count');
 const totalQtyEl = document.getElementById('total-qty-count');
 
+// Preload stat numbers from session cache to prevent 0 or jump flicker on reload
+(function preloadEmpStats() {
+    const cachedTotal = sessionStorage.getItem('gtrack_total_articles');
+    if (cachedTotal) {
+        if (totalItemsEl) totalItemsEl.textContent = Number(cachedTotal).toLocaleString();
+        const homeTotal = document.getElementById('emp-home-stat-total');
+        if (homeTotal) homeTotal.textContent = Number(cachedTotal).toLocaleString();
+    }
+})();
+
 let inventoryData = [];
 let currentPage = 1;
 const ROWS_PER_PAGE = 20;
@@ -286,6 +313,8 @@ function calculateMetrics() {
     if (homeServiceable) homeServiceable.textContent = serviceableCount.toLocaleString();
     if (homeUnserviceable) homeUnserviceable.textContent = unserviceableCount.toLocaleString();
     if (homeQty) homeQty.textContent = totalQuantity.toLocaleString();
+
+    sessionStorage.setItem('gtrack_total_articles', String(totalArticles));
 }
 
 function updateAccountDropdown() {

@@ -273,6 +273,8 @@ function calculateMetrics() {
     if (totalQtyEl) totalQtyEl.textContent = totalQuantity.toLocaleString();
     if (totalValueEl) totalValueEl.textContent = `₱${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
+    sessionStorage.setItem('gtrack_total_articles', String(totalArticles));
+
     renderHomeDashboard();
 }
 
