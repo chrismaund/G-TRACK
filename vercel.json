@@ -1,10 +1,11 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
+  "redirects": [
     {
       "source": "/",
-      "destination": "/login/index.html"
+      "destination": "/login/index.html",
+      "permanent": true
     }
   ],
   "headers": [
