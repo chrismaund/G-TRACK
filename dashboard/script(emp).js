@@ -138,6 +138,13 @@ auth.onAuthStateChanged(async (user) => {
             if (modalDept) modalDept.value = currentEmployeeDept;
             if (modalCreated) modalCreated.textContent = currentEmployeeCreatedAt ? new Date(currentEmployeeCreatedAt).toLocaleDateString() : 'Active';
 
+            // Municipal Accounting Office Exclusive View Toggle
+            const isAccountingOffice = (currentEmployeeDept || '').toLowerCase().includes('accounting');
+            const accountingSidebarBtn = document.getElementById('sidebar-accounting-btn');
+            if (accountingSidebarBtn) {
+                accountingSidebarBtn.style.display = isAccountingOffice ? 'flex' : 'none';
+            }
+
             checkAdminRoleRequestStatus(user.uid);
         }, (err) => {
             console.warn("User doc listener error:", err);
@@ -518,18 +525,21 @@ window.switchEmpView = function(viewName) {
     activeEmpView = viewName;
     const homeView = document.getElementById('home-view');
     const directoryView = document.getElementById('directory-view');
+    const accountingView = document.getElementById('accounting-view');
 
     // Update active class on sidebar buttons
     const homeBtn = document.getElementById('sidebar-home-btn');
     const directoryBtn = document.getElementById('sidebar-directory-btn');
+    const accountingBtn = document.getElementById('sidebar-accounting-btn');
     const darkModeBtn = document.getElementById('dark-mode-toggle');
     const darkModeDivider = document.getElementById('dark-mode-divider');
 
     if (homeBtn) homeBtn.classList.toggle('active', viewName === 'home');
     if (directoryBtn) directoryBtn.classList.toggle('active', viewName === 'directory');
+    if (accountingBtn) accountingBtn.classList.toggle('active', viewName === 'accounting');
 
-    // Dark Mode toggle smoothly appears only when in the Masterlist interface
-    const isMasterlist = (viewName === 'directory');
+    // Dark Mode toggle smoothly appears when in Masterlist or Accounting interface
+    const isMasterlist = (viewName === 'directory' || viewName === 'accounting');
     if (darkModeBtn) {
         darkModeBtn.style.display = '';
         darkModeBtn.classList.toggle('theme-toggle-hidden', !isMasterlist);
@@ -542,10 +552,15 @@ window.switchEmpView = function(viewName) {
     // Toggle views
     if (homeView) homeView.classList.toggle('hidden', viewName !== 'home');
     if (directoryView) directoryView.classList.toggle('hidden', viewName !== 'directory');
+    if (accountingView) accountingView.classList.toggle('hidden', viewName !== 'accounting');
 
     if (viewName === 'directory') {
         setTimeout(() => {
             renderTable();
+        }, 30);
+    } else if (viewName === 'accounting') {
+        setTimeout(() => {
+            renderAccountingView();
         }, 30);
     } else {
         setTimeout(() => {
@@ -1236,7 +1251,8 @@ async function fetchInventoryFromSupabase() {
         if (data && data.length > 0) {
             inventoryData = data.map(mapSupabaseToInventoryItem);
             updateAccountDropdown();
-            renderTable();
+            if (activeEmpView === 'accounting') renderAccountingView();
+            else renderTable();
         }
     } catch (e) {
         console.warn("Supabase fetch exception (using Firebase):", e);
@@ -1252,7 +1268,8 @@ inventoryRef.on('value', (snapshot) => {
             if (inventoryData.length === 0 || !supabaseClient) {
                 inventoryData = fbItems;
                 updateAccountDropdown();
-                renderTable();
+                if (activeEmpView === 'accounting') renderAccountingView();
+                else renderTable();
             }
         }
     }
@@ -1843,3 +1860,408 @@ window.submitAdminRoleRequest = async function(event) {
         }
     }
 };
+
+// =========================================================================
+// MUNICIPAL ACCOUNTING OFFICE • FINANCIAL TALLYING & COA RPCPPE EXPORTER
+// =========================================================================
+let accountingCurrentPage = 1;
+const ACCOUNTING_ROWS_PER_PAGE = 20;
+
+function renderAccountingView() {
+    const tableBodyEl = document.getElementById('accounting-table-body');
+    const searchInputEl = document.getElementById('accounting-search-input');
+    const groupFilterEl = document.getElementById('accounting-group-filter');
+    const tallyFilterEl = document.getElementById('accounting-tally-filter');
+    const pageIndicatorEl = document.getElementById('accounting-page-indicator');
+    const prevPageBtnEl = document.getElementById('accounting-prev-page-btn');
+    const nextPageBtnEl = document.getElementById('accounting-next-page-btn');
+    const clearSearchBtnEl = document.getElementById('accounting-clear-search-btn');
+
+    // 1. Calculate Comprehensive Financial Valuation & Tally Metrics
+    let totalMunicipalVal = 0;
+    let totalTalliedCount = 0;
+    let totalTalliedVal = 0;
+    let totalPendingCount = 0;
+    let totalPendingVal = 0;
+
+    const groupStats = {};
+
+    inventoryData.forEach(item => {
+        const qty = parseInt(item.qty, 10) || 0;
+        const uCost = parseFloat(item.unitCost) || 0;
+        const tCost = parseFloat(item.totalCost) || (qty * uCost);
+        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+
+        totalMunicipalVal += tCost;
+        if (isTallied) {
+            totalTalliedCount++;
+            totalTalliedVal += tCost;
+        } else {
+            totalPendingCount++;
+            totalPendingVal += tCost;
+        }
+
+        const groupKey = item.account || 'Unclassified PPE';
+        if (!groupStats[groupKey]) {
+            groupStats[groupKey] = { count: 0, qty: 0, value: 0, talliedCount: 0 };
+        }
+        groupStats[groupKey].count++;
+        groupStats[groupKey].qty += qty;
+        groupStats[groupKey].value += tCost;
+        if (isTallied) groupStats[groupKey].talliedCount++;
+    });
+
+    // Update KPI Card Displays
+    const totalValEl = document.getElementById('accounting-total-val');
+    const talliedCountEl = document.getElementById('accounting-tallied-count');
+    const talliedValEl = document.getElementById('accounting-tallied-val');
+    const pendingCountEl = document.getElementById('accounting-pending-count');
+    const pendingValEl = document.getElementById('accounting-pending-val');
+
+    if (totalValEl) totalValEl.textContent = `₱${totalMunicipalVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (talliedCountEl) talliedCountEl.textContent = `${totalTalliedCount} Items (${inventoryData.length > 0 ? Math.round((totalTalliedCount / inventoryData.length) * 100) : 0}%)`;
+    if (talliedValEl) talliedValEl.textContent = `₱${totalTalliedVal.toLocaleString('en-US', { minimumFractionDigits: 2 })} reconciled`;
+    if (pendingCountEl) pendingCountEl.textContent = `${totalPendingCount} Items`;
+    if (pendingValEl) pendingValEl.textContent = `₱${totalPendingVal.toLocaleString('en-US', { minimumFractionDigits: 2 })} pending verification`;
+
+    // 2. Populate PPE Account Group Valuation Breakdown Cards
+    const groupsGridEl = document.getElementById('accounting-groups-grid');
+    if (groupsGridEl) {
+        groupsGridEl.innerHTML = '';
+        Object.keys(groupStats).sort().forEach(groupName => {
+            const stat = groupStats[groupName];
+            const pctTallied = stat.count > 0 ? Math.round((stat.talliedCount / stat.count) * 100) : 0;
+            const card = document.createElement('div');
+            card.style.background = 'rgba(15, 23, 42, 0.6)';
+            card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            card.style.borderRadius = '10px';
+            card.style.padding = '12px 14px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.gap = '6px';
+            card.innerHTML = `
+                <div style="font-size: 11.5px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sanitizeText(groupName)}">
+                    ${sanitizeText(groupName)}
+                </div>
+                <div style="font-size: 15px; font-weight: 800; color: #38bdf8;">
+                    ₱${stat.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
+                    <span>${stat.count} articles • ${stat.qty} units</span>
+                    <span style="color: ${pctTallied === 100 ? '#34d399' : '#fbbf24'}; font-weight: 600;">${pctTallied}% Tallied</span>
+                </div>
+                <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 2px;">
+                    <div style="width: ${pctTallied}%; height: 100%; background: ${pctTallied === 100 ? '#34d399' : '#38bdf8'}; border-radius: 2px;"></div>
+                </div>
+            `;
+            groupsGridEl.appendChild(card);
+        });
+    }
+
+    // 3. Update Group Filter Dropdown Options
+    if (groupFilterEl) {
+        const currentVal = groupFilterEl.value || 'All';
+        const existingOpts = Array.from(groupFilterEl.options).map(o => o.value);
+        const groupKeys = Object.keys(groupStats).sort();
+        
+        // Only rebuild if options changed
+        if (groupKeys.some(k => !existingOpts.includes(k))) {
+            groupFilterEl.innerHTML = '<option value="All">All Account Groups</option>';
+            groupKeys.forEach(grp => {
+                const opt = document.createElement('option');
+                opt.value = grp;
+                opt.textContent = grp;
+                groupFilterEl.appendChild(opt);
+            });
+            if (existingOpts.includes(currentVal)) {
+                groupFilterEl.value = currentVal;
+            }
+        }
+    }
+
+    // 4. Filter and Render Financial Tally Table
+    if (!tableBodyEl) return;
+    tableBodyEl.innerHTML = '';
+
+    const searchText = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
+    const selectedGroup = groupFilterEl ? groupFilterEl.value || 'All' : 'All';
+    const selectedTally = tallyFilterEl ? tallyFilterEl.value || 'All' : 'All';
+
+    if (clearSearchBtnEl && searchInputEl) {
+        clearSearchBtnEl.style.display = searchInputEl.value.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    const filtered = inventoryData.filter(item => {
+        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+        const matchesGroup = (selectedGroup === 'All' || item.account === selectedGroup);
+        let matchesTally = true;
+        if (selectedTally === 'Tallied') matchesTally = isTallied;
+        else if (selectedTally === 'Pending') matchesTally = !isTallied;
+
+        let matchesSearch = true;
+        if (searchText) {
+            const searchBlob = [
+                item.article,
+                item.description,
+                item.propertyNo,
+                item.accountablePerson,
+                item.location,
+                item.account,
+                item.remarks,
+                String(item.unitCost || ''),
+                String(item.totalCost || '')
+            ].map(v => String(v || '').toLowerCase()).join(' ');
+            matchesSearch = searchText.split(/\s+/).every(term => searchBlob.includes(term));
+        }
+
+        return matchesGroup && matchesTally && matchesSearch;
+    });
+
+    const totalPages = Math.ceil(filtered.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
+    if (accountingCurrentPage > totalPages) accountingCurrentPage = totalPages;
+    if (accountingCurrentPage < 1) accountingCurrentPage = 1;
+
+    if (pageIndicatorEl) pageIndicatorEl.textContent = `Page ${accountingCurrentPage} of ${totalPages}`;
+    if (prevPageBtnEl) prevPageBtnEl.disabled = (accountingCurrentPage <= 1);
+    if (nextPageBtnEl) nextPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
+
+    if (filtered.length === 0) {
+        tableBodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">No property records match your search or filter.</td></tr>`;
+        return;
+    }
+
+    const startIndex = (accountingCurrentPage - 1) * ACCOUNTING_ROWS_PER_PAGE;
+    const pageData = filtered.slice(startIndex, startIndex + ACCOUNTING_ROWS_PER_PAGE);
+    const fragment = document.createDocumentFragment();
+
+    pageData.forEach((item, index) => {
+        const qtyVal = parseInt(item.qty, 10) || 0;
+        const unitCostVal = parseFloat(item.unitCost) || 0;
+        const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+
+        const tr = document.createElement('tr');
+        tr.style.animationDelay = `${Math.min(index * 0.02, 0.35)}s`;
+        tr.innerHTML = `
+            <td class="text-muted">${sanitizeText(item.date) || '-'}</td>
+            <td class="text-muted font-bold">${sanitizeText(item.propertyNo) || '-'}</td>
+            <td class="font-bold article-cell" title="${sanitizeText(item.article)} - ${sanitizeText(item.description)}">
+                ${sanitizeText(item.article) || '-'}<br>
+                <small style="color: #94a3b8; font-weight: 400;">${sanitizeText(item.description) || '-'}</small>
+            </td>
+            <td class="font-bold">${qtyVal} ${sanitizeText(item.unit) || ''}</td>
+            <td>₱${unitCostVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td class="font-bold text-blue">₱${computedTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td>${sanitizeText(item.account) || '-'}</td>
+            <td>${sanitizeText(item.accountablePerson) || '-'}</td>
+            <td>
+                <span class="badge ${isTallied ? 'serviceable-badge' : 'unserviceable-badge'}" style="font-size: 11px;">
+                    ${isTallied ? '✅ Tallied' : '⏳ Pending'}
+                </span>
+            </td>
+            <td class="actions-cell actions-cell-wrapper" style="text-align: center; white-space: nowrap;">
+                <button type="button" class="action-btn" onclick="toggleAccountingTally('${item.id}')" title="${isTallied ? 'Reconciled with voucher. Click to mark Pending' : 'Click to verify and tally with Payment Voucher'}" style="background: ${isTallied ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)'}; color: ${isTallied ? '#4ade80' : '#38bdf8'}; border: 1px solid ${isTallied ? 'rgba(74, 222, 128, 0.3)' : 'rgba(56, 189, 248, 0.3)'}; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                    <i class="${isTallied ? 'fas fa-check-circle' : 'far fa-circle'}"></i> ${isTallied ? 'Tallied' : 'Verify'}
+                </button>
+            </td>
+        `;
+        fragment.appendChild(tr);
+    });
+
+    tableBodyEl.appendChild(fragment);
+}
+
+/**
+ * Toggles an inventory item's payment voucher tally status.
+ */
+window.toggleAccountingTally = async function(itemId) {
+    if (!itemId) return;
+    const item = inventoryData.find(i => i.id === itemId);
+    if (!item) return;
+
+    const currentStatus = (item.tallyStatus === 'Tallied' || item.tallied === true) ? 'Tallied' : 'Pending';
+    const newStatus = (currentStatus === 'Tallied') ? 'Pending' : 'Tallied';
+
+    try {
+        await database.ref(`inventoryData/${itemId}`).update({
+            tallyStatus: newStatus,
+            tallied: (newStatus === 'Tallied'),
+            talliedBy: (newStatus === 'Tallied') ? (currentEmployeeName || 'Municipal Accounting Office') : null,
+            talliedAt: (newStatus === 'Tallied') ? new Date().toISOString() : null
+        });
+
+        // Instant local optimistic update
+        item.tallyStatus = newStatus;
+        item.tallied = (newStatus === 'Tallied');
+        item.talliedBy = (newStatus === 'Tallied') ? (currentEmployeeName || 'Municipal Accounting Office') : null;
+        item.talliedAt = (newStatus === 'Tallied') ? new Date().toISOString() : null;
+
+        renderAccountingView();
+
+        window.showGTrackToast(
+            'success',
+            newStatus === 'Tallied' ? '✅ Voucher Verified & Tallied' : '⏳ Tally Marked Pending',
+            `Property item "${item.propertyNo || item.article}" has been ${newStatus === 'Tallied' ? 'verified against the payment voucher.' : 'marked as pending voucher verification.'}`
+        );
+    } catch (err) {
+        console.error("Error updating tally status:", err);
+        window.showGTrackToast('error', 'Error', 'Failed to update voucher tally status.');
+    }
+};
+
+/**
+ * Exports official COA RPCPPE CSV report formatted for Philippine Local Government Accounting standards.
+ */
+window.exportCOARPCPPEReport = function() {
+    if (!inventoryData || inventoryData.length === 0) {
+        window.showGTrackToast('error', 'No Records', 'No inventory records found to generate the COA report.');
+        return;
+    }
+
+    const grouped = {};
+    let grandTotalQty = 0;
+    let grandTotalCost = 0;
+
+    inventoryData.forEach(item => {
+        const group = item.account || 'Unclassified PPE';
+        if (!grouped[group]) grouped[group] = [];
+        grouped[group].push(item);
+
+        const qty = parseInt(item.qty, 10) || 0;
+        const uCost = parseFloat(item.unitCost) || 0;
+        const tCost = parseFloat(item.totalCost) || (qty * uCost);
+
+        grandTotalQty += qty;
+        grandTotalCost += tCost;
+    });
+
+    const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    
+    const lines = [];
+    lines.push('REPUBLIC OF THE PHILIPPINES');
+    lines.push('MUNICIPAL GOVERNMENT OF GENERAL SERVICES & ASSET MANAGEMENT');
+    lines.push('MUNICIPAL ACCOUNTING OFFICE - PROPERTY, PLANT AND EQUIPMENT LEDGER');
+    lines.push('REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)');
+    lines.push(`"As of Date: ${reportDate}"`);
+    lines.push('Fund Cluster: 101 - General Fund');
+    lines.push('Accountable Officer: General Services Office (Custodian) / Reconciled by: Municipal Accounting Office');
+    lines.push('');
+    lines.push('Account Classification,Article,Description,Property No.,Unit of Measure,Unit Cost (PHP),Qty (Property Card),Qty (Physical Count),Total Cost (PHP),Condition,Voucher Tally Status,Accountable Officer,Location,Remarks');
+
+    Object.keys(grouped).sort().forEach(groupName => {
+        lines.push(`"${groupName.toUpperCase()}",,,,,,,,,,,,,`);
+        let groupTotalQty = 0;
+        let groupTotalCost = 0;
+
+        grouped[groupName].forEach(item => {
+            const qty = parseInt(item.qty, 10) || 0;
+            const uCost = parseFloat(item.unitCost) || 0;
+            const tCost = parseFloat(item.totalCost) || (qty * uCost);
+            const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+            const tallyLabel = isTallied ? `Tallied (${item.talliedBy || 'Accounting'})` : 'Pending Tally';
+
+            groupTotalQty += qty;
+            groupTotalCost += tCost;
+
+            const row = [
+                `"${(groupName || '').replace(/"/g, '""')}"`,
+                `"${(item.article || '').replace(/"/g, '""')}"`,
+                `"${(item.description || '').replace(/"/g, '""')}"`,
+                `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
+                `"${(item.unit || 'Unit').replace(/"/g, '""')}"`,
+                uCost.toFixed(2),
+                qty,
+                qty,
+                tCost.toFixed(2),
+                `"${(item.condition || 'SERVICEABLE').replace(/"/g, '""')}"`,
+                `"${tallyLabel}"`,
+                `"${(item.accountablePerson || '').replace(/"/g, '""')}"`,
+                `"${(item.location || '').replace(/"/g, '""')}"`,
+                `"${(item.remarks || '').replace(/"/g, '""')}"`
+            ];
+            lines.push(row.join(','));
+        });
+
+        lines.push(`"SUBTOTAL - ${groupName.toUpperCase()}",,,,,,"${groupTotalQty}","${groupTotalQty}","${groupTotalCost.toFixed(2)}",,,,,`);
+        lines.push('');
+    });
+
+    lines.push(`"GRAND TOTAL - ALL PPE ACCOUNTS",,,,,,"${grandTotalQty}","${grandTotalQty}","${grandTotalCost.toFixed(2)}",,,,,`);
+    lines.push('');
+    lines.push('CERTIFICATION & SIGNATURES:');
+    lines.push(`"Prepared & Reconciled By:","${currentEmployeeName || 'Accounting Officer'}","Municipal Accounting Office","Date: ${reportDate}"`);
+    lines.push(`"Certified Correct (Physical Custody):","General Services Officer (GSO)","General Services Office","Date: ${reportDate}"`);
+    lines.push(`"Approved By:","Municipal Accountant / Local Chief Executive","Municipal Government","Date: ${reportDate}"`);
+    lines.push(`"Witnessed By:","Commission on Audit (COA) Representative","Audit Team","Date: ${reportDate}"`);
+
+    const csvContent = lines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `COA_RPCPPE_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.showGTrackToast('success', 'COA Report Generated', `Downloaded official COA RPCPPE compliance report (${filename}).`);
+};
+
+// Hook up Accounting View Event Listeners
+(function setupAccountingListeners() {
+    const searchInput = document.getElementById('accounting-search-input');
+    const clearSearchBtn = document.getElementById('accounting-clear-search-btn');
+    const groupFilter = document.getElementById('accounting-group-filter');
+    const tallyFilter = document.getElementById('accounting-tally-filter');
+    const prevPageBtn = document.getElementById('accounting-prev-page-btn');
+    const nextPageBtn = document.getElementById('accounting-next-page-btn');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            accountingCurrentPage = 1;
+            renderAccountingView();
+        });
+    }
+
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+            }
+            accountingCurrentPage = 1;
+            renderAccountingView();
+        });
+    }
+
+    if (groupFilter) {
+        groupFilter.addEventListener('change', () => {
+            accountingCurrentPage = 1;
+            renderAccountingView();
+        });
+    }
+
+    if (tallyFilter) {
+        tallyFilter.addEventListener('change', () => {
+            accountingCurrentPage = 1;
+            renderAccountingView();
+        });
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (accountingCurrentPage > 1) {
+                accountingCurrentPage--;
+                renderAccountingView();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            accountingCurrentPage++;
+            renderAccountingView();
+        });
+    }
+})();
