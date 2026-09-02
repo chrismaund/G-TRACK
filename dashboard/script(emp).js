@@ -1940,7 +1940,7 @@ function renderAccountingView() {
         const qty = parseInt(item.qty, 10) || 0;
         const uCost = parseFloat(item.unitCost) || 0;
         const tCost = parseFloat(item.totalCost) || (qty * uCost);
-        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
 
         totalMunicipalVal += tCost;
         if (isTallied) {
@@ -2053,7 +2053,7 @@ function renderAccountingView() {
     const isAllGroups = (!selectedGroup || selectedGroup === 'All' || selectedGroup === 'All Account Groups');
 
     const filtered = inventoryData.filter(item => {
-        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
         const itemAcc = (item.account || '').trim();
         const matchesGroup = isAllGroups || (itemAcc === selectedGroup.trim()) || (selectedGroup === 'Unclassified PPE' && !itemAcc);
         
@@ -2101,8 +2101,8 @@ function renderAccountingView() {
         const qtyVal = parseInt(item.qty, 10) || 0;
         const unitCostVal = parseFloat(item.unitCost) || 0;
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
-        const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
-        const dateStr = item.date ? (new Date(item.date).toLocaleDateString() || item.date) : '-';
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+        const dateStr = item.date || '-';
 
         const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(index * 0.02, 0.35)}s`;
@@ -2119,12 +2119,12 @@ function renderAccountingView() {
             <td>${sanitizeText(item.account) || '-'}</td>
             <td>${sanitizeText(item.accountablePerson) || '-'}</td>
             <td>
-                <span class="badge ${isTallied ? 'serviceable-badge' : 'unserviceable-badge'}" style="font-size: 11px;" title="${isTallied ? 'Reconciled by ' + (item.talliedBy || 'Accounting') + ' on ' + (item.talliedAt ? new Date(item.talliedAt).toLocaleDateString() : '') : 'Pending payment voucher check'}">
+                <span class="badge ${isTallied ? 'serviceable-badge' : 'unserviceable-badge'}" style="font-size: 11px;" title="${isTallied ? 'Reconciled • ' + (item.talliedBy || 'Audited Legacy Record') : 'Pending payment voucher check'}">
                     ${isTallied ? '<i class="fas fa-check-circle"></i> Tallied' : '<i class="far fa-clock"></i> Pending'}
                 </span>
             </td>
             <td class="actions-cell actions-cell-wrapper" style="text-align: center; white-space: nowrap;">
-                <button type="button" class="action-btn" onclick="toggleAccountingTally('${item.id}')" title="${isTallied ? 'Reconciled with voucher by ' + (item.talliedBy || 'Accounting') + '. Click to unmark.' : 'Click to verify and reconcile with payment voucher.'}" style="background: ${isTallied ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)'}; color: ${isTallied ? '#4ade80' : '#38bdf8'}; border: 1px solid ${isTallied ? 'rgba(74, 222, 128, 0.35)' : 'rgba(56, 189, 248, 0.35)'}; padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
+                <button type="button" class="action-btn" onclick="toggleAccountingTally('${item.id}')" title="${isTallied ? 'Reconciled with voucher. Click to unmark.' : 'Click to verify and reconcile with payment voucher.'}" style="background: ${isTallied ? 'rgba(74, 222, 128, 0.15)' : 'rgba(56, 189, 248, 0.15)'}; color: ${isTallied ? '#4ade80' : '#38bdf8'}; border: 1px solid ${isTallied ? 'rgba(74, 222, 128, 0.35)' : 'rgba(56, 189, 248, 0.35)'}; padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
                     <i class="${isTallied ? 'fas fa-check-circle' : 'fas fa-check'}"></i> ${isTallied ? 'Tallied' : 'Verify'}
                 </button>
             </td>
@@ -2155,8 +2155,8 @@ window.toggleAccountingTally = async function(itemId) {
     const item = inventoryData.find(i => i.id === itemId);
     if (!item) return;
 
-    const currentStatus = (item.tallyStatus === 'Tallied' || item.tallied === true) ? 'Tallied' : 'Pending';
-    const newStatus = (currentStatus === 'Tallied') ? 'Pending' : 'Tallied';
+    const isCurrentlyTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+    const newStatus = isCurrentlyTallied ? 'Pending' : 'Tallied';
 
     try {
         await database.ref(`inventoryData/${itemId}`).update({
@@ -2233,8 +2233,8 @@ window.exportCOARPCPPEReport = function() {
             const qty = parseInt(item.qty, 10) || 0;
             const uCost = parseFloat(item.unitCost) || 0;
             const tCost = parseFloat(item.totalCost) || (qty * uCost);
-            const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
-            const tallyLabel = isTallied ? `Tallied (${item.talliedBy || 'Accounting'})` : 'Pending Tally';
+            const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+            const tallyLabel = isTallied ? `Tallied (${item.talliedBy || 'Audited Record'})` : 'Pending Tally';
 
             groupTotalQty += qty;
             groupTotalCost += tCost;

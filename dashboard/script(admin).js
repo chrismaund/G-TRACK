@@ -544,11 +544,15 @@ if (addForm) {
                 const newRef = inventoryRef.push();
                 const newId = newRef.key;
                 formData.id = newId;
+                formData.tallyStatus = 'Pending';
+                formData.tallied = false;
 
                 await newRef.set(formData);
 
                 // Insert into Supabase if available
                 if (supabaseClient) {
+                    supabasePayload.tally_status = 'Pending';
+                    supabasePayload.tallied = false;
                     await supabaseClient
                         .from('inventory')
                         .insert([supabasePayload]);
