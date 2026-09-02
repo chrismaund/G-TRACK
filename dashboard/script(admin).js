@@ -484,6 +484,26 @@ function closeModal() {
     if (toast) toast.style.display = 'none';
 }
 
+window.updateCOAClassificationBadge = function() {
+    const qty = parseInt(document.getElementById('add-qty')?.value, 10) || 1;
+    const unitCost = parseFloat(document.getElementById('add-unit-cost')?.value) || 0;
+    const totalCost = qty * unitCost;
+    const badge = document.getElementById('add-coa-form-badge');
+    if (!badge) return;
+
+    if (totalCost >= 50000) {
+        badge.style.background = 'rgba(56, 189, 248, 0.18)';
+        badge.style.color = '#38bdf8';
+        badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        badge.innerHTML = '<i class="fas fa-file-contract"></i> PAR (Capital Outlay / PPE ≥ ₱50,000)';
+    } else {
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.color = '#fbbf24';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        badge.innerHTML = '<i class="fas fa-boxes"></i> ICS (Semi-Expendable &lt; ₱50,000)';
+    }
+};
+
 if (addBtn) {
     addBtn.addEventListener('click', () => {
         isEditMode = false;
@@ -491,6 +511,7 @@ if (addBtn) {
         const toast = document.getElementById('add-success-toast');
         if (toast) toast.style.display = 'none';
         if (addForm) addForm.reset();
+        window.updateCOAClassificationBadge();
         openModal();
     });
 }
@@ -520,6 +541,9 @@ if (addForm) {
             accountablePerson: document.getElementById('add-accountable')?.value || '',
             condition: document.getElementById('add-condition')?.value || 'Serviceable',
             account: document.getElementById('add-account')?.value || '',
+            poNo: document.getElementById('add-po-no')?.value.trim() || '',
+            supplier: document.getElementById('add-supplier')?.value.trim() || '',
+            formType: totalCostVal >= 50000 ? 'PAR' : 'ICS',
             remarks: document.getElementById('add-remarks')?.value || 'N/A'
         };
 
@@ -554,6 +578,7 @@ if (addForm) {
 
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
+                window.updateCOAClassificationBadge();
                 const toast = document.getElementById('add-success-toast');
                 if (toast) {
                     toast.style.display = 'inline-flex';
@@ -593,9 +618,139 @@ window.openEditModal = function(id) {
     if (document.getElementById('add-accountable')) document.getElementById('add-accountable').value = item.accountablePerson || '';
     if (document.getElementById('add-account')) document.getElementById('add-account').value = item.account || '';
     if (document.getElementById('add-condition')) document.getElementById('add-condition').value = item.condition || 'Serviceable';
+    if (document.getElementById('add-po-no')) document.getElementById('add-po-no').value = item.poNo || '';
+    if (document.getElementById('add-supplier')) document.getElementById('add-supplier').value = item.supplier || '';
     if (document.getElementById('add-remarks')) document.getElementById('add-remarks').value = item.remarks || '';
 
+    window.updateCOAClassificationBadge();
     openModal();
+};
+
+// =========================================================================
+// COA RPCPPE EXPORT GENERATOR (PHYSICAL COUNT REPORT FOR ACCOUNTING / COA)
+// =========================================================================
+window.exportCOARPCPPE = function() {
+    if (!inventoryData || inventoryData.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'No Records', 'There are no inventory records available to export.');
+        } else {
+            alert('No inventory records found to export.');
+        }
+        return;
+    }
+
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const fileTimestamp = today.toISOString().split('T')[0];
+
+    // Build official COA RPCPPE Document Header
+    const csvRows = [
+        ['REPUBLIC OF THE PHILIPPINES'],
+        ['MUNICIPALITY OF PAGBILAO, QUEZON'],
+        ['GENERAL SERVICES OFFICE (GSO) - PROPERTY & ASSET MANAGEMENT DIVISION'],
+        ['REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)'],
+        [`As of ${formattedDate} | Annual Inventory Report for Accounting & COA Submission`],
+        [],
+        [
+            'Item No.',
+            'Date Acquired',
+            'Property No.',
+            'Article',
+            'Description / Specifications',
+            'Unit of Measure',
+            'Unit Value (PHP)',
+            'Quantity (Physical Count)',
+            'Total Value (PHP)',
+            'Location / Municipal Office',
+            'Accountable Officer / Custodian',
+            'Current Condition',
+            'Account Group Classification',
+            'PO / Voucher Ref No.',
+            'Supplier / Vendor',
+            'COA Form Type',
+            'Remarks'
+        ]
+    ];
+
+    let grandTotalQty = 0;
+    let grandTotalVal = 0;
+
+    inventoryData.forEach((item, idx) => {
+        const qty = parseInt(item.qty, 10) || 0;
+        const unitCost = parseFloat(item.unitCost) || 0;
+        const totalCost = parseFloat(item.totalCost) || (qty * unitCost);
+        const formType = totalCost >= 50000 ? 'PAR (PPE)' : 'ICS (Semi-Expendable)';
+
+        grandTotalQty += qty;
+        grandTotalVal += totalCost;
+
+        csvRows.push([
+            idx + 1,
+            item.date || '',
+            item.propertyNo || '',
+            item.article || '',
+            item.description || '',
+            item.unit || '',
+            unitCost.toFixed(2),
+            qty,
+            totalCost.toFixed(2),
+            item.location || '',
+            item.accountablePerson || '',
+            item.condition || 'Serviceable',
+            item.account || '',
+            item.poNo || 'N/A',
+            item.supplier || 'N/A',
+            formType,
+            item.remarks || ''
+        ]);
+    });
+
+    // Summary Row
+    csvRows.push([]);
+    csvRows.push([
+        '',
+        '',
+        '',
+        'GRAND TOTAL VALUATION',
+        '',
+        '',
+        '',
+        grandTotalQty,
+        grandTotalVal.toFixed(2),
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        ''
+    ]);
+
+    // Format as CSV with UTF-8 BOM so Excel opens cleanly without encoding glitches
+    const csvContent = '\uFEFF' + csvRows.map(row => 
+        row.map(val => {
+            const str = String(val === null || val === undefined ? '' : val);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }).join(',')
+    ).join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `COA_RPCPPE_Inventory_Report_Pagbilao_GSO_${fileTimestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (typeof window.showGTrackToast === 'function') {
+        window.showGTrackToast('success', 'COA RPCPPE Exported', 'Official inventory report prepared and downloaded for Accounting & COA audit compliance.');
+    }
 };
 
 // =========================================================================

@@ -377,6 +377,9 @@
                 </div>
                 
                 <div class="report-actions-group">
+                    <button type="button" id="export-coa-btn" onclick="exportCOARPCPPE()" class="add-eq-btn" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.25)';" onmouseout="this.style.background='rgba(16,185,129,0.15)';" title="Download official RPCPPE formatted for Accounting Office & Commission on Audit submission">
+                        <i class="fas fa-file-export"></i> Export RPCPPE (COA Format)
+                    </button>
                     <button id="add-article-btn" class="add-eq-btn btn-blue">
                         <i class="fas fa-plus"></i> Add Article
                     </button>
@@ -604,7 +607,7 @@
         </div>
         <div class="form-group">
           <label for="add-qty">Quantity</label>
-          <input type="number" id="add-qty" min="1" required>
+          <input type="number" id="add-qty" min="1" required oninput="updateCOAClassificationBadge()">
         </div>
         <div class="form-group">
           <label for="add-unit">Unit of Measure</label>
@@ -612,8 +615,20 @@
         </div>
         <div class="form-group">
           <label for="add-unit-cost">Unit Cost (₱)</label>
-          <input type="number" id="add-unit-cost" step="0.01" min="0" placeholder="0.00" required>
+          <input type="number" id="add-unit-cost" step="0.01" min="0" placeholder="0.00" required oninput="updateCOAClassificationBadge()">
         </div>
+        
+        <!-- Live COA Property Classification (PAR for PPE >= ₱50k vs ICS for Semi-Expendable < ₱50k) -->
+        <div class="form-group full-width" style="margin: -2px 0 4px 0; background: rgba(15, 23, 42, 0.65); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">COA Property Form:</span>
+            <span id="add-coa-form-badge" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">
+              <i class="fas fa-boxes"></i> ICS (Semi-Expendable &lt; ₱50,000)
+            </span>
+          </div>
+          <span style="font-size: 11px; color: #64748b;">Automatic compliance under COA Circular No. 2020-006</span>
+        </div>
+
         <div class="form-group">
           <label for="add-article">Article</label>
           <input type="text" id="add-article" placeholder="e.g., Desktop Computer" required>
@@ -644,11 +659,30 @@
         </div>
         <div class="form-group">
           <label for="add-account">Account Group</label>
-          <input type="text" id="add-account" placeholder="e.g., ICT Equipment" required>
+          <input type="text" id="add-account" list="standard-account-groups" placeholder="e.g., ICT Equipment" required>
+          <datalist id="standard-account-groups">
+            <option value="Information and Communication Technology (ICT) Equipment">
+            <option value="Office Equipment">
+            <option value="Machinery and Equipment">
+            <option value="Transportation Equipment">
+            <option value="Furniture, Fixtures and Books">
+            <option value="Semi-Expendable Property">
+            <option value="Medical, Dental and Laboratory Equipment">
+            <option value="Communication Equipment">
+            <option value="Other Property, Plant and Equipment">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="add-po-no">PO / Voucher No. <span style="font-size: 10.5px; color: #94a3b8; font-weight: normal;">(Accounting Tally)</span></label>
+          <input type="text" id="add-po-no" placeholder="e.g., PO-2026-004 / DV-1029">
+        </div>
+        <div class="form-group">
+          <label for="add-supplier">Supplier / Vendor <span style="font-size: 10.5px; color: #94a3b8; font-weight: normal;">(Procurement Origin)</span></label>
+          <input type="text" id="add-supplier" placeholder="e.g., Microtech Solutions Inc.">
         </div>
         <div class="form-group full-width">
           <label for="add-remarks">Remarks</label>
-          <textarea id="add-remarks" rows="2" placeholder="Additional notes or comments"></textarea>
+          <textarea id="add-remarks" rows="2" placeholder="Additional notes, serial numbers, or inspection comments"></textarea>
         </div>
       </div>
       <div class="modal-actions">
