@@ -2457,18 +2457,15 @@ async function checkAndMigrateData() {
     }
 }
 
-// 1. Instant Data Load from Firebase Realtime DB (Guarantees data is never empty)
+// 1. Instant Data Load from Firebase Realtime DB (Guarantees data is always up to date with live masterlist)
 inventoryRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
         const fbItems = Object.keys(data).map(key => ({ id: key, ...data[key] }));
         if (fbItems.length > 0) {
-            // Populate if Supabase hasn't loaded yet or if using Firebase directly
-            if (inventoryData.length === 0 || !supabaseClient) {
-                inventoryData = fbItems;
-                updateAccountDropdown();
-                renderTable();
-            }
+            inventoryData = fbItems;
+            updateAccountDropdown();
+            renderTable();
         }
     }
 });
