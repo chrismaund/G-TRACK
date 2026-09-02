@@ -1875,6 +1875,29 @@ function renderAccountingView() {
     const nextPageBtnEl = document.getElementById('accounting-next-page-btn');
     const clearSearchBtnEl = document.getElementById('accounting-clear-search-btn');
 
+    if (!tableBodyEl) return;
+
+    // If inventory data hasn't arrived yet, show loader and trigger direct read
+    if (inventoryData.length === 0) {
+        tableBodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;"><i class="fas fa-spinner fa-spin"></i> Loading municipal inventory records...</td></tr>`;
+        inventoryRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                inventoryData = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                renderAccountingView();
+            }
+        });
+        return;
+    }
+
+    const selectedGroup = groupFilterEl ? (groupFilterEl.value || 'All') : 'All';
+    const selectedTally = tallyFilterEl ? (tallyFilterEl.value || 'All') : 'All';
+    const searchText = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
+
+    if (clearSearchBtnEl && searchInputEl) {
+        clearSearchBtnEl.style.display = searchInputEl.value.length > 0 ? 'inline-flex' : 'none';
+    }
+
     // 1. Calculate Comprehensive Financial Valuation & Tally Metrics
     let totalMunicipalVal = 0;
     let totalTalliedCount = 0;
@@ -1996,16 +2019,7 @@ function renderAccountingView() {
     }
 
     // 4. Filter and Render Financial Tally Table
-    if (!tableBodyEl) return;
     tableBodyEl.innerHTML = '';
-
-    const searchText = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
-    const selectedGroup = groupFilterEl ? (groupFilterEl.value || 'All') : 'All';
-    const selectedTally = tallyFilterEl ? (tallyFilterEl.value || 'All') : 'All';
-
-    if (clearSearchBtnEl && searchInputEl) {
-        clearSearchBtnEl.style.display = searchInputEl.value.length > 0 ? 'inline-flex' : 'none';
-    }
 
     const isAllGroups = (!selectedGroup || selectedGroup === 'All' || selectedGroup === 'All Account Groups');
 
