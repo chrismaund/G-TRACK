@@ -1265,12 +1265,10 @@ inventoryRef.on('value', (snapshot) => {
     if (data) {
         const fbItems = Object.keys(data).map(key => ({ id: key, ...data[key] }));
         if (fbItems.length > 0) {
-            if (inventoryData.length === 0 || !supabaseClient) {
-                inventoryData = fbItems;
-                updateAccountDropdown();
-                if (activeEmpView === 'accounting') renderAccountingView();
-                else renderTable();
-            }
+            inventoryData = fbItems;
+            updateAccountDropdown();
+            if (activeEmpView === 'accounting') renderAccountingView();
+            else renderTable();
         }
     }
 });
@@ -2002,16 +2000,20 @@ function renderAccountingView() {
     tableBodyEl.innerHTML = '';
 
     const searchText = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
-    const selectedGroup = groupFilterEl ? groupFilterEl.value || 'All' : 'All';
-    const selectedTally = tallyFilterEl ? tallyFilterEl.value || 'All' : 'All';
+    const selectedGroup = groupFilterEl ? (groupFilterEl.value || 'All') : 'All';
+    const selectedTally = tallyFilterEl ? (tallyFilterEl.value || 'All') : 'All';
 
     if (clearSearchBtnEl && searchInputEl) {
         clearSearchBtnEl.style.display = searchInputEl.value.length > 0 ? 'inline-flex' : 'none';
     }
 
+    const isAllGroups = (!selectedGroup || selectedGroup === 'All' || selectedGroup === 'All Account Groups');
+
     const filtered = inventoryData.filter(item => {
         const isTallied = (item.tallyStatus === 'Tallied' || item.tallied === true);
-        const matchesGroup = (selectedGroup === 'All' || item.account === selectedGroup);
+        const itemAcc = (item.account || '').trim();
+        const matchesGroup = isAllGroups || (itemAcc === selectedGroup.trim()) || (selectedGroup === 'Unclassified PPE' && !itemAcc);
+        
         let matchesTally = true;
         if (selectedTally === 'Tallied') matchesTally = isTallied;
         else if (selectedTally === 'Pending') matchesTally = !isTallied;
