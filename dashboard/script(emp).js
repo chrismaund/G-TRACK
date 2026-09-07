@@ -277,6 +277,8 @@ const totalQtyEl = document.getElementById('total-qty-count');
 
 let inventoryData = [];
 let currentPage = 1;
+let totalPages = 1;
+let accountingTotalPages = 1;
 const ROWS_PER_PAGE = 20;
 const prevPageBtn = document.getElementById('prev-page-btn');
 const nextPageBtn = document.getElementById('next-page-btn');
@@ -469,7 +471,7 @@ function renderTable() {
         return matchesAccount && matchesCondition && matchesMyAssignments && matchesSearch;
     });
 
-    const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
+    totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
@@ -1438,7 +1440,6 @@ if (nextPageBtn) {
 
 if (lastPageBtn) {
     lastPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
         if (currentPage !== totalPages) {
             currentPage = totalPages;
             renderTable();
@@ -2133,8 +2134,8 @@ function renderAccountingView() {
         return matchesGroup && matchesTally && matchesSearch;
     });
 
-    const totalPages = Math.ceil(filtered.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
-    if (accountingCurrentPage > totalPages) accountingCurrentPage = totalPages;
+    accountingTotalPages = Math.ceil(filtered.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
+    if (accountingCurrentPage > accountingTotalPages) accountingCurrentPage = accountingTotalPages;
     if (accountingCurrentPage < 1) accountingCurrentPage = 1;
 
     const firstPageBtnEl = document.getElementById('accounting-first-page-btn');
@@ -2143,9 +2144,9 @@ function renderAccountingView() {
     const pageTotalCountEl = document.getElementById('accounting-page-total-count');
 
     if (pageSelectEl) {
-        if (pageSelectEl.options.length !== totalPages) {
+        if (pageSelectEl.options.length !== accountingTotalPages) {
             pageSelectEl.innerHTML = '';
-            for (let p = 1; p <= totalPages; p++) {
+            for (let p = 1; p <= accountingTotalPages; p++) {
                 const opt = document.createElement('option');
                 opt.value = p;
                 opt.textContent = p;
@@ -2154,12 +2155,12 @@ function renderAccountingView() {
         }
         pageSelectEl.value = accountingCurrentPage;
     }
-    if (pageTotalCountEl) pageTotalCountEl.textContent = totalPages;
+    if (pageTotalCountEl) pageTotalCountEl.textContent = accountingTotalPages;
 
     if (firstPageBtnEl) firstPageBtnEl.disabled = (accountingCurrentPage <= 1);
     if (prevPageBtnEl) prevPageBtnEl.disabled = (accountingCurrentPage <= 1);
-    if (nextPageBtnEl) nextPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
-    if (lastPageBtnEl) lastPageBtnEl.disabled = (accountingCurrentPage >= totalPages);
+    if (nextPageBtnEl) nextPageBtnEl.disabled = (accountingCurrentPage >= accountingTotalPages);
+    if (lastPageBtnEl) lastPageBtnEl.disabled = (accountingCurrentPage >= accountingTotalPages);
 
     if (filtered.length === 0) {
         tableBodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px 16px; font-size: 13px;">No property records match your search or filter.</td></tr>`;
@@ -2435,9 +2436,8 @@ window.exportCOARPCPPEReport = function() {
 
     if (lastPageBtn) {
         lastPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(inventoryData.length / ACCOUNTING_ROWS_PER_PAGE) || 1;
-            if (accountingCurrentPage !== totalPages) {
-                accountingCurrentPage = totalPages;
+            if (accountingCurrentPage !== accountingTotalPages) {
+                accountingCurrentPage = accountingTotalPages;
                 renderAccountingView();
             }
         });

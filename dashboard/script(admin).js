@@ -308,6 +308,8 @@ function setupConditionDropdown() {
     }
 }
 
+let totalPages = 1;
+
 // Ensure renderTable uses unified lower-case comparison and omni-field search
 function renderTable() {
     if (!tableBody) return;
@@ -385,7 +387,7 @@ function renderTable() {
         return matchesAccount && matchesCondition && matchesTally && matchesSearch;
     });
 
-    const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
+    totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
@@ -2604,7 +2606,6 @@ if (nextPageBtn) {
 
 if (lastPageBtn) {
     lastPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(inventoryData.length / ROWS_PER_PAGE) || 1;
         if (currentPage !== totalPages) {
             currentPage = totalPages;
             renderTable();
