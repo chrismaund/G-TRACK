@@ -3205,23 +3205,183 @@ body.dark-theme-mode .btn-cancel:hover {
 .analytics-view {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
 }
 
 @keyframes simpleFadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+    0% { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
 
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(1) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(2) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(3) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
-.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(4) { animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+@keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.2); }
+}
 
-.analytics-view:not(.hidden) .chart-card { animation: simpleFadeIn 0.3s ease both; }
-.analytics-view:not(.hidden) .advisory-section { animation: simpleFadeIn 0.35s ease 0.15s both; }
+.analytics-view:not(.hidden) .predictive-hero-ribbon { animation: simpleFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(1) { animation: simpleFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(2) { animation: simpleFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(3) { animation: simpleFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+.analytics-view:not(.hidden) .analytics-kpi-card:nth-child(4) { animation: simpleFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+.analytics-view:not(.hidden) .analytics-main-grid { animation: simpleFadeIn 0.4s ease 0.2s both; }
 
-/* Analytics Executive KPI Grid */
+/* 1. Predictive Hero Ribbon */
+.predictive-hero-ribbon {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.88) 50%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 16px;
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(14px);
+}
+
+.predictive-hero-ribbon::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 380px;
+    height: 380px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.hero-ribbon-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 680px;
+}
+
+.hero-ribbon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 0.8px;
+    width: fit-content;
+}
+
+.pulse-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulseGlow 1.8s infinite;
+}
+
+.hero-ribbon-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: -0.3px;
+}
+
+.hero-ribbon-desc {
+    margin: 0;
+    font-size: 12.5px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.hero-ribbon-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.ribbon-mini-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ribbon-stat-label {
+    font-size: 10.5px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ribbon-stat-val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.ribbon-stat-divider {
+    width: 1px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ribbon-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 180px;
+}
+
+.ribbon-btn {
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.22s ease;
+    font-family: inherit;
+    border: none;
+    white-space: nowrap;
+}
+
+.ribbon-btn.primary-glow {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.35);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.ribbon-btn.primary-glow:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+}
+
+.ribbon-btn.secondary-glass {
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ribbon-btn.secondary-glass:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* 2. Executive KPI Grid */
 .analytics-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -3229,50 +3389,70 @@ body.dark-theme-mode .btn-cancel:hover {
 }
 
 .analytics-kpi-card {
-    background: rgba(18, 26, 43, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(18, 26, 43, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 14px;
     padding: 18px 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+    overflow: hidden;
 }
+
+.analytics-kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    opacity: 0.8;
+}
+
+.analytics-kpi-card.card-glow-blue::after { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+.analytics-kpi-card.card-glow-green::after { background: linear-gradient(90deg, #4ade80, #16a34a); }
+.analytics-kpi-card.card-glow-red::after { background: linear-gradient(90deg, #f87171, #dc2626); }
+.analytics-kpi-card.card-glow-amber::after { background: linear-gradient(90deg, #fbbf24, #d97706); }
 
 .analytics-kpi-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, 0.3);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
-.kpi-card-inner {
+.kpi-card-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-}
-
-.kpi-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
+    gap: 10px;
 }
 
 .kpi-label {
-    font-size: 11.5px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 .kpi-value {
-    font-size: 22px;
+    font-size: 23px;
     font-weight: 800;
     color: #f8fafc;
     letter-spacing: -0.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.kpi-footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .kpi-subtitle {
@@ -3285,64 +3465,70 @@ body.dark-theme-mode .btn-cancel:hover {
 }
 
 .kpi-icon-box {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
     flex-shrink: 0;
 }
 
 .kpi-icon-box.blue-gradient {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.3));
+    background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
 .kpi-icon-box.green-gradient {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.3));
+    background: rgba(34, 197, 94, 0.15);
     color: #4ade80;
     border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .kpi-icon-box.red-gradient {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.3));
+    background: rgba(239, 68, 68, 0.15);
     color: #f87171;
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .kpi-icon-box.amber-gradient {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
+    background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.text-amber {
-    color: #fbbf24 !important;
-}
-
-.text-cyan {
-    color: #38bdf8 !important;
-}
-
-/* Analytics Charts 2x2 Grid */
-.analytics-charts-grid {
+/* 3. Advanced Split Intelligence Grid */
+.analytics-main-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    grid-template-columns: 1.38fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.analytics-col-primary,
+.analytics-col-secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .chart-card {
-    background: rgba(18, 26, 43, 0.75);
+    background: rgba(18, 26, 43, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 18px 20px;
+    padding: 20px 22px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     gap: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.chart-card.card-primary-highlight {
+    border-color: rgba(56, 189, 248, 0.22);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 }
 
 .chart-card-header {
@@ -3350,6 +3536,13 @@ body.dark-theme-mode .btn-cancel:hover {
     justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
+}
+
+.chart-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .chart-card-title {
@@ -3365,17 +3558,17 @@ body.dark-theme-mode .btn-cancel:hover {
 .chart-card-subtitle {
     font-size: 11.5px;
     color: #64748b;
-    margin-top: 2px;
+    margin-top: 3px;
     display: block;
 }
 
 .badge-predictive {
     background: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.35);
     font-size: 10.5px;
     font-weight: 700;
-    padding: 3px 8px;
+    padding: 2px 8px;
     border-radius: 12px;
     display: inline-flex;
     align-items: center;
@@ -3385,28 +3578,26 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .chart-canvas-wrapper {
     position: relative;
-    height: 270px;
     width: 100%;
 }
 
 .chart-canvas-wrapper.doughnut-wrapper {
-    height: 270px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* Predictive Maintenance Advisory Section */
+/* Strategic Advisory Section & Tabs */
 .advisory-section {
-    background: rgba(18, 26, 43, 0.75);
+    background: rgba(18, 26, 43, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 20px;
+    padding: 20px 22px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
 }
 
 .advisory-header {
@@ -3419,7 +3610,7 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .advisory-title {
     margin: 0;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     color: #f8fafc;
     display: flex;
@@ -3428,29 +3619,42 @@ body.dark-theme-mode .btn-cancel:hover {
 }
 
 .advisory-subtitle {
-    margin: 4px 0 0 0;
-    font-size: 12px;
+    margin: 3px 0 0 0;
+    font-size: 11.5px;
     color: #94a3b8;
 }
 
-.advisory-refresh-btn {
-    background: rgba(56, 189, 248, 0.1);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 7px 14px;
+.advisory-filter-tabs {
+    display: flex;
+    background: rgba(11, 15, 25, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
+    padding: 3px;
+    gap: 4px;
 }
 
-.advisory-refresh-btn:hover {
-    background: rgba(56, 189, 248, 0.2);
-    transform: translateY(-1px);
+.adv-tab {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 5px 11px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.adv-tab:hover {
+    color: #f8fafc;
+}
+
+.adv-tab.active {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
 }
 
 .advisory-table-container {
@@ -3458,6 +3662,8 @@ body.dark-theme-mode .btn-cancel:hover {
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     background: rgba(11, 15, 25, 0.5);
+    max-height: 380px;
+    overflow-y: auto;
 }
 
 .advisory-table {
@@ -3469,31 +3675,34 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .advisory-table th {
     background: #0f172a;
-    padding: 12px 14px;
+    padding: 11px 13px;
     color: #94a3b8;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 1px solid #334155;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .advisory-table td {
-    padding: 12px 14px;
+    padding: 11px 13px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     color: #cbd5e1;
     vertical-align: middle;
 }
 
 .advisory-table tr:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(56, 189, 248, 0.04);
 }
 
 .priority-badge {
     padding: 3px 8px;
     border-radius: 6px;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
@@ -3547,13 +3756,24 @@ body.dark-theme-mode .btn-cancel:hover {
     border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
-/* Responsive Breakpoints for Analytics */
+/* Responsive Layout */
+@media (max-width: 1200px) {
+    .analytics-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 1024px) {
     .analytics-kpi-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    .analytics-charts-grid {
-        grid-template-columns: 1fr;
+    .predictive-hero-ribbon {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .ribbon-actions {
+        width: 100%;
+        flex-direction: row;
     }
 }
 
@@ -3561,9 +3781,8 @@ body.dark-theme-mode .btn-cancel:hover {
     .analytics-kpi-grid {
         grid-template-columns: 1fr;
     }
-    .view-tabs-container {
-        margin-left: 0;
-        margin-top: 8px;
+    .ribbon-actions {
+        flex-direction: column;
     }
 }
 

@@ -3458,10 +3458,21 @@ window.renderAnalyticsDashboard = function() {
     if (totalValuationEl) animateNumberValue(totalValuationEl, totalValuation, true, false, 850);
     if (serviceableRateEl) animateNumberValue(serviceableRateEl, serviceableRate, false, true, 850);
     if (serviceableRatioEl) {
-        serviceableRatioEl.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${serviceableCount} of ${totalArticles} articles operational`;
+        serviceableRatioEl.innerHTML = `<i class="fas fa-circle-check text-success"></i> ${serviceableCount} of ${totalArticles} active items operational`;
     }
     if (repairAlertsEl) animateNumberValue(repairAlertsEl, totalRepairAlerts, false, false, 750);
     if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, replacementBudget, true, false, 850);
+
+    // Update Ribbon Indicators
+    const ribbonHealthEl = document.getElementById('ribbon-health-score');
+    const ribbonAuditedEl = document.getElementById('ribbon-audited-count');
+    if (ribbonHealthEl) {
+        ribbonHealthEl.textContent = `${serviceableRate}% ${serviceableRate >= 90 ? 'Nominal' : (serviceableRate >= 75 ? 'Moderate' : 'Attention Required')}`;
+        ribbonHealthEl.className = `ribbon-stat-val ${serviceableRate >= 90 ? 'text-success' : (serviceableRate >= 75 ? 'text-amber' : 'text-danger')}`;
+    }
+    if (ribbonAuditedEl) {
+        ribbonAuditedEl.textContent = `${totalArticles.toLocaleString()} Verified Items`;
+    }
 
     // 2. Render Chart.js Visualizations (Safely checking Chart availability)
     if (typeof Chart !== 'undefined') {
@@ -3471,55 +3482,127 @@ window.renderAnalyticsDashboard = function() {
         renderDepartmentAllocationChart(departmentCounts);
     }
 
-    // 3. Render Advisory Matrix Table
-    if (advisoryTableBody) {
-        advisoryTableBody.innerHTML = '';
+    // 3. Cache Advisory Items & Render Table
+    cachedAdvisoryItems = advisoryItems;
+    renderAdvisoryTableRows();
+};
 
-        if (advisoryItems.length === 0) {
-            advisoryTableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align: center; color: #4ade80; padding: 24px; font-weight: 600;">
-                        <i class="fas fa-circle-check" style="font-size: 18px; margin-right: 6px;"></i>
-                        All inventory items are currently in optimal operating condition. No immediate repair or replacement alerts.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
+let cachedAdvisoryItems = [];
+let currentAdvisoryFilter = 'ALL';
 
-        // Sort advisory: HIGH priority first, then MEDIUM, then LOW
-        const priorityOrder = { 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
-        advisoryItems.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+window.filterAdvisoryTable = function(filterType, tabEl) {
+    currentAdvisoryFilter = filterType || 'ALL';
+    const tabs = document.querySelectorAll('.advisory-filter-tabs .adv-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (tabEl) tabEl.classList.add('active');
+    renderAdvisoryTableRows();
+};
 
-        const fragment = document.createDocumentFragment();
-        advisoryItems.slice(0, 15).forEach(adv => {
-            const tr = document.createElement('tr');
-            let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-info-circle"></i> Low</span>`;
-            if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-exclamation-triangle"></i> High</span>`;
-            if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium"><i class="fas fa-clock"></i> Medium</span>`;
+function renderAdvisoryTableRows() {
+    const advisoryTableBody = document.getElementById('advisory-table-body');
+    if (!advisoryTableBody) return;
+    advisoryTableBody.innerHTML = '';
 
-            tr.innerHTML = `
-                <td>${priorityBadge}</td>
-                <td class="font-bold text-muted">${sanitizeText(adv.propertyNo)}</td>
-                <td>
-                    <div style="font-weight: 700; color: #f8fafc;">${sanitizeText(adv.article)}</div>
-                    <div style="font-size: 11px; color: #94a3b8;">${sanitizeText(adv.description)}</div>
-                </td>
-                <td>${sanitizeText(adv.location)}</td>
-                <td><span style="font-weight: 600; color: #f1f5f9;">${sanitizeText(adv.condition)}</span></td>
-                <td>${sanitizeText(adv.age)}</td>
-                <td style="font-weight: 600;">₱${adv.unitCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td>
-                    <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(adv.propertyNo)}')" class="action-tag ${adv.actionClass}" style="cursor: pointer; border: none; font-family: inherit; transition: all 0.2s ease;" title="Click to view and inspect this item in Masterlist">
-                        <i class="fas fa-search-plus"></i> ${adv.actionText}
-                    </button>
-                </td>
-            `;
-            fragment.appendChild(tr);
-        });
+    let items = [...cachedAdvisoryItems];
 
-        advisoryTableBody.appendChild(fragment);
+    if (currentAdvisoryFilter === 'HIGH') {
+        items = items.filter(i => i.priority === 'HIGH');
+    } else if (currentAdvisoryFilter === 'MEDIUM') {
+        items = items.filter(i => i.priority === 'MEDIUM');
+    } else if (currentAdvisoryFilter === 'LOW') {
+        items = items.filter(i => i.priority === 'LOW');
     }
+
+    if (items.length === 0) {
+        advisoryTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; color: #4ade80; padding: 24px; font-weight: 600;">
+                    <i class="fas fa-circle-check" style="font-size: 18px; margin-right: 6px;"></i>
+                    No equipment currently matches this advisory filter.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Sort advisory: HIGH priority first, then MEDIUM, then LOW
+    const priorityOrder = { 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+    items.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+    const fragment = document.createDocumentFragment();
+    items.slice(0, 20).forEach(adv => {
+        const tr = document.createElement('tr');
+        let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-info-circle"></i> Low</span>`;
+        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-triangle-exclamation"></i> High</span>`;
+        if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium"><i class="fas fa-clock"></i> Medium</span>`;
+
+        tr.innerHTML = `
+            <td>${priorityBadge}</td>
+            <td class="font-bold text-muted">${sanitizeText(adv.propertyNo)}</td>
+            <td>
+                <div style="font-weight: 700; color: #f8fafc;">${sanitizeText(adv.article)}</div>
+                <div style="font-size: 11px; color: #94a3b8;">${sanitizeText(adv.description)}</div>
+            </td>
+            <td>${sanitizeText(adv.location)}</td>
+            <td><span style="font-weight: 600; color: #f1f5f9;">${sanitizeText(adv.condition)}</span></td>
+            <td>${sanitizeText(adv.age)}</td>
+            <td style="font-weight: 600;">₱${adv.unitCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td>
+                <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(adv.propertyNo)}')" class="action-tag ${adv.actionClass}" style="cursor: pointer; border: none; font-family: inherit; transition: all 0.2s ease;" title="Click to view and inspect this item in Masterlist">
+                    <i class="fas fa-search-plus"></i> ${adv.actionText}
+                </button>
+            </td>
+        `;
+        fragment.appendChild(tr);
+    });
+
+    advisoryTableBody.appendChild(fragment);
+}
+
+/**
+ * Generates and downloads the Official Predictive Asset Lifecycle & Budget Forecast CSV.
+ */
+window.exportPredictiveForecastCSV = function() {
+    if (!cachedAdvisoryItems || cachedAdvisoryItems.length === 0) {
+        window.showGTrackToast('info', 'No Data', 'No predictive advisory records available to export.');
+        return;
+    }
+
+    const headers = [
+        "Priority",
+        "Property No.",
+        "Article",
+        "Description",
+        "Assigned Office / Location",
+        "Current Condition",
+        "Service Age",
+        "Unit Cost (PHP)",
+        "Recommended GSO Action"
+    ];
+
+    const rows = cachedAdvisoryItems.map(item => [
+        `"${item.priority || ''}"`,
+        `"${item.propertyNo || ''}"`,
+        `"${(item.article || '').replace(/"/g, '""')}"`,
+        `"${(item.description || '').replace(/"/g, '""')}"`,
+        `"${(item.location || '').replace(/"/g, '""')}"`,
+        `"${item.condition || ''}"`,
+        `"${item.age || ''}"`,
+        `"${item.unitCost ? item.unitCost.toFixed(2) : '0.00'}"`,
+        `"${(item.actionText || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `GTRACK_Predictive_Lifecycle_Forecast_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.showGTrackToast('success', 'Export Complete', 'Predictive Asset Lifecycle & Budget Forecast exported successfully.');
 };
 
 window.inspectAdvisoryItem = function(propertyNo) {

@@ -448,145 +448,205 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- ANALYTICS & PREDICTIVE INSIGHTS VIEW (ADMIN ONLY) -->
+        <!-- ADVANCED PREDICTIVE INTELLIGENCE & ASSET ANALYTICS VIEW -->
         <!-- ========================================================================= -->
         <div id="analytics-view" class="analytics-view hidden">
-            <!-- Executive KPI Header Cards -->
+            
+            <!-- 1. Executive Intelligence & Predictive Planning Ribbon -->
+            <section class="predictive-hero-ribbon">
+                <div class="hero-ribbon-left">
+                    <div class="hero-ribbon-badge">
+                        <span class="pulse-indicator"></span>
+                        <span>PREDICTIVE INTELLIGENCE ENGINE</span>
+                    </div>
+                    <h2 class="hero-ribbon-title">Municipal Asset Lifecycle & Capital Forecasting</h2>
+                    <p class="hero-ribbon-desc">
+                        Algorithmic forecasting based on Philippine COA Asset Depreciation standards, remaining useful life (RUL) modeling, and historical servicing cycles.
+                    </p>
+                    <div class="hero-ribbon-stats">
+                        <div class="ribbon-mini-stat">
+                            <span class="ribbon-stat-label">Forecast Horizon</span>
+                            <span class="ribbon-stat-val">FY 2026 – FY 2030</span>
+                        </div>
+                        <div class="ribbon-stat-divider"></div>
+                        <div class="ribbon-mini-stat">
+                            <span class="ribbon-stat-label">Asset Health Score</span>
+                            <span class="ribbon-stat-val text-success" id="ribbon-health-score">96.8% Nominal</span>
+                        </div>
+                        <div class="ribbon-stat-divider"></div>
+                        <div class="ribbon-mini-stat">
+                            <span class="ribbon-stat-label">Capital Base Audited</span>
+                            <span class="ribbon-stat-val text-blue" id="ribbon-audited-count">389 Verified Items</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-ribbon-right">
+                    <div class="ribbon-actions">
+                        <button type="button" class="ribbon-btn primary-glow" onclick="exportPredictiveForecastCSV()">
+                            <i class="fas fa-file-csv"></i> Export Forecast Data
+                        </button>
+                        <button type="button" class="ribbon-btn secondary-glass" onclick="renderAnalyticsDashboard()">
+                            <i class="fas fa-arrows-rotate"></i> Re-Calculate Models
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Executive Strategic KPI Matrix -->
             <section class="analytics-kpi-grid">
-                <div class="analytics-kpi-card">
-                    <div class="kpi-card-inner">
-                        <div class="kpi-info">
-                            <span class="kpi-label">Total Capital Valuation</span>
-                            <span id="kpi-total-valuation" class="kpi-value">₱0.00</span>
-                            <span class="kpi-subtitle"><i class="fas fa-coins text-cyan"></i> Total municipal asset value</span>
-                        </div>
+                <div class="analytics-kpi-card card-glow-blue">
+                    <div class="kpi-card-top">
+                        <span class="kpi-label">Total Capital Asset Valuation</span>
                         <div class="kpi-icon-box blue-gradient">
-                            <i class="fas fa-peso-sign"></i>
+                            <i class="fas fa-coins"></i>
                         </div>
+                    </div>
+                    <div class="kpi-value" id="kpi-total-valuation">₱0.00</div>
+                    <div class="kpi-footer-bar">
+                        <span class="kpi-subtitle"><i class="fas fa-shield-check text-cyan"></i> 100% Reconciled Municipal PPE</span>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card">
-                    <div class="kpi-card-inner">
-                        <div class="kpi-info">
-                            <span class="kpi-label">Serviceability Index</span>
-                            <span id="kpi-serviceable-rate" class="kpi-value text-success">0%</span>
-                            <span class="kpi-subtitle" id="kpi-serviceable-ratio"><i class="fas fa-check-circle text-success"></i> 0 of 0 active items</span>
-                        </div>
+                <div class="analytics-kpi-card card-glow-green">
+                    <div class="kpi-card-top">
+                        <span class="kpi-label">Operational Serviceability Index</span>
                         <div class="kpi-icon-box green-gradient">
-                            <i class="fas fa-shield-alt"></i>
+                            <i class="fas fa-bolt"></i>
                         </div>
+                    </div>
+                    <div class="kpi-value text-success" id="kpi-serviceable-rate">0%</div>
+                    <div class="kpi-footer-bar">
+                        <span class="kpi-subtitle" id="kpi-serviceable-ratio"><i class="fas fa-circle-check text-success"></i> 0 of 0 active items operational</span>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card">
-                    <div class="kpi-card-inner">
-                        <div class="kpi-info">
-                            <span class="kpi-label">Maintenance & Repair Alerts</span>
-                            <span id="kpi-repair-alerts" class="kpi-value text-danger">0</span>
-                            <span class="kpi-subtitle text-warning"><i class="fas fa-triangle-exclamation text-warning"></i> Requires GSO attention</span>
-                        </div>
+                <div class="analytics-kpi-card card-glow-red">
+                    <div class="kpi-card-top">
+                        <span class="kpi-label">Active Failure Risk & Servicing</span>
                         <div class="kpi-icon-box red-gradient">
-                            <i class="fas fa-wrench"></i>
+                            <i class="fas fa-triangle-exclamation"></i>
                         </div>
+                    </div>
+                    <div class="kpi-value text-danger" id="kpi-repair-alerts">0</div>
+                    <div class="kpi-footer-bar">
+                        <span class="kpi-subtitle text-warning"><i class="fas fa-wrench text-warning"></i> Items flagged for maintenance</span>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card">
-                    <div class="kpi-card-inner">
-                        <div class="kpi-info">
-                            <span class="kpi-label">Forecasted Replacement Budget</span>
-                            <span id="kpi-replacement-budget" class="kpi-value text-amber">₱0.00</span>
-                            <span class="kpi-subtitle"><i class="fas fa-calendar-check text-amber"></i> For obsolete / unserviceable assets</span>
-                        </div>
+                <div class="analytics-kpi-card card-glow-amber">
+                    <div class="kpi-card-top">
+                        <span class="kpi-label">5-Year Capital Replacement Reserve</span>
                         <div class="kpi-icon-box amber-gradient">
-                            <i class="fas fa-hand-holding-dollar"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
+                    </div>
+                    <div class="kpi-value text-amber" id="kpi-replacement-budget">₱0.00</div>
+                    <div class="kpi-footer-bar">
+                        <span class="kpi-subtitle"><i class="fas fa-calendar-check text-amber"></i> Aging & EOL depreciation reserve</span>
                     </div>
                 </div>
             </section>
 
-            <!-- Interactive Visual Analytics (2x2 Grid) -->
-            <section class="analytics-charts-grid">
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h4 class="chart-card-title"><i class="fas fa-chart-pie" style="color: #38bdf8;"></i> Equipment Condition & Serviceability</h4>
-                            <span class="chart-card-subtitle">Real-time status breakdown across all municipal assets</span>
+            <!-- 3. Advanced Split Intelligence Grid (Asymmetric 2-Column) -->
+            <section class="analytics-main-grid">
+                
+                <!-- Left Column (60%): Lifecycle Curves & Strategic Advisory Table -->
+                <div class="analytics-col-primary">
+                    
+                    <!-- Chart 1: Predictive Equipment Aging & Lifecycle Curve -->
+                    <div class="chart-card card-primary-highlight">
+                        <div class="chart-card-header">
+                            <div>
+                                <div class="chart-title-wrap">
+                                    <h4 class="chart-card-title"><i class="fas fa-hourglass-half text-amber"></i> Predictive Asset Lifecycle & Depreciation Stage Distribution</h4>
+                                    <span class="badge-predictive"><i class="fas fa-wand-magic-sparkles"></i> 5-Year Runway</span>
+                                </div>
+                                <span class="chart-card-subtitle">Distribution of municipal equipment across service age brackets and end-of-life replacement thresholds</span>
+                            </div>
+                        </div>
+                        <div class="chart-canvas-wrapper" style="height: 290px;">
+                            <canvas id="lifecycleAgingChart"></canvas>
                         </div>
                     </div>
-                    <div class="chart-canvas-wrapper doughnut-wrapper">
-                        <canvas id="conditionDoughnutChart"></canvas>
+
+                    <!-- Predictive Maintenance & Replacement Advisory Matrix -->
+                    <div class="advisory-section">
+                        <div class="advisory-header">
+                            <div>
+                                <h4 class="advisory-title"><i class="fas fa-clipboard-check text-cyan"></i> Strategic Predictive Maintenance & Capital Outlay Matrix</h4>
+                                <p class="advisory-subtitle">Actionable GSO recommendations for equipment servicing, lifecycle retirement, and procurement budget planning.</p>
+                            </div>
+                            <div class="advisory-filter-tabs">
+                                <button type="button" class="adv-tab active" onclick="filterAdvisoryTable('ALL', this)">All</button>
+                                <button type="button" class="adv-tab" onclick="filterAdvisoryTable('HIGH', this)">High Urgency</button>
+                                <button type="button" class="adv-tab" onclick="filterAdvisoryTable('MEDIUM', this)">Aging (5+ Yrs)</button>
+                                <button type="button" class="adv-tab" onclick="filterAdvisoryTable('LOW', this)">Inspection</button>
+                            </div>
+                        </div>
+                        <div class="advisory-table-container">
+                            <table class="advisory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Priority</th>
+                                        <th>Property No.</th>
+                                        <th>Article & Description</th>
+                                        <th>Location / Office</th>
+                                        <th>Condition</th>
+                                        <th>Service Age</th>
+                                        <th>Valuation</th>
+                                        <th>Recommended Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="advisory-table-body">
+                                    <!-- Dynamically populated -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h4 class="chart-card-title"><i class="fas fa-chart-column" style="color: #818cf8;"></i> Account Group Valuation (₱)</h4>
-                            <span class="chart-card-subtitle">Procurement expenditure per category classification</span>
+                <!-- Right Column (40%): Valuation Breakdown, Condition Integrity, & Department Distribution -->
+                <div class="analytics-col-secondary">
+                    
+                    <!-- Chart 2: Equipment Condition & Integrity Breakdown -->
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="chart-card-title"><i class="fas fa-chart-pie text-cyan"></i> Condition & Operational Integrity</h4>
+                                <span class="chart-card-subtitle">Real-time status breakdown across municipal fleet</span>
+                            </div>
+                        </div>
+                        <div class="chart-canvas-wrapper doughnut-wrapper" style="height: 250px;">
+                            <canvas id="conditionDoughnutChart"></canvas>
                         </div>
                     </div>
-                    <div class="chart-canvas-wrapper">
-                        <canvas id="categoryValuationChart"></canvas>
-                    </div>
-                </div>
 
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h4 class="chart-card-title"><i class="fas fa-hourglass-half" style="color: #f59e0b;"></i> Predictive Equipment Aging & Lifecycle</h4>
-                            <span class="chart-card-subtitle">Years in service vs recommended replacement timeline</span>
+                    <!-- Chart 3: Account Group Valuation -->
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="chart-card-title"><i class="fas fa-layer-group text-indigo"></i> Account Group Capital Valuation</h4>
+                                <span class="chart-card-subtitle">Capital outlay allocation per asset classification</span>
+                            </div>
                         </div>
-                        <span class="badge-predictive"><i class="fas fa-wand-magic-sparkles"></i> Predictive</span>
-                    </div>
-                    <div class="chart-canvas-wrapper">
-                        <canvas id="lifecycleAgingChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-card">
-                    <div class="chart-card-header">
-                        <div>
-                            <h4 class="chart-card-title"><i class="fas fa-building" style="color: #10b981;"></i> Department Asset Allocation</h4>
-                            <span class="chart-card-subtitle">Equipment distribution across Pagbilao municipal offices</span>
+                        <div class="chart-canvas-wrapper" style="height: 250px;">
+                            <canvas id="categoryValuationChart"></canvas>
                         </div>
                     </div>
-                    <div class="chart-canvas-wrapper">
-                        <canvas id="departmentAllocationChart"></canvas>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Predictive Maintenance & Replacement Advisory Matrix -->
-            <section class="advisory-section">
-                <div class="advisory-header">
-                    <div>
-                        <h4 class="advisory-title"><i class="fas fa-clipboard-check" style="color: #38bdf8;"></i> Predictive Maintenance & Replacement Advisory Matrix</h4>
-                        <p class="advisory-subtitle">Automated GSO recommendations for equipment servicing, lifecycle replacement, and municipal budget requests.</p>
+                    <!-- Chart 4: Department Asset Allocation -->
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="chart-card-title"><i class="fas fa-building text-emerald"></i> Department Asset Allocation</h4>
+                                <span class="chart-card-subtitle">Equipment distribution across Pagbilao municipal offices</span>
+                            </div>
+                        </div>
+                        <div class="chart-canvas-wrapper" style="height: 250px;">
+                            <canvas id="departmentAllocationChart"></canvas>
+                        </div>
                     </div>
-                    <button type="button" class="advisory-refresh-btn" onclick="renderAnalyticsDashboard()">
-                        <i class="fas fa-sync-alt"></i> Refresh Analytics
-                    </button>
-                </div>
-                <div class="advisory-table-container">
-                    <table class="advisory-table">
-                        <thead>
-                            <tr>
-                                <th>Priority</th>
-                                <th>Property No.</th>
-                                <th>Article & Description</th>
-                                <th>Location / Office</th>
-                                <th>Current Condition</th>
-                                <th>Est. Lifespan</th>
-                                <th>Unit Cost</th>
-                                <th>Recommended GSO Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="advisory-table-body">
-                            <!-- Dynamically populated -->
-                        </tbody>
-                    </table>
+
                 </div>
             </section>
         </div>
