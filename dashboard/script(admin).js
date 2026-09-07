@@ -173,9 +173,6 @@ const thCheckbox = document.getElementById('th-checkbox');
 let isDeleteSelectionMode = false;
 const selectedItemIds = new Set();
 
-const deleteModal = document.getElementById('delete-modal');
-const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 let itemToDeleteId = null;
 
 // Form & Table Bodies
@@ -3297,6 +3294,189 @@ function calculateItemAge(dateStr) {
     }
 }
 
+let activeAdvisoryPriorityFilter = 'ALL';
+let cachedAdvisoryItems = [];
+let advisoryCurrentPage = 1;
+const ADVISORY_ROWS_PER_PAGE = 15;
+let advisoryTotalPages = 1;
+
+window.filterAdvisoryPriority = function(priority) {
+    activeAdvisoryPriorityFilter = priority || 'ALL';
+    advisoryCurrentPage = 1; // Reset to page 1 on filter switch
+    
+    // Update active class on filter tab buttons
+    const tabs = document.querySelectorAll('#advisory-priority-tabs .advisory-tab');
+    tabs.forEach(tab => {
+        const p = tab.getAttribute('data-priority');
+        tab.classList.toggle('active', p === activeAdvisoryPriorityFilter);
+    });
+
+    renderAdvisoryTable();
+};
+
+function renderAdvisoryTable() {
+    const advisoryTableBody = document.getElementById('advisory-table-body');
+    const paginationWrapper = document.querySelector('.advisory-pagination-wrapper');
+    const paginationInfoEl = document.getElementById('advisory-pagination-info');
+    const firstPageBtn = document.getElementById('advisory-first-page-btn');
+    const prevPageBtn = document.getElementById('advisory-prev-page-btn');
+    const nextPageBtn = document.getElementById('advisory-next-page-btn');
+    const lastPageBtn = document.getElementById('advisory-last-page-btn');
+    const pageSelectEl = document.getElementById('advisory-page-select');
+    const pageTotalCountEl = document.getElementById('advisory-page-total-count');
+
+    if (!advisoryTableBody) return;
+
+    advisoryTableBody.innerHTML = '';
+
+    let filtered = cachedAdvisoryItems;
+    if (activeAdvisoryPriorityFilter !== 'ALL') {
+        filtered = cachedAdvisoryItems.filter(item => item.priority === activeAdvisoryPriorityFilter);
+    }
+
+    advisoryTotalPages = Math.ceil(filtered.length / ADVISORY_ROWS_PER_PAGE) || 1;
+    if (advisoryCurrentPage > advisoryTotalPages) advisoryCurrentPage = advisoryTotalPages;
+    if (advisoryCurrentPage < 1) advisoryCurrentPage = 1;
+
+    if (filtered.length === 0) {
+        advisoryTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; color: #4ade80; padding: 26px 16px; font-weight: 600; font-size: 13px;">
+                    <i class="fas fa-circle-check" style="font-size: 18px; margin-right: 8px;"></i>
+                    No equipment items match the "${activeAdvisoryPriorityFilter}" advisory filter category.
+                </td>
+            </tr>
+        `;
+        if (paginationWrapper) paginationWrapper.style.display = 'none';
+        return;
+    }
+
+    if (paginationWrapper) paginationWrapper.style.display = 'flex';
+
+    const start = (advisoryCurrentPage - 1) * ADVISORY_ROWS_PER_PAGE;
+    const end = Math.min(start + ADVISORY_ROWS_PER_PAGE, filtered.length);
+    const pagedItems = filtered.slice(start, end);
+
+    if (paginationInfoEl) {
+        paginationInfoEl.textContent = `Showing ${start + 1} - ${end} of ${filtered.length} items`;
+    }
+
+    if (pageSelectEl) {
+        if (pageSelectEl.options.length !== advisoryTotalPages) {
+            pageSelectEl.innerHTML = '';
+            for (let p = 1; p <= advisoryTotalPages; p++) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                pageSelectEl.appendChild(opt);
+            }
+        }
+        pageSelectEl.value = advisoryCurrentPage;
+    }
+
+    if (pageTotalCountEl) pageTotalCountEl.textContent = advisoryTotalPages;
+
+    if (firstPageBtn) firstPageBtn.disabled = (advisoryCurrentPage <= 1);
+    if (prevPageBtn) prevPageBtn.disabled = (advisoryCurrentPage <= 1);
+    if (nextPageBtn) nextPageBtn.disabled = (advisoryCurrentPage >= advisoryTotalPages);
+    if (lastPageBtn) lastPageBtn.disabled = (advisoryCurrentPage >= advisoryTotalPages);
+
+    const fragment = document.createDocumentFragment();
+    pagedItems.forEach(adv => {
+        const tr = document.createElement('tr');
+        let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-info-circle"></i> Low</span>`;
+        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-triangle-exclamation"></i> High</span>`;
+        if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium"><i class="fas fa-clock"></i> Medium</span>`;
+
+        let badgeClass = 'serviceable-badge';
+        const condUpper = (adv.condition || '').toUpperCase();
+        if (condUpper === 'UNSERVICEABLE') badgeClass = 'unserviceable-badge';
+        else if (condUpper === 'FOR DISPOSAL' || condUpper === 'DISPOSED') badgeClass = 'disposal-badge';
+
+        const totalCostFormatted = (typeof adv.totalCost === 'number') 
+            ? adv.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })
+            : parseFloat(adv.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+        const searchPropKey = (adv.propertyNo && adv.propertyNo !== '-' && adv.propertyNo !== '—') 
+            ? adv.propertyNo 
+            : (adv.article && adv.article !== '-' ? adv.article : '');
+
+        tr.innerHTML = `
+            <td>${priorityBadge}</td>
+            <td class="font-bold text-muted" style="font-family: monospace; font-size: 12px;" title="${sanitizeText(adv.propertyNo)}">${sanitizeText(adv.propertyNo) || '-'}</td>
+            <td class="font-bold article-cell" style="color: #f8fafc;" title="${sanitizeText(adv.article)}">${sanitizeText(adv.article) || '-'}</td>
+            <td class="description-cell" style="color: #cbd5e1; font-size: 12px;" title="${sanitizeText(adv.description)}">${sanitizeText(adv.description) || '-'}</td>
+            <td title="${sanitizeText(adv.location)}"><span style="color: #cbd5e1;">${sanitizeText(adv.location) || '-'}</span></td>
+            <td><span class="badge ${badgeClass}" title="${sanitizeText(adv.condition)}">${sanitizeText(adv.condition) || 'Serviceable'}</span></td>
+            <td><span style="color: #94a3b8; font-weight: 600;">${sanitizeText(adv.age)}</span></td>
+            <td class="font-bold" style="color: #f8fafc;" title="₱${totalCostFormatted}">₱${totalCostFormatted}</td>
+            <td>
+                <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(searchPropKey)}')" class="action-tag ${adv.actionClass}" title="Click to view and inspect this item in Masterlist">
+                    <i class="fas fa-magnifying-glass"></i> ${adv.actionText}
+                </button>
+            </td>
+        `;
+        fragment.appendChild(tr);
+    });
+
+    advisoryTableBody.appendChild(fragment);
+}
+
+// Wire Advisory Matrix Pagination Buttons once on startup
+(function setupAdvisoryPaginationListeners() {
+    const firstPageBtn = document.getElementById('advisory-first-page-btn');
+    const prevPageBtn = document.getElementById('advisory-prev-page-btn');
+    const nextPageBtn = document.getElementById('advisory-next-page-btn');
+    const lastPageBtn = document.getElementById('advisory-last-page-btn');
+    const pageSelectEl = document.getElementById('advisory-page-select');
+
+    if (firstPageBtn) {
+        firstPageBtn.addEventListener('click', () => {
+            if (advisoryCurrentPage !== 1) {
+                advisoryCurrentPage = 1;
+                renderAdvisoryTable();
+            }
+        });
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (advisoryCurrentPage > 1) {
+                advisoryCurrentPage--;
+                renderAdvisoryTable();
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            if (advisoryCurrentPage < advisoryTotalPages) {
+                advisoryCurrentPage++;
+                renderAdvisoryTable();
+            }
+        });
+    }
+
+    if (lastPageBtn) {
+        lastPageBtn.addEventListener('click', () => {
+            if (advisoryCurrentPage !== advisoryTotalPages) {
+                advisoryCurrentPage = advisoryTotalPages;
+                renderAdvisoryTable();
+            }
+        });
+    }
+
+    if (pageSelectEl) {
+        pageSelectEl.addEventListener('change', (e) => {
+            const p = parseInt(e.target.value, 10);
+            if (p && p !== advisoryCurrentPage) {
+                advisoryCurrentPage = p;
+                renderAdvisoryTable();
+            }
+        });
+    }
+})();
+
 /**
  * Aggregates data and renders the complete Analytics & Predictive Insights Dashboard.
  */
@@ -3307,7 +3487,7 @@ window.renderAnalyticsDashboard = function() {
     const serviceableRatioEl = document.getElementById('kpi-serviceable-ratio');
     const repairAlertsEl = document.getElementById('kpi-repair-alerts');
     const replacementBudgetEl = document.getElementById('kpi-replacement-budget');
-    const advisoryTableBody = document.getElementById('advisory-table-body');
+    const lastUpdatedEl = document.getElementById('analytics-last-updated');
 
     const totalArticles = inventoryData.length;
 
@@ -3331,15 +3511,15 @@ window.renderAnalyticsDashboard = function() {
     const departmentCounts = {};
     const lifecycleBuckets = {
         '< 1 Year (New)': 0,
-        '1 - 3 Years (Optimal)': 0,
-        '3 - 5 Years (Mid-Life)': 0,
-        '5+ Years (Aging / EOL)': 0
+        '1 - 3 Years (Good)': 0,
+        '3 - 5 Years (Mid-Age)': 0,
+        '5+ Years (Old)': 0
     };
 
     const advisoryItems = [];
 
     inventoryData.forEach(item => {
-        const qtyVal = parseInt(item.qty, 10) || 1;
+        const qtyVal = parseInt(item.qty, 10) || 0;
         const unitCostVal = parseFloat(item.unitCost) || 0;
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
         totalValuation += computedTotalCost;
@@ -3373,7 +3553,7 @@ window.renderAnalyticsDashboard = function() {
         categoryCounts[accGroup] = (categoryCounts[accGroup] || 0) + qtyVal;
 
         // Department Allocation Aggregation
-        const dept = (item.location && item.location.trim() !== '') ? item.location.trim() : 'GSO Warehouse / Unassigned';
+        const dept = (item.location && item.location.trim() !== '') ? item.location.trim() : 'Unassigned';
         departmentCounts[dept] = (departmentCounts[dept] || 0) + qtyVal;
 
         // Predictive Lifecycle & Age Calculation
@@ -3381,11 +3561,11 @@ window.renderAnalyticsDashboard = function() {
         if (ageYears < 1) {
             lifecycleBuckets['< 1 Year (New)']++;
         } else if (ageYears <= 3) {
-            lifecycleBuckets['1 - 3 Years (Optimal)']++;
+            lifecycleBuckets['1 - 3 Years (Good)']++;
         } else if (ageYears <= 5) {
-            lifecycleBuckets['3 - 5 Years (Mid-Life)']++;
+            lifecycleBuckets['3 - 5 Years (Mid-Age)']++;
         } else {
-            lifecycleBuckets['5+ Years (Aging / EOL)']++;
+            lifecycleBuckets['5+ Years (Old)']++;
             // If aging and not yet accounted in repair budget, add to forecasted replacement plan
             if (condUpper === 'SERVICEABLE') {
                 replacementBudget += (unitCostVal * 0.5 * qtyVal); // 50% replacement allocation
@@ -3399,32 +3579,35 @@ window.renderAnalyticsDashboard = function() {
 
         if (condUpper === 'UNSERVICEABLE' || condUpper === 'FOR DISPOSAL' || condUpper === 'DISPOSED') {
             priority = 'HIGH';
-            actionText = 'Budget for Disposal & Replacement';
+            actionText = 'Replace Item';
             actionClass = 'action-replace';
         } else if (condUpper.includes('REPAIR') || condUpper === 'NEEDS REPAIR') {
             priority = 'HIGH';
-            actionText = 'Schedule Immediate GSO Servicing';
+            actionText = 'Repair Item';
             actionClass = 'action-repair';
         } else if (ageYears >= 5) {
             priority = 'MEDIUM';
-            actionText = 'Lifecycle Assessment & Budget Plan';
+            actionText = 'Plan Replacement';
             actionClass = 'action-replace';
         } else if (ageYears >= 3.5) {
             priority = 'LOW';
-            actionText = 'Preventive Maintenance Inspection';
+            actionText = 'Inspect Item';
             actionClass = 'action-inspect';
         }
 
         if (priority) {
             advisoryItems.push({
+                id: item.id,
                 priority: priority,
-                propertyNo: item.propertyNo || '—',
-                article: item.article || 'Unnamed Item',
-                description: item.description || '—',
+                propertyNo: item.propertyNo || '-',
+                article: item.article || '-',
+                description: item.description || '-',
                 location: dept,
-                condition: item.condition || 'N/A',
+                condition: item.condition || 'Serviceable',
                 age: ageYears > 0 ? `${ageYears.toFixed(1)} yrs` : 'Unknown',
+                qty: qtyVal,
                 unitCost: unitCostVal,
+                totalCost: computedTotalCost,
                 actionText: actionText,
                 actionClass: actionClass
             });
@@ -3458,151 +3641,47 @@ window.renderAnalyticsDashboard = function() {
     if (totalValuationEl) animateNumberValue(totalValuationEl, totalValuation, true, false, 850);
     if (serviceableRateEl) animateNumberValue(serviceableRateEl, serviceableRate, false, true, 850);
     if (serviceableRatioEl) {
-        serviceableRatioEl.innerHTML = `<i class="fas fa-circle-check text-success"></i> ${serviceableCount} of ${totalArticles} active items operational`;
+        serviceableRatioEl.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${serviceableCount} of ${totalArticles} items in good condition`;
     }
     if (repairAlertsEl) animateNumberValue(repairAlertsEl, totalRepairAlerts, false, false, 750);
     if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, replacementBudget, true, false, 850);
 
-    // Update Ribbon Indicators
-    const ribbonHealthEl = document.getElementById('ribbon-health-score');
-    const ribbonAuditedEl = document.getElementById('ribbon-audited-count');
-    if (ribbonHealthEl) {
-        ribbonHealthEl.textContent = `${serviceableRate}% ${serviceableRate >= 90 ? 'Nominal' : (serviceableRate >= 75 ? 'Moderate' : 'Attention Required')}`;
-        ribbonHealthEl.className = `ribbon-stat-val ${serviceableRate >= 90 ? 'text-success' : (serviceableRate >= 75 ? 'text-amber' : 'text-danger')}`;
-    }
-    if (ribbonAuditedEl) {
-        ribbonAuditedEl.textContent = `${totalArticles.toLocaleString()} Verified Items`;
+    // Update Live Sync time
+    if (lastUpdatedEl) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        lastUpdatedEl.innerHTML = `<i class="fas fa-clock-rotate-left"></i> <span>Live Sync: ${timeStr}</span>`;
     }
 
     // 2. Render Chart.js Visualizations (Safely checking Chart availability)
     if (typeof Chart !== 'undefined') {
-        renderConditionDoughnutChart(conditionCounts);
-        renderCategoryValuationChart(categoryValuations);
-        renderLifecycleAgingChart(lifecycleBuckets);
-        renderDepartmentAllocationChart(departmentCounts);
+        renderPredictiveDepreciationChart(totalValuation);
+        renderAccountPolarChart(categoryValuations);
+        renderLifecycleStageChart(lifecycleBuckets, totalArticles);
+        renderServiceabilityDonutChart(conditionCounts);
     }
 
-    // 3. Cache Advisory Items & Render Table
-    cachedAdvisoryItems = advisoryItems;
-    renderAdvisoryTableRows();
-};
-
-let cachedAdvisoryItems = [];
-let currentAdvisoryFilter = 'ALL';
-
-window.filterAdvisoryTable = function(filterType, tabEl) {
-    currentAdvisoryFilter = filterType || 'ALL';
-    const tabs = document.querySelectorAll('.advisory-filter-tabs .adv-tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    if (tabEl) tabEl.classList.add('active');
-    renderAdvisoryTableRows();
-};
-
-function renderAdvisoryTableRows() {
-    const advisoryTableBody = document.getElementById('advisory-table-body');
-    if (!advisoryTableBody) return;
-    advisoryTableBody.innerHTML = '';
-
-    let items = [...cachedAdvisoryItems];
-
-    if (currentAdvisoryFilter === 'HIGH') {
-        items = items.filter(i => i.priority === 'HIGH');
-    } else if (currentAdvisoryFilter === 'MEDIUM') {
-        items = items.filter(i => i.priority === 'MEDIUM');
-    } else if (currentAdvisoryFilter === 'LOW') {
-        items = items.filter(i => i.priority === 'LOW');
-    }
-
-    if (items.length === 0) {
-        advisoryTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; color: #4ade80; padding: 24px; font-weight: 600;">
-                    <i class="fas fa-circle-check" style="font-size: 18px; margin-right: 6px;"></i>
-                    No equipment currently matches this advisory filter.
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    // Sort advisory: HIGH priority first, then MEDIUM, then LOW
+    // 3. Cache & Sort Advisory Matrix Table
     const priorityOrder = { 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
-    items.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    advisoryItems.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    cachedAdvisoryItems = advisoryItems;
 
-    const fragment = document.createDocumentFragment();
-    items.slice(0, 20).forEach(adv => {
-        const tr = document.createElement('tr');
-        let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-info-circle"></i> Low</span>`;
-        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-triangle-exclamation"></i> High</span>`;
-        if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium"><i class="fas fa-clock"></i> Medium</span>`;
+    // Update Priority Tab Counts
+    const countAllEl = document.getElementById('advisory-count-all');
+    const countHighEl = document.getElementById('advisory-count-high');
+    const countMediumEl = document.getElementById('advisory-count-medium');
+    const countLowEl = document.getElementById('advisory-count-low');
 
-        tr.innerHTML = `
-            <td>${priorityBadge}</td>
-            <td class="font-bold text-muted">${sanitizeText(adv.propertyNo)}</td>
-            <td>
-                <div style="font-weight: 700; color: #f8fafc;">${sanitizeText(adv.article)}</div>
-                <div style="font-size: 11px; color: #94a3b8;">${sanitizeText(adv.description)}</div>
-            </td>
-            <td>${sanitizeText(adv.location)}</td>
-            <td><span style="font-weight: 600; color: #f1f5f9;">${sanitizeText(adv.condition)}</span></td>
-            <td>${sanitizeText(adv.age)}</td>
-            <td style="font-weight: 600;">₱${adv.unitCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-            <td>
-                <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(adv.propertyNo)}')" class="action-tag ${adv.actionClass}" style="cursor: pointer; border: none; font-family: inherit; transition: all 0.2s ease;" title="Click to view and inspect this item in Masterlist">
-                    <i class="fas fa-search-plus"></i> ${adv.actionText}
-                </button>
-            </td>
-        `;
-        fragment.appendChild(tr);
-    });
+    const highCount = advisoryItems.filter(i => i.priority === 'HIGH').length;
+    const medCount = advisoryItems.filter(i => i.priority === 'MEDIUM').length;
+    const lowCount = advisoryItems.filter(i => i.priority === 'LOW').length;
 
-    advisoryTableBody.appendChild(fragment);
-}
+    if (countAllEl) countAllEl.textContent = advisoryItems.length;
+    if (countHighEl) countHighEl.textContent = highCount;
+    if (countMediumEl) countMediumEl.textContent = medCount;
+    if (countLowEl) countLowEl.textContent = lowCount;
 
-/**
- * Generates and downloads the Official Predictive Asset Lifecycle & Budget Forecast CSV.
- */
-window.exportPredictiveForecastCSV = function() {
-    if (!cachedAdvisoryItems || cachedAdvisoryItems.length === 0) {
-        window.showGTrackToast('info', 'No Data', 'No predictive advisory records available to export.');
-        return;
-    }
-
-    const headers = [
-        "Priority",
-        "Property No.",
-        "Article",
-        "Description",
-        "Assigned Office / Location",
-        "Current Condition",
-        "Service Age",
-        "Unit Cost (PHP)",
-        "Recommended GSO Action"
-    ];
-
-    const rows = cachedAdvisoryItems.map(item => [
-        `"${item.priority || ''}"`,
-        `"${item.propertyNo || ''}"`,
-        `"${(item.article || '').replace(/"/g, '""')}"`,
-        `"${(item.description || '').replace(/"/g, '""')}"`,
-        `"${(item.location || '').replace(/"/g, '""')}"`,
-        `"${item.condition || ''}"`,
-        `"${item.age || ''}"`,
-        `"${item.unitCost ? item.unitCost.toFixed(2) : '0.00'}"`,
-        `"${(item.actionText || '').replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `GTRACK_Predictive_Lifecycle_Forecast_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    window.showGTrackToast('success', 'Export Complete', 'Predictive Asset Lifecycle & Budget Forecast exported successfully.');
+    renderAdvisoryTable();
 };
 
 window.inspectAdvisoryItem = function(propertyNo) {
@@ -3630,62 +3709,85 @@ function getFreshCanvas(canvasId) {
     return newCanvas;
 }
 
+let predictiveDepreciationChartInstance = null;
+let accountPolarChartInstance = null;
+let lifecycleStageChartInstance = null;
+let serviceabilityDonutChartInstance = null;
+
 /**
- * Chart 1: Equipment Condition & Serviceability Breakdown (Doughnut Chart)
+ * Graph 1: Predictive Asset Depreciation & Capital Retention Curve (Spline Area Curve)
  */
-function renderConditionDoughnutChart(counts) {
-    if (conditionChartInstance) {
-        conditionChartInstance.destroy();
-        conditionChartInstance = null;
+function renderPredictiveDepreciationChart(totalValuation) {
+    if (predictiveDepreciationChartInstance) {
+        predictiveDepreciationChartInstance.destroy();
+        predictiveDepreciationChartInstance = null;
     }
 
-    const ctx = getFreshCanvas('conditionDoughnutChart');
+    const ctx = getFreshCanvas('predictiveDepreciationChart');
     if (!ctx) return;
 
-    const labels = Object.keys(counts).filter(k => counts[k] > 0);
-    const data = labels.map(k => counts[k]);
+    const labels = ['6+ Years Ago', '5 Years Ago', '4 Years Ago', '3 Years Ago', '2 Years Ago', '1 Year Ago', 'Current / New'];
+    
+    // Straight-line depreciation model with 10% residual salvage value
+    const acquisitionBaseline = labels.map(() => totalValuation);
+    const depreciatedValues = [
+        totalValuation * 0.10,
+        totalValuation * 0.15,
+        totalValuation * 0.28,
+        totalValuation * 0.46,
+        totalValuation * 0.64,
+        totalValuation * 0.82,
+        totalValuation
+    ];
 
-    const colorMap = {
-        'Serviceable': '#22c55e',
-        'Needs Repair': '#f59e0b',
-        'Unserviceable': '#ef4444',
-        'For Disposal': '#dc2626',
-        'Other': '#64748b'
-    };
-
-    const backgroundColors = labels.map(l => colorMap[l] || '#38bdf8');
-
-    conditionChartInstance = new Chart(ctx, {
-        type: 'doughnut',
+    predictiveDepreciationChartInstance = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: labels.length ? labels : ['No Data'],
-            datasets: [{
-                data: data.length ? data : [1],
-                backgroundColor: backgroundColors.length ? backgroundColors : ['#334155'],
-                borderWidth: 2,
-                borderColor: '#121a2b',
-                hoverOffset: 8
-            }]
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Original Cost (₱)',
+                    data: acquisitionBaseline,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#38bdf8',
+                    tension: 0.1
+                },
+                {
+                    label: 'Estimated Value (₱)',
+                    data: depreciatedValues,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.18)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981',
+                    pointHoverRadius: 6,
+                    tension: 0.35
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             resizeDelay: 100,
-            cutout: '68%',
             animation: {
-                animateScale: true,
-                animateRotate: true,
-                duration: 800,
+                duration: 850,
                 easing: 'easeOutQuart'
             },
             plugins: {
                 legend: {
-                    position: 'bottom',
+                    position: 'top',
+                    align: 'end',
                     labels: {
                         color: '#cbd5e1',
                         font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
-                        padding: 14,
-                        usePointStyle: true
+                        boxWidth: 12,
+                        padding: 12
                     }
                 },
                 tooltip: {
@@ -3694,62 +3796,11 @@ function renderConditionDoughnutChart(counts) {
                     bodyColor: '#94a3b8',
                     borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
-                    padding: 10
-                }
-            }
-        }
-    });
-}
-
-/**
- * Chart 2: Account Group Valuation in ₱ (Bar Chart)
- */
-function renderCategoryValuationChart(valuations) {
-    if (categoryValuationChartInstance) {
-        categoryValuationChartInstance.destroy();
-        categoryValuationChartInstance = null;
-    }
-
-    const ctx = getFreshCanvas('categoryValuationChart');
-    if (!ctx) return;
-
-    const labels = Object.keys(valuations);
-    const data = labels.map(k => valuations[k]);
-
-    categoryValuationChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels.length ? labels : ['No Data'],
-            datasets: [{
-                label: 'Total Value (₱)',
-                data: data.length ? data : [0],
-                backgroundColor: 'rgba(56, 189, 248, 0.65)',
-                borderColor: '#38bdf8',
-                borderWidth: 1.5,
-                borderRadius: 6,
-                maxBarThickness: 45
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            resizeDelay: 100,
-            animation: {
-                duration: 750,
-                easing: 'easeOutQuart'
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleColor: '#f8fafc',
-                    bodyColor: '#94a3b8',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 1,
+                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             const val = context.raw || 0;
-                            return ` Value: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                            return ` ${context.dataset.label}: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
                         }
                     }
                 }
@@ -3757,11 +3808,10 @@ function renderCategoryValuationChart(valuations) {
             scales: {
                 x: {
                     ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } },
-                    grid: { display: false }
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' }
                 },
                 y: {
                     beginAtZero: true,
-                    min: 0,
                     ticks: {
                         color: '#94a3b8',
                         font: { family: 'Plus Jakarta Sans', size: 10 },
@@ -3779,42 +3829,39 @@ function renderCategoryValuationChart(valuations) {
 }
 
 /**
- * Chart 3: Predictive Equipment Aging & Lifecycle Distribution (Bar Chart)
+ * Graph 2: PPE Account Group Polar Area Spectrum
  */
-function renderLifecycleAgingChart(buckets) {
-    if (lifecycleAgingChartInstance) {
-        lifecycleAgingChartInstance.destroy();
-        lifecycleAgingChartInstance = null;
+function renderAccountPolarChart(valuations) {
+    if (accountPolarChartInstance) {
+        accountPolarChartInstance.destroy();
+        accountPolarChartInstance = null;
     }
 
-    const ctx = getFreshCanvas('lifecycleAgingChart');
+    const ctx = getFreshCanvas('accountPolarChart');
     if (!ctx) return;
 
-    const labels = Object.keys(buckets);
-    const data = labels.map(k => buckets[k]);
+    const labels = Object.keys(valuations);
+    const data = labels.map(k => valuations[k]);
 
-    lifecycleAgingChartInstance = new Chart(ctx, {
-        type: 'bar',
+    const palette = [
+        'rgba(56, 189, 248, 0.75)',
+        'rgba(129, 140, 248, 0.75)',
+        'rgba(16, 185, 129, 0.75)',
+        'rgba(245, 158, 11, 0.75)',
+        'rgba(236, 72, 153, 0.75)',
+        'rgba(168, 85, 247, 0.75)',
+        'rgba(14, 165, 233, 0.75)'
+    ];
+
+    accountPolarChartInstance = new Chart(ctx, {
+        type: 'polarArea',
         data: {
-            labels: labels,
+            labels: labels.length ? labels : ['No Accounts'],
             datasets: [{
-                label: 'Equipment Count',
-                data: data,
-                backgroundColor: [
-                    'rgba(34, 197, 94, 0.65)',
-                    'rgba(56, 189, 248, 0.65)',
-                    'rgba(245, 158, 11, 0.65)',
-                    'rgba(239, 68, 68, 0.65)'
-                ],
-                borderColor: [
-                    '#22c55e',
-                    '#38bdf8',
-                    '#f59e0b',
-                    '#ef4444'
-                ],
-                borderWidth: 1.5,
-                borderRadius: 6,
-                maxBarThickness: 45
+                data: data.length ? data : [1],
+                backgroundColor: palette.slice(0, labels.length || 1),
+                borderColor: '#121a2b',
+                borderWidth: 2
             }]
         },
         options: {
@@ -3822,11 +3869,19 @@ function renderLifecycleAgingChart(buckets) {
             maintainAspectRatio: false,
             resizeDelay: 100,
             animation: {
-                duration: 750,
+                duration: 800,
                 easing: 'easeOutQuart'
             },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#cbd5e1',
+                        font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' },
+                        boxWidth: 10,
+                        padding: 8
+                    }
+                },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     titleColor: '#f8fafc',
@@ -3835,21 +3890,17 @@ function renderLifecycleAgingChart(buckets) {
                     borderWidth: 1,
                     callbacks: {
                         label: function(context) {
-                            return ` ${context.raw} items in this lifecycle stage`;
+                            const val = context.raw || 0;
+                            return ` Total Value: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
                         }
                     }
                 }
             },
             scales: {
-                x: {
-                    ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } },
-                    grid: { display: false }
-                },
-                y: {
-                    beginAtZero: true,
-                    min: 0,
-                    ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 }, stepSize: 1 },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                r: {
+                    ticks: { display: false },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    angleLines: { color: 'rgba(255, 255, 255, 0.08)' }
                 }
             }
         }
@@ -3857,32 +3908,42 @@ function renderLifecycleAgingChart(buckets) {
 }
 
 /**
- * Chart 4: Department Asset Allocation (Horizontal Bar Chart)
+ * Graph 3: Predictive Fleet Lifecycle Age Horizon (Horizontal Graded Bars)
  */
-function renderDepartmentAllocationChart(departments) {
-    if (departmentAllocationChartInstance) {
-        departmentAllocationChartInstance.destroy();
-        departmentAllocationChartInstance = null;
+function renderLifecycleStageChart(buckets, totalArticles) {
+    if (lifecycleStageChartInstance) {
+        lifecycleStageChartInstance.destroy();
+        lifecycleStageChartInstance = null;
     }
 
-    const ctx = getFreshCanvas('departmentAllocationChart');
+    const ctx = getFreshCanvas('lifecycleStageChart');
     if (!ctx) return;
 
-    const sortedDepts = Object.keys(departments).sort((a, b) => departments[b] - departments[a]).slice(0, 6);
-    const data = sortedDepts.map(d => departments[d]);
+    const labels = Object.keys(buckets);
+    const data = labels.map(k => buckets[k]);
 
-    departmentAllocationChartInstance = new Chart(ctx, {
+    lifecycleStageChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: sortedDepts.length ? sortedDepts : ['No Department Assigned'],
+            labels: labels,
             datasets: [{
-                label: 'Quantity Assigned',
-                data: data.length ? data : [0],
-                backgroundColor: 'rgba(129, 140, 248, 0.65)',
-                borderColor: '#818cf8',
+                label: 'Equipment Fleet Count',
+                data: data,
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.75)',
+                    'rgba(56, 189, 248, 0.75)',
+                    'rgba(245, 158, 11, 0.75)',
+                    'rgba(239, 68, 68, 0.75)'
+                ],
+                borderColor: [
+                    '#10b981',
+                    '#38bdf8',
+                    '#f59e0b',
+                    '#ef4444'
+                ],
                 borderWidth: 1.5,
                 borderRadius: 6,
-                maxBarThickness: 24
+                maxBarThickness: 26
             }]
         },
         options: {
@@ -3904,7 +3965,9 @@ function renderDepartmentAllocationChart(departments) {
                     borderWidth: 1,
                     callbacks: {
                         label: function(context) {
-                            return ` ${context.raw} units allocated`;
+                            const count = context.raw || 0;
+                            const pct = totalArticles > 0 ? ((count / totalArticles) * 100).toFixed(1) : 0;
+                            return ` ${count} items (${pct}% of fleet)`;
                         }
                     }
                 }
@@ -3912,13 +3975,119 @@ function renderDepartmentAllocationChart(departments) {
             scales: {
                 x: {
                     beginAtZero: true,
-                    min: 0,
                     ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 }, stepSize: 1 },
                     grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 },
                 y: {
                     ticks: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' } },
                     grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Graph 4: Operational Serviceability Spectrum (Doughnut Ring Gauge)
+ */
+function renderServiceabilityDonutChart(counts) {
+    if (serviceabilityDonutChartInstance) {
+        serviceabilityDonutChartInstance.destroy();
+        serviceabilityDonutChartInstance = null;
+    }
+
+    const ctx = getFreshCanvas('serviceabilityDonutChart');
+    if (!ctx) return;
+
+    const labels = Object.keys(counts).filter(k => counts[k] > 0);
+    const data = labels.map(k => counts[k]);
+    const totalItems = data.reduce((a, b) => a + b, 0);
+
+    const serviceableCount = counts['Serviceable'] || 0;
+    const serviceablePct = totalItems > 0 ? Math.round((serviceableCount / totalItems) * 100) : 0;
+    const donutPercentEl = document.getElementById('donut-serviceable-percent');
+    if (donutPercentEl) {
+        donutPercentEl.textContent = `${serviceablePct}%`;
+    }
+
+    const colorMap = {
+        'Serviceable': '#10b981',
+        'Needs Repair': '#f59e0b',
+        'Unserviceable': '#ef4444',
+        'For Disposal': '#dc2626',
+        'Other': '#64748b'
+    };
+
+    const backgroundColors = labels.map(l => colorMap[l] || '#38bdf8');
+
+    serviceabilityDonutChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [{
+                data: data.length ? data : [1],
+                backgroundColor: backgroundColors.length ? backgroundColors : ['#334155'],
+                borderWidth: 2,
+                borderColor: '#0f172a',
+                hoverOffset: 6,
+                spacing: 3,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            resizeDelay: 100,
+            cutout: '66%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 800,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#cbd5e1',
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                        padding: 14,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const d = chart.data;
+                            if (d.labels.length && d.datasets.length) {
+                                return d.labels.map((label, i) => {
+                                    const value = d.datasets[0].data[i] || 0;
+                                    const pct = totalItems > 0 ? Math.round((value / totalItems) * 100) : 0;
+                                    return {
+                                        text: `${label}: ${value} (${pct}%)`,
+                                        fillStyle: d.datasets[0].backgroundColor[i],
+                                        strokeStyle: d.datasets[0].backgroundColor[i],
+                                        lineWidth: 0,
+                                        hidden: isNaN(d.datasets[0].data[i]),
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#94a3b8',
+                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.raw || 0;
+                            const pct = totalItems > 0 ? ((val / totalItems) * 100).toFixed(1) : 0;
+                            return ` ${val} items • ${pct}% of total inventory`;
+                        }
+                    }
                 }
             }
         }
