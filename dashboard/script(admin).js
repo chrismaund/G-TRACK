@@ -2072,7 +2072,7 @@ window.adminClearRequestsLogs = async function(e) {
 
     const ok = await window.showGTrackConfirm(
         "Clear All Request Logs?",
-        "Warning: This will permanently delete all request records (Department Transfers, Equipment Transfers, and Masterlist Copies) from the database. This action cannot be undone.",
+        "Warning: This will permanently delete all request records (Department Transfers, Equipment Transfers, and Masterlist Copies) from the system. This action cannot be undone.",
         "Yes, Clear Everything",
         "Cancel",
         true,
