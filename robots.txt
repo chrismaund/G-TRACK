@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Allow: /login/
-Allow: /dashboard/
-
-Sitemap: https://g-track.vercel.app/sitemap.xml
