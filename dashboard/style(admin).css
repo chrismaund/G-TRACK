@@ -5256,3 +5256,326 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     font-size: 16px;
     line-height: 1;
 }
+
+/* =========================================================================
+   AUTHENTIC GOVERNMENT PPE ASSET MANAGEMENT THEME & DASHBOARD STYLES
+   ========================================================================= */
+
+/* Top Government Tricolor Accent Trim */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3.5px;
+    background: linear-gradient(90deg, #0284c7 0%, #38bdf8 35%, #eab308 65%, #dc2626 100%);
+    z-index: 1000;
+}
+
+/* Navbar Brand & Government Hierarchy Titles */
+.nav-brand-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-gov-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.gov-sub-title {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    line-height: 1.2;
+}
+
+.gov-clock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', monospace, sans-serif;
+    padding: 5px 12px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Government Official Hero Card */
+.gov-hero-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 55%, rgba(2, 132, 199, 0.18) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 14px;
+    padding: 22px 28px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.gov-hero-card::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -5%;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.gov-hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.gov-badge-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.gov-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 16px;
+}
+
+.gov-pill-badge.blue {
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.gov-pill-badge.green {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.gov-pill-badge.amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.gov-portal-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #34d399;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.gov-hero-title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: -0.3px;
+}
+
+.gov-hero-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.gov-hero-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gov-hero-meta strong {
+    color: #e2e8f0;
+}
+
+/* Stat Card Government Subtext */
+.stat-gov-subtext {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Command Center Section Header */
+.gov-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.gov-section-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 3px 10px;
+    border-radius: 8px;
+}
+
+.action-card-subtitle {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* Government Summary & Audit Protocol Card */
+.gov-summary-card {
+    background: rgba(18, 26, 43, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.gov-summary-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24px;
+}
+
+.gov-summary-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gov-col-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.gov-account-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.gov-account-pill {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.2s;
+}
+
+.gov-account-pill:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #f8fafc;
+}
+
+.gov-status-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gov-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+}
+
+.gov-status-label {
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gov-status-val {
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* Official Government Footer */
+.gov-dashboard-footer {
+    margin-top: 10px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gov-footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.gov-footer-content strong {
+    color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+    .gov-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    .gov-clock-badge {
+        display: none;
+    }
+}
+

@@ -130,13 +130,21 @@
 
     <header class="navbar">
         <div class="nav-left">
-            <div class="logo-box">
-                <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+            <div class="nav-brand-group">
+                <div class="logo-box">
+                    <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+                </div>
+                <div class="nav-gov-titles">
+                    <span class="gov-sub-title">Republic of the Philippines • LGU Pagbilao</span>
+                    <span class="brand-name">General Services Office — PPE Tracking</span>
+                </div>
             </div>
-            <span class="brand-name">GSO Inventory</span>
         </div>
         <div class="nav-right">
-            <span class="user-email">Employee</span>
+            <div id="gov-live-clock" class="gov-clock-badge" title="Philippine Standard Time">
+                <i class="fas fa-clock" style="color: #38bdf8;"></i> PST: Loading...
+            </div>
+            <span class="user-email"><i class="fas fa-id-badge"></i> Employee</span>
         </div>
     </header>
 
@@ -146,10 +154,24 @@
         <!-- EMPLOYEE HOMEPAGE VIEW (DEFAULT LANDING) -->
         <!-- ========================================================================= -->
         <div id="home-view" class="dashboard-home-view">
-            <!-- Hero Welcome Card -->
-            <section class="home-hero-card">
-                <span class="hero-badge green-badge"><i class="fas fa-id-badge"></i> Staff Lookup & Requests</span>
-                <h2 class="hero-title">Welcome to G-TRACK, <span id="emp-hero-name" style="color: #38bdf8;">Employee</span></h2>
+            <!-- Government Official Portal Header -->
+            <section class="gov-hero-card">
+                <div class="gov-hero-top">
+                    <div class="gov-badge-group">
+                        <span class="gov-pill-badge blue"><i class="fas fa-building-columns"></i> LGU Pagbilao, Quezon</span>
+                        <span class="gov-pill-badge green"><i class="fas fa-id-badge"></i> Staff Property Clearance</span>
+                        <span class="gov-pill-badge amber"><i class="fas fa-file-invoice"></i> Official Lookup</span>
+                    </div>
+                    <span class="gov-portal-tag"><i class="fas fa-check-circle"></i> Staff Access Active</span>
+                </div>
+                <div class="gov-hero-content">
+                    <h2 class="gov-hero-title">Property Accountability & Equipment Custodianship Portal</h2>
+                    <p class="gov-hero-meta">
+                        <span><i class="fas fa-user-check"></i> <strong>User:</strong> <span id="emp-hero-name">Employee</span></span>
+                        <span><i class="fas fa-landmark"></i> <strong>Office:</strong> General Services Office</span>
+                        <span><i class="fas fa-shield-halved"></i> <strong>Clearance:</strong> Read-Only Asset Verification</span>
+                    </p>
+                </div>
             </section>
 
             <!-- Quick Live Stats Row -->
@@ -159,8 +181,9 @@
                         <i class="fas fa-boxes-stacked"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Total Articles</span>
+                        <span class="stat-label">Total PPE Articles</span>
                         <span id="emp-home-stat-total" class="stat-val">0</span>
+                        <span class="stat-gov-subtext"><i class="fas fa-barcode"></i> Registered Inventory</span>
                     </div>
                 </div>
 
@@ -169,8 +192,9 @@
                         <i class="fas fa-circle-check"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Serviceable</span>
+                        <span class="stat-label">Serviceable Assets</span>
                         <span id="emp-home-stat-serviceable" class="stat-val text-success">0</span>
+                        <span class="stat-gov-subtext text-success"><i class="fas fa-circle-dot"></i> Operational</span>
                     </div>
                 </div>
 
@@ -179,8 +203,9 @@
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Unserviceable</span>
+                        <span class="stat-label">Unserviceable Assets</span>
                         <span id="emp-home-stat-unserviceable" class="stat-val text-danger">0</span>
+                        <span class="stat-gov-subtext text-danger"><i class="fas fa-wrench"></i> Inactive / Repair</span>
                     </div>
                 </div>
 
@@ -189,22 +214,29 @@
                         <i class="fas fa-cubes"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Total Units</span>
+                        <span class="stat-label">Total Registered Units</span>
                         <span id="emp-home-stat-qty" class="stat-val text-blue">0</span>
+                        <span class="stat-gov-subtext text-amber"><i class="fas fa-boxes-packing"></i> Physical Units</span>
                     </div>
                 </div>
             </section>
 
             <!-- Quick Action Module Cards -->
             <section>
-                <h3 class="home-section-title"><i class="fas fa-compass" style="color: #38bdf8;"></i> Quick Navigation & Actions</h3>
+                <div class="gov-section-header">
+                    <h3 class="home-section-title"><i class="fas fa-compass" style="color: #38bdf8;"></i> Staff Operations & Quick Actions</h3>
+                    <span class="gov-section-tag">Property Verification • Export Requests</span>
+                </div>
                 <div class="home-actions-grid">
                     <div class="action-card" onclick="switchEmpView('directory')">
                         <div class="action-card-header">
                             <div class="action-card-icon blue-gradient">
                                 <i class="fas fa-table-list"></i>
                             </div>
-                            <h4 class="action-card-title">Equipment Directory</h4>
+                            <div>
+                                <h4 class="action-card-title">Equipment Directory Lookup</h4>
+                                <span class="action-card-subtitle">Official Property Registry & Accountability Verification</span>
+                            </div>
                         </div>
                         <span class="action-card-btn">Browse Directory <i class="fas fa-arrow-right"></i></span>
                     </div>
@@ -214,7 +246,10 @@
                             <div class="action-card-icon green-gradient">
                                 <i class="fas fa-paper-plane"></i>
                             </div>
-                            <h4 class="action-card-title">Request Masterlist Copy</h4>
+                            <div>
+                                <h4 class="action-card-title">Request Masterlist Copy</h4>
+                                <span class="action-card-subtitle">Submit Official CSV Export Request to GSO Admin</span>
+                            </div>
                         </div>
                         <span class="action-card-btn">Submit Request <i class="fas fa-arrow-right"></i></span>
                     </div>
@@ -224,12 +259,50 @@
                             <div class="action-card-icon amber-gradient">
                                 <i class="fas fa-clock-rotate-left"></i>
                             </div>
-                            <h4 class="action-card-title">Request History</h4>
+                            <div>
+                                <h4 class="action-card-title">Request Status & History</h4>
+                                <span class="action-card-subtitle">Track Submitted Requests & Download Approved Files</span>
+                            </div>
                         </div>
                         <span class="action-card-btn">View History <i class="fas fa-arrow-right"></i></span>
                     </div>
                 </div>
             </section>
+
+            <!-- Official Government Audit & System Status Panel -->
+            <section class="gov-summary-card">
+                <div class="gov-summary-grid">
+                    <div class="gov-summary-col">
+                        <h4 class="gov-col-title"><i class="fas fa-clipboard-check" style="color: #38bdf8;"></i> Staff Custodianship Standards</h4>
+                        <div class="gov-account-pills">
+                            <span class="gov-account-pill"><i class="fas fa-user-shield"></i> Property Acknowledgement Receipt (PAR)</span>
+                            <span class="gov-account-pill"><i class="fas fa-id-card"></i> Inventory Custodian Slip (ICS)</span>
+                            <span class="gov-account-pill"><i class="fas fa-bell"></i> Maintenance Notification Protocol</span>
+                        </div>
+                    </div>
+                    <div class="gov-summary-col">
+                        <h4 class="gov-col-title"><i class="fas fa-shield-check" style="color: #34d399;"></i> System Security & Compliance</h4>
+                        <div class="gov-status-items">
+                            <div class="gov-status-row">
+                                <span class="gov-status-label"><i class="fas fa-circle text-success" style="font-size: 8px;"></i> Cloud Database Sync:</span>
+                                <span class="gov-status-val text-success">Live & Protected</span>
+                            </div>
+                            <div class="gov-status-row">
+                                <span class="gov-status-label"><i class="fas fa-lock text-cyan" style="font-size: 8px;"></i> Access Level:</span>
+                                <span class="gov-status-val">Authorized Staff Clearance</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Official Government Footer -->
+            <footer class="gov-dashboard-footer">
+                <div class="gov-footer-content">
+                    <span><i class="fas fa-building-flag"></i> <strong>General Services Office (GSO)</strong> • Local Government Unit of Pagbilao, Quezon</span>
+                    <span>G-TRACK PPE Asset Tracking Portal • Official Government Registry</span>
+                </div>
+            </footer>
         </div>
 
         <!-- ========================================================================= -->

@@ -193,13 +193,21 @@
 
     <header class="navbar">
         <div class="nav-left">
-            <div class="logo-box">
-                <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+            <div class="nav-brand-group">
+                <div class="logo-box">
+                    <img src="logo.png" alt="GSO Logo" class="admin-nav-logo">
+                </div>
+                <div class="nav-gov-titles">
+                    <span class="gov-sub-title">Republic of the Philippines • LGU Pagbilao</span>
+                    <span class="brand-name">General Services Office — PPE Tracking</span>
+                </div>
             </div>
-            <span class="brand-name">GSO Inventory</span>
         </div>
         <div class="nav-right">
-            <span class="user-email">Administrator</span>
+            <div id="gov-live-clock" class="gov-clock-badge" title="Philippine Standard Time">
+                <i class="fas fa-clock" style="color: #38bdf8;"></i> PST: Loading...
+            </div>
+            <span class="user-email"><i class="fas fa-user-shield"></i> Administrator</span>
         </div>
     </header>
 
@@ -209,41 +217,58 @@
         <!-- HOMEPAGE VIEW (ADMIN DEFAULT LANDING) -->
         <!-- ========================================================================= -->
         <div id="home-view" class="dashboard-home-view">
-            <!-- Hero Welcome Card -->
-            <section class="home-hero-card">
-                <span class="hero-badge"><i class="fas fa-shield-alt"></i> Administrator Portal</span>
-                <h2 class="hero-title">Welcome to G-TRACK Admin Hub</h2>
+            <!-- Government Official Portal Header -->
+            <section class="gov-hero-card">
+                <div class="gov-hero-top">
+                    <div class="gov-badge-group">
+                        <span class="gov-pill-badge blue"><i class="fas fa-building-columns"></i> LGU Pagbilao, Quezon</span>
+                        <span class="gov-pill-badge green"><i class="fas fa-shield-halved"></i> GSO Property Registry</span>
+                        <span class="gov-pill-badge amber"><i class="fas fa-scale-balanced"></i> COA & GAM Compliant</span>
+                    </div>
+                    <span class="gov-portal-tag"><i class="fas fa-check-circle"></i> Official Portal Active</span>
+                </div>
+                <div class="gov-hero-content">
+                    <h2 class="gov-hero-title">Property, Plant & Equipment (PPE) Asset Management System</h2>
+                    <p class="gov-hero-meta">
+                        <span><i class="fas fa-landmark"></i> <strong>Entity:</strong> General Services Office</span>
+                        <span><i class="fas fa-coins"></i> <strong>Fund Cluster:</strong> General Fund & SEF</span>
+                        <span><i class="fas fa-file-signature"></i> <strong>Standard:</strong> COA Circular No. 2020-006</span>
+                    </p>
+                </div>
             </section>
 
-            <!-- Quick Live Stats Row -->
+            <!-- Executive Property Inventory KPIs -->
             <section class="home-stats-bar">
-                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('All Conditions')" title="View all inventory articles in Masterlist">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('All Conditions')" title="View all registered articles in Masterlist">
                     <div class="stat-icon-circle blue-gradient">
                         <i class="fas fa-boxes-stacked"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Total Articles</span>
+                        <span class="stat-label">Total PPE Articles</span>
                         <span id="home-stat-total-articles" class="stat-val">0</span>
+                        <span class="stat-gov-subtext"><i class="fas fa-barcode"></i> Registered Inventory</span>
                     </div>
                 </div>
 
-                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Serviceable')" title="Filter by Serviceable items in Masterlist">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Serviceable')" title="Filter to Serviceable items in Masterlist">
                     <div class="stat-icon-circle green-gradient">
                         <i class="fas fa-circle-check"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Serviceable</span>
+                        <span class="stat-label">Serviceable / Operational</span>
                         <span id="home-stat-serviceable" class="stat-val text-success">0</span>
+                        <span class="stat-gov-subtext text-success"><i class="fas fa-circle-dot"></i> In Active Service</span>
                     </div>
                 </div>
 
-                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter by Maintenance / Alerts in Masterlist">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter to Unserviceable & Disposal Alerts in Masterlist">
                     <div class="stat-icon-circle red-gradient">
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Maintenance / Alerts</span>
+                        <span class="stat-label">Unserviceable / Disposal</span>
                         <span id="home-stat-alerts" class="stat-val text-danger">0</span>
+                        <span class="stat-gov-subtext text-danger"><i class="fas fa-wrench"></i> Subject to IIRUP/Audit</span>
                     </div>
                 </div>
 
@@ -252,24 +277,31 @@
                         <i class="fas fa-peso-sign"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Total Valuation</span>
+                        <span class="stat-label">Total Capitalized Value</span>
                         <span id="home-stat-valuation" class="stat-val text-amber">₱0.00</span>
+                        <span class="stat-gov-subtext text-amber"><i class="fas fa-book-journal-whills"></i> Recorded PPE Cost</span>
                     </div>
                 </div>
             </section>
 
-            <!-- Quick Action Module Cards -->
+            <!-- Core Government Operations & Modules -->
             <section>
-                <h3 class="home-section-title"><i class="fas fa-compass" style="color: #38bdf8;"></i> Core Operations & Quick Navigation</h3>
+                <div class="gov-section-header">
+                    <h3 class="home-section-title"><i class="fas fa-folder-tree" style="color: #38bdf8;"></i> Asset Management Command Center</h3>
+                    <span class="gov-section-tag">COA Form 73 • RPCPPE • Audit Modules</span>
+                </div>
                 <div class="home-actions-grid">
                     <div class="action-card" onclick="switchAdminView('masterlist')">
                         <div class="action-card-header">
                             <div class="action-card-icon blue-gradient">
                                 <i class="fas fa-table-list"></i>
                             </div>
-                            <h4 class="action-card-title">Inventory Masterlist</h4>
+                            <div>
+                                <h4 class="action-card-title">Physical Inventory Masterlist</h4>
+                                <span class="action-card-subtitle">COA Form 73 • Asset Registry & Barcode Tracking</span>
+                            </div>
                         </div>
-                        <span class="action-card-btn">Open Masterlist <i class="fas fa-arrow-right"></i></span>
+                        <span class="action-card-btn">Launch Masterlist <i class="fas fa-arrow-right"></i></span>
                     </div>
 
                     <div class="action-card" onclick="switchAdminView('analytics')">
@@ -277,9 +309,12 @@
                             <div class="action-card-icon green-gradient">
                                 <i class="fas fa-chart-pie"></i>
                             </div>
-                            <h4 class="action-card-title">Analytics & Predictions</h4>
+                            <div>
+                                <h4 class="action-card-title">Depreciation & Lifecycle Analytics</h4>
+                                <span class="action-card-subtitle">Predictive Aging • Useful Life & Replacement</span>
+                            </div>
                         </div>
-                        <span class="action-card-btn">View Analytics <i class="fas fa-arrow-right"></i></span>
+                        <span class="action-card-btn">Launch Analytics <i class="fas fa-arrow-right"></i></span>
                     </div>
 
                     <div class="action-card" onclick="openProfilesModal()">
@@ -287,9 +322,12 @@
                             <div class="action-card-icon red-gradient">
                                 <i class="fas fa-users-cog"></i>
                             </div>
-                            <h4 class="action-card-title">User Authorizations</h4>
+                            <div>
+                                <h4 class="action-card-title">Property Custodians & Clearances</h4>
+                                <span class="action-card-subtitle">PAR Authorizations & Staff Access Management</span>
+                            </div>
                         </div>
-                        <span class="action-card-btn">Manage Users <i class="fas fa-arrow-right"></i></span>
+                        <span class="action-card-btn">Manage Custodians <i class="fas fa-arrow-right"></i></span>
                     </div>
 
                     <div class="action-card" onclick="switchAdminView('masterlist'); setTimeout(function(){ var sd = document.getElementById('sidebar-drawer'); var so = document.getElementById('sidebar-overlay'); if(sd) sd.classList.add('open'); if(so) so.classList.add('show'); setTimeout(function(){ var pop = document.getElementById('printPopover'); if(pop) pop.classList.remove('hidden'); }, 200); }, 150);">
@@ -297,12 +335,55 @@
                             <div class="action-card-icon amber-gradient">
                                 <i class="fas fa-print"></i>
                             </div>
-                            <h4 class="action-card-title">Generate PPE Report</h4>
+                            <div>
+                                <h4 class="action-card-title">Generate PPE Audit Reports</h4>
+                                <span class="action-card-subtitle">Physical Count of PPE (RPCPPE / RPCI Format)</span>
+                            </div>
                         </div>
-                        <span class="action-card-btn">Print Report <i class="fas fa-arrow-right"></i></span>
+                        <span class="action-card-btn">Generate & Print <i class="fas fa-arrow-right"></i></span>
                     </div>
                 </div>
             </section>
+
+            <!-- Official Government Audit & System Status Panel -->
+            <section class="gov-summary-card">
+                <div class="gov-summary-grid">
+                    <div class="gov-summary-col">
+                        <h4 class="gov-col-title"><i class="fas fa-layer-group" style="color: #38bdf8;"></i> Primary Account Group Allocations</h4>
+                        <div class="gov-account-pills">
+                            <span class="gov-account-pill"><i class="fas fa-desktop"></i> IT & Communications Equipment</span>
+                            <span class="gov-account-pill"><i class="fas fa-chair"></i> Furniture, Fixtures & Books</span>
+                            <span class="gov-account-pill"><i class="fas fa-car-side"></i> Transportation & Heavy Equipment</span>
+                            <span class="gov-account-pill"><i class="fas fa-print"></i> Office Equipment & Peripherals</span>
+                        </div>
+                    </div>
+                    <div class="gov-summary-col">
+                        <h4 class="gov-col-title"><i class="fas fa-shield-check" style="color: #34d399;"></i> Compliance & Data Integrity</h4>
+                        <div class="gov-status-items">
+                            <div class="gov-status-row">
+                                <span class="gov-status-label"><i class="fas fa-circle text-success" style="font-size: 8px;"></i> Cloud Database Sync:</span>
+                                <span class="gov-status-val text-success">Live & Connected</span>
+                            </div>
+                            <div class="gov-status-row">
+                                <span class="gov-status-label"><i class="fas fa-file-contract text-cyan" style="font-size: 8px;"></i> Audit Standard:</span>
+                                <span class="gov-status-val">COA Circular 2020-006</span>
+                            </div>
+                            <div class="gov-status-row">
+                                <span class="gov-status-label"><i class="fas fa-lock text-amber" style="font-size: 8px;"></i> Data Privacy:</span>
+                                <span class="gov-status-val">RA 10173 Protected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Official Government Footer -->
+            <footer class="gov-dashboard-footer">
+                <div class="gov-footer-content">
+                    <span><i class="fas fa-building-flag"></i> <strong>General Services Office (GSO)</strong> • Local Government Unit of Pagbilao, Quezon</span>
+                    <span>G-TRACK PPE Asset Tracking Portal • Official Government Registry</span>
+                </div>
+            </footer>
         </div>
 
         <!-- ========================================================================= -->

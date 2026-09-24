@@ -1422,6 +1422,31 @@ function updateEmpMetricCardActiveState(condition) {
     if (cardQty) cardQty.classList.toggle('active-filter-card', false);
 }
 
+// Live Official Philippine Standard Time (PST) Clock
+function updateGovClock() {
+    const clockEl = document.getElementById('gov-live-clock');
+    if (!clockEl) return;
+    try {
+        const now = new Date();
+        const formatted = now.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }) + ' | ' + now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+        clockEl.innerHTML = `<i class="fas fa-clock" style="color: #38bdf8;"></i> PST: ${formatted}`;
+    } catch(e) {
+        // Fallback
+    }
+}
+setInterval(updateGovClock, 1000);
+updateGovClock();
+
 // Table Filter & Pagination Listeners
 if (accountFilter) accountFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (conditionFilter) conditionFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
