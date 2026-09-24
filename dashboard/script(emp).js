@@ -398,6 +398,421 @@ window.jumpToPropertyFromHomeEmp = function(propertyNo) {
     }, 40);
 };
 
+// =========================================================================
+// EXECUTIVE METRIC BREAKDOWN & AUDIT MODAL (EMPLOYEE)
+// =========================================================================
+window.openMetricModal = function(type) {
+    const modal = document.getElementById('metric-breakdown-modal');
+    const titleEl = document.getElementById('metric-modal-title');
+    const badgeEl = document.getElementById('metric-modal-badge');
+    const subtitleEl = document.getElementById('metric-modal-subtitle');
+    const iconBadgeEl = document.getElementById('metric-modal-icon-badge');
+    const iconEl = document.getElementById('metric-modal-icon');
+    const contentEl = document.getElementById('metric-modal-content');
+    const primaryBtn = document.getElementById('metric-modal-primary-btn');
+
+    if (!modal || !contentEl) return;
+
+    const totalArticles = inventoryData.length;
+    const serviceableCount = inventoryData.filter(i => (i.condition || '').toUpperCase() === 'SERVICEABLE').length;
+    const unserviceableCount = inventoryData.filter(i => {
+        const c = (i.condition || '').toUpperCase();
+        return c === 'UNSERVICEABLE' || c === 'FOR DISPOSAL';
+    }).length;
+    const totalUnits = inventoryData.reduce((sum, i) => sum + (parseInt(i.qty, 10) || 0), 0);
+
+    if (type === 'total') {
+        iconBadgeEl.className = 'metric-modal-icon-badge blue-gradient';
+        iconEl.className = 'fas fa-boxes-stacked';
+        titleEl.textContent = 'Total PPE Articles Registry Inspection';
+        badgeEl.textContent = 'Official Registry';
+        subtitleEl.textContent = 'Complete registered equipment composition across LGU offices';
+
+        const accounts = {};
+        inventoryData.forEach(item => {
+            const acc = (item.account || 'General Equipment').trim();
+            if (!accounts[acc]) accounts[acc] = { count: 0, units: 0 };
+            accounts[acc].count++;
+            accounts[acc].units += (parseInt(item.qty, 10) || 0);
+        });
+
+        const accEntries = Object.entries(accounts).sort((a, b) => b[1].count - a[1].count);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-barcode text-blue"></i> Total Articles</span>
+                    <span class="kpi-value text-blue">${totalArticles.toLocaleString()}</span>
+                    <span class="kpi-subtext">Registered Records</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-boxes-packing text-cyan"></i> Total Units</span>
+                    <span class="kpi-value text-cyan">${totalUnits.toLocaleString()}</span>
+                    <span class="kpi-subtext">Physical Units</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-circle-check text-success"></i> Operational</span>
+                    <span class="kpi-value text-success">${serviceableCount.toLocaleString()}</span>
+                    <span class="kpi-subtext">In Active Service</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-layer-group text-amber"></i> Categories</span>
+                    <span class="kpi-value text-amber">${accEntries.length}</span>
+                    <span class="kpi-subtext">Account Groups</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-folder-tree text-blue"></i> Equipment Account Categories</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">COA Classifications</span>
+                </div>
+                <div class="metric-modal-table-wrapper">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Category / Account</th>
+                                <th style="text-align: right;">Articles</th>
+                                <th style="text-align: right;">Physical Units</th>
+                                <th style="text-align: right;">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${accEntries.map(([name, data]) => {
+                                const share = totalArticles > 0 ? ((data.count / totalArticles) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td><strong>${name}</strong></td>
+                                        <td style="text-align: right;">${data.count.toLocaleString()}</td>
+                                        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${data.units.toLocaleString()}</td>
+                                        <td style="text-align: right; color: #94a3b8;">${share}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-search text-cyan"></i> Quick Equipment Lookup</h4>
+                    <input type="text" class="metric-modal-search" placeholder="Search item, property no, office..." oninput="window.filterMetricModalSearch(this.value)" />
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 200px;">
+                    <table class="metric-modal-table" id="metric-modal-quick-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article & Description</th>
+                                <th>Office</th>
+                                <th>Accountable Person</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metric-modal-quick-tbody">
+                            ${renderMetricQuickRowsEmp(inventoryData.slice(0, 15))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-table-list"></i> Browse Full Directory`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                switchEmpView('directory');
+            };
+        }
+    } else if (type === 'serviceable') {
+        iconBadgeEl.className = 'metric-modal-icon-badge green-gradient';
+        iconEl.className = 'fas fa-circle-check';
+        titleEl.textContent = 'Serviceable Assets & Office Deployments';
+        badgeEl.textContent = 'Active Service';
+        subtitleEl.textContent = 'Verified operational equipment assigned across municipal offices';
+
+        const servRate = totalArticles > 0 ? ((serviceableCount / totalArticles) * 100).toFixed(1) : 100;
+        const servItems = inventoryData.filter(i => (i.condition || '').toUpperCase() === 'SERVICEABLE');
+        
+        const locMap = {};
+        servItems.forEach(item => {
+            const loc = (item.location || 'Unassigned / GSO Storage').trim();
+            if (!locMap[loc]) locMap[loc] = 0;
+            locMap[loc]++;
+        });
+        const locEntries = Object.entries(locMap).sort((a, b) => b[1] - a[1]);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-circle-check text-success"></i> Serviceable</span>
+                    <span class="kpi-value text-success">${serviceableCount.toLocaleString()}</span>
+                    <span class="kpi-subtext">Active Articles</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-gauge-high text-cyan"></i> Readiness</span>
+                    <span class="kpi-value text-cyan">${servRate}%</span>
+                    <span class="kpi-subtext">Operational Rate</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-location-dot text-amber"></i> Offices</span>
+                    <span class="kpi-value text-amber">${locEntries.length}</span>
+                    <span class="kpi-subtext">Active Deployments</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-shield-halved text-blue"></i> Clearance</span>
+                    <span class="kpi-value text-blue" style="font-size: 15px;">Verified</span>
+                    <span class="kpi-subtext">PAR Cleared</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-building text-success"></i> Office Equipment Distribution</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">${locEntries.length} Operating Offices</span>
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 220px;">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Department / Office Location</th>
+                                <th style="text-align: right;">Serviceable Items</th>
+                                <th style="text-align: right;">Deployment Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${locEntries.map(([loc, count]) => {
+                                const share = serviceableCount > 0 ? ((count / serviceableCount) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td><i class="fas fa-location-dot text-cyan" style="margin-right: 6px;"></i><strong>${loc}</strong></td>
+                                        <td style="text-align: right; font-weight: 700; color: #4ade80;">${count.toLocaleString()}</td>
+                                        <td style="text-align: right; color: #94a3b8;">${share}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-filter"></i> View Serviceable in Directory`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                filterDirectoryFromHome('SERVICEABLE');
+            };
+        }
+    } else if (type === 'unserviceable') {
+        iconBadgeEl.className = 'metric-modal-icon-badge red-gradient';
+        iconEl.className = 'fas fa-triangle-exclamation';
+        titleEl.textContent = 'Unserviceable & Maintenance Queue Breakdown';
+        badgeEl.textContent = 'Repair & Disposal';
+        subtitleEl.textContent = 'Articles currently inactive, under repair, or subject to GSO appraisal';
+
+        const unservItems = inventoryData.filter(i => {
+            const c = (i.condition || '').toUpperCase();
+            return c === 'UNSERVICEABLE' || c === 'FOR DISPOSAL';
+        });
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-ban text-danger"></i> Unserviceable</span>
+                    <span class="kpi-value text-danger">${unserviceableCount.toLocaleString()}</span>
+                    <span class="kpi-subtext">Items Inactive</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-wrench text-amber"></i> Action Needed</span>
+                    <span class="kpi-value text-amber">Inspection</span>
+                    <span class="kpi-subtext">GSO Appraisal</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-clipboard-check text-cyan"></i> IIRUP Status</span>
+                    <span class="kpi-value text-cyan" style="font-size: 15px;">Pending</span>
+                    <span class="kpi-subtext">Disposal Queue</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-arrow-right-arrow-left text-purple"></i> Transferable</span>
+                    <span class="kpi-value text-purple">No</span>
+                    <span class="kpi-subtext">Locked for Transfer</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-list-check text-danger"></i> Unserviceable Equipment Records</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">${unservItems.length} Registered Items</span>
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 220px;">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article & Remarks</th>
+                                <th>Office</th>
+                                <th>Accountable Person</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${unservItems.length === 0 ? `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 18px;">No unserviceable property records found.</td></tr>` : unservItems.map(item => {
+                                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                                const art = item.article || item.description || 'Equipment';
+                                const remarks = item.remarks ? ` - ${item.remarks}` : '';
+                                return `
+                                    <tr>
+                                        <td style="font-family: monospace; color: #38bdf8;"><strong>${propNo}</strong></td>
+                                        <td>${art}<span style="color: #94a3b8; font-size: 11px;">${remarks}</span></td>
+                                        <td>${item.location || 'GSO'}</td>
+                                        <td>${item.accountablePerson || 'N/A'}</td>
+                                        <td><span class="badge-unserv" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">${item.condition || 'Unserviceable'}</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-filter"></i> View Unserviceable in Directory`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                filterDirectoryFromHome('UNSERVICEABLE');
+            };
+        }
+    } else if (type === 'units') {
+        iconBadgeEl.className = 'metric-modal-icon-badge amber-gradient';
+        iconEl.className = 'fas fa-cubes';
+        titleEl.textContent = 'Total Registered Units & Physical Inventory';
+        badgeEl.textContent = 'Physical Counts';
+        subtitleEl.textContent = 'Breakdown of physical equipment units, batch allocations, and custodianship';
+
+        const avgUnits = totalArticles > 0 ? (totalUnits / totalArticles).toFixed(1) : '1.0';
+        const topBatchItems = [...inventoryData].sort((a, b) => (parseInt(b.qty, 10) || 0) - (parseInt(a.qty, 10) || 0)).slice(0, 5);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-cubes text-amber"></i> Total Units</span>
+                    <span class="kpi-value text-amber">${totalUnits.toLocaleString()}</span>
+                    <span class="kpi-subtext">Counted Units</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-boxes-stacked text-cyan"></i> Total Articles</span>
+                    <span class="kpi-value text-cyan">${totalArticles.toLocaleString()}</span>
+                    <span class="kpi-subtext">Distinct Listings</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-calculator text-blue"></i> Mean Units</span>
+                    <span class="kpi-value text-blue">${avgUnits}</span>
+                    <span class="kpi-subtext">Per Article</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-clipboard-user text-success"></i> Custodianship</span>
+                    <span class="kpi-value text-success" style="font-size: 15px;">Active</span>
+                    <span class="kpi-subtext">Assigned Staff</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-boxes-packing text-amber"></i> Highest Quantity Equipment Batches</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">Bulk Physical Inventory</span>
+                </div>
+                <div class="metric-modal-table-wrapper">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article & Description</th>
+                                <th>Office</th>
+                                <th>Custodian</th>
+                                <th style="text-align: right;">Batch Units</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${topBatchItems.map(item => {
+                                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                                const art = item.article || item.description || 'Equipment';
+                                const qty = parseInt(item.qty, 10) || 1;
+                                return `
+                                    <tr>
+                                        <td style="font-family: monospace; color: #38bdf8;"><strong>${propNo}</strong></td>
+                                        <td>${art}</td>
+                                        <td>${item.location || 'GSO'}</td>
+                                        <td>${item.accountablePerson || 'N/A'}</td>
+                                        <td style="text-align: right; color: #fbbf24; font-weight: 800; font-size: 13px;">${qty.toLocaleString()} ${item.unit || 'units'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-table-list"></i> Browse Directory`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                switchEmpView('directory');
+            };
+        }
+    }
+
+    modal.style.display = 'flex';
+};
+
+window.closeMetricModal = function() {
+    const modal = document.getElementById('metric-breakdown-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+function renderMetricQuickRowsEmp(items) {
+    if (!items || items.length === 0) {
+        return `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 14px;">No matching equipment found.</td></tr>`;
+    }
+    return items.map(item => {
+        const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+        const art = item.article || item.description || 'Equipment';
+        const cond = (item.condition || 'Serviceable').toUpperCase();
+        const badgeClass = cond === 'SERVICEABLE' ? 'badge-serv' : 'badge-unserv';
+        return `
+            <tr>
+                <td style="font-family: monospace; color: #38bdf8;">${propNo}</td>
+                <td><strong>${art}</strong></td>
+                <td>${item.location || 'N/A'}</td>
+                <td>${item.accountablePerson || 'N/A'}</td>
+                <td><span class="${badgeClass}" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">${cond}</span></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.filterMetricModalSearch = function(query) {
+    const tbody = document.getElementById('metric-modal-quick-tbody');
+    if (!tbody) return;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+        tbody.innerHTML = renderMetricQuickRowsEmp(inventoryData.slice(0, 15));
+        return;
+    }
+    const filtered = inventoryData.filter(item => {
+        const art = (item.article || '').toLowerCase();
+        const desc = (item.description || '').toLowerCase();
+        const prop = (item.propertyNo || item.propertyNumber || '').toLowerCase();
+        const loc = (item.location || '').toLowerCase();
+        const person = (item.accountablePerson || '').toLowerCase();
+        return art.includes(q) || desc.includes(q) || prop.includes(q) || loc.includes(q) || person.includes(q);
+    });
+    tbody.innerHTML = renderMetricQuickRowsEmp(filtered.slice(0, 20));
+};
+
 function updateAccountDropdown() {
     const accounts = ['All Accounts', ...new Set(inventoryData.map(item => item.account).filter(Boolean))];
     const currentSelection = accountFilter ? accountFilter.value : 'All Accounts';

@@ -3392,6 +3392,434 @@ window.jumpToPropertyFromHome = function(propertyNo) {
     }, 40);
 };
 
+// =========================================================================
+// EXECUTIVE METRIC BREAKDOWN & AUDIT MODAL
+// =========================================================================
+window.openMetricModal = function(type) {
+    const modal = document.getElementById('metric-breakdown-modal');
+    const titleEl = document.getElementById('metric-modal-title');
+    const badgeEl = document.getElementById('metric-modal-badge');
+    const subtitleEl = document.getElementById('metric-modal-subtitle');
+    const iconBadgeEl = document.getElementById('metric-modal-icon-badge');
+    const iconEl = document.getElementById('metric-modal-icon');
+    const contentEl = document.getElementById('metric-modal-content');
+    const primaryBtn = document.getElementById('metric-modal-primary-btn');
+
+    if (!modal || !contentEl) return;
+
+    const totalArticles = inventoryData.length;
+    const serviceableCount = inventoryData.filter(i => (i.condition || '').toUpperCase() === 'SERVICEABLE').length;
+    const unserviceableCount = inventoryData.filter(i => {
+        const c = (i.condition || '').toUpperCase();
+        return c === 'UNSERVICEABLE' || c === 'FOR DISPOSAL' || c === 'DISPOSED' || c.includes('REPAIR');
+    }).length;
+    const totalValuation = inventoryData.reduce((sum, i) => sum + (parseFloat(i.totalCost) || (parseInt(i.qty, 10) || 0) * (parseFloat(i.unitCost) || 0)), 0);
+    const totalUnits = inventoryData.reduce((sum, i) => sum + (parseInt(i.qty, 10) || 0), 0);
+
+    if (type === 'total') {
+        iconBadgeEl.className = 'metric-modal-icon-badge blue-gradient';
+        iconEl.className = 'fas fa-boxes-stacked';
+        titleEl.textContent = 'Total PPE Articles Registry Inspection';
+        badgeEl.textContent = 'Full Registry';
+        subtitleEl.textContent = 'Comprehensive inventory composition across all COA asset accounts';
+
+        const accounts = {};
+        inventoryData.forEach(item => {
+            const acc = (item.account || 'Unclassified PPE').trim();
+            if (!accounts[acc]) accounts[acc] = { count: 0, units: 0, val: 0 };
+            accounts[acc].count++;
+            accounts[acc].units += (parseInt(item.qty, 10) || 0);
+            accounts[acc].val += (parseFloat(item.totalCost) || (parseInt(item.qty, 10) || 0) * (parseFloat(item.unitCost) || 0));
+        });
+
+        const accEntries = Object.entries(accounts).sort((a, b) => b[1].count - a[1].count);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-barcode text-blue"></i> Total Articles</span>
+                    <span class="kpi-value text-blue">${totalArticles.toLocaleString()}</span>
+                    <span class="kpi-subtext">Recorded Items</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-boxes-packing text-cyan"></i> Total Units</span>
+                    <span class="kpi-value text-cyan">${totalUnits.toLocaleString()}</span>
+                    <span class="kpi-subtext">Physical Quantities</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-peso-sign text-amber"></i> Total Valuation</span>
+                    <span class="kpi-value text-amber" style="font-size: 16px;">₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span class="kpi-subtext">Recorded Cost</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-layer-group text-success"></i> Categories</span>
+                    <span class="kpi-value text-success">${accEntries.length}</span>
+                    <span class="kpi-subtext">Account Groups</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-folder-tree text-blue"></i> Asset Account Classifications</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">COA Form 73 Categorization</span>
+                </div>
+                <div class="metric-modal-table-wrapper">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Account Group</th>
+                                <th style="text-align: right;">Articles</th>
+                                <th style="text-align: right;">Units</th>
+                                <th style="text-align: right;">Total Valuation</th>
+                                <th style="text-align: right;">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${accEntries.map(([name, data]) => {
+                                const share = totalValuation > 0 ? ((data.val / totalValuation) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td><strong>${name}</strong></td>
+                                        <td style="text-align: right;">${data.count.toLocaleString()}</td>
+                                        <td style="text-align: right;">${data.units.toLocaleString()}</td>
+                                        <td style="text-align: right; color: #fbbf24; font-family: monospace;">₱${data.val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${share}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-search text-cyan"></i> Quick Article Verification</h4>
+                    <input type="text" class="metric-modal-search" placeholder="Search item, prop no, or office..." oninput="window.filterMetricModalSearch(this.value)" />
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 200px;">
+                    <table class="metric-modal-table" id="metric-modal-quick-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article Description</th>
+                                <th>Location</th>
+                                <th>Condition</th>
+                                <th style="text-align: right;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metric-modal-quick-tbody">
+                            ${renderMetricQuickRows(inventoryData.slice(0, 15))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-table-list"></i> Open Full Masterlist`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                switchAdminView('masterlist');
+            };
+        }
+    } else if (type === 'serviceable') {
+        iconBadgeEl.className = 'metric-modal-icon-badge green-gradient';
+        iconEl.className = 'fas fa-circle-check';
+        titleEl.textContent = 'Serviceable & Operational Assets Breakdown';
+        badgeEl.textContent = 'Operational Status';
+        subtitleEl.textContent = 'Deployments, department allocations, and in-service property readiness';
+
+        const servRate = totalArticles > 0 ? ((serviceableCount / totalArticles) * 100).toFixed(1) : 100;
+        const servItems = inventoryData.filter(i => (i.condition || '').toUpperCase() === 'SERVICEABLE');
+        
+        const locMap = {};
+        servItems.forEach(item => {
+            const loc = (item.location || 'Unassigned / GSO Storage').trim();
+            if (!locMap[loc]) locMap[loc] = 0;
+            locMap[loc]++;
+        });
+        const locEntries = Object.entries(locMap).sort((a, b) => b[1] - a[1]);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-check-circle text-success"></i> Serviceable</span>
+                    <span class="kpi-value text-success">${serviceableCount.toLocaleString()}</span>
+                    <span class="kpi-subtext">Active Articles</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-gauge-high text-cyan"></i> Operational Rate</span>
+                    <span class="kpi-value text-cyan">${servRate}%</span>
+                    <span class="kpi-subtext">Readiness Index</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-location-dot text-amber"></i> Deployed Offices</span>
+                    <span class="kpi-value text-amber">${locEntries.length}</span>
+                    <span class="kpi-subtext">Active Locations</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-shield-check text-blue"></i> Audit Status</span>
+                    <span class="kpi-value text-blue" style="font-size: 15px;">Compliant</span>
+                    <span class="kpi-subtext">COA Verified</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-building text-success"></i> Operational Deployment by Department / Office</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">${locEntries.length} Offices Registered</span>
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 220px;">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Department / Office Location</th>
+                                <th style="text-align: right;">Serviceable Items</th>
+                                <th style="text-align: right;">Operational Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${locEntries.map(([loc, count]) => {
+                                const share = serviceableCount > 0 ? ((count / serviceableCount) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td><i class="fas fa-location-dot text-cyan" style="margin-right: 6px;"></i><strong>${loc}</strong></td>
+                                        <td style="text-align: right; font-weight: 700; color: #4ade80;">${count.toLocaleString()}</td>
+                                        <td style="text-align: right; color: #94a3b8;">${share}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-filter"></i> View Serviceable in Masterlist`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                filterMasterlistFromHome('Serviceable');
+            };
+        }
+    } else if (type === 'unserviceable') {
+        iconBadgeEl.className = 'metric-modal-icon-badge red-gradient';
+        iconEl.className = 'fas fa-triangle-exclamation';
+        titleEl.textContent = 'Unserviceable Property & Disposal Queue';
+        badgeEl.textContent = 'IIRUP / Repair Queue';
+        subtitleEl.textContent = 'Property awaiting COA Form 74 inspection, appraisal, or maintenance';
+
+        const unservItems = inventoryData.filter(i => {
+            const c = (i.condition || '').toUpperCase();
+            return c === 'UNSERVICEABLE' || c === 'FOR DISPOSAL' || c === 'DISPOSED' || c.includes('REPAIR');
+        });
+
+        const unservVal = unservItems.reduce((sum, i) => sum + (parseFloat(i.totalCost) || (parseInt(i.qty, 10) || 0) * (parseFloat(i.unitCost) || 0)), 0);
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-ban text-danger"></i> Unserviceable</span>
+                    <span class="kpi-value text-danger">${unserviceableCount.toLocaleString()}</span>
+                    <span class="kpi-subtext">Items Pending Action</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-peso-sign text-amber"></i> Book Deficit</span>
+                    <span class="kpi-value text-amber" style="font-size: 15px;">₱${unservVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span class="kpi-subtext">Historical Cost</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-clipboard-check text-cyan"></i> Form 74 IIRUP</span>
+                    <span class="kpi-value text-cyan" style="font-size: 15px;">Pending</span>
+                    <span class="kpi-subtext">Disposal Committee</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-wrench text-purple"></i> Under Repair</span>
+                    <span class="kpi-value text-purple">${unservItems.filter(i => (i.condition || '').toUpperCase().includes('REPAIR')).length}</span>
+                    <span class="kpi-subtext">Maintenance</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-list-check text-danger"></i> Unserviceable Property Inspection List</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">${unservItems.length} Registered Items</span>
+                </div>
+                <div class="metric-modal-table-wrapper" style="max-height: 220px;">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article & Remarks</th>
+                                <th>Office</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${unservItems.length === 0 ? `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 18px;">No unserviceable property records found.</td></tr>` : unservItems.map(item => {
+                                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                                const art = item.article || item.description || 'Equipment';
+                                const remarks = item.remarks ? ` - ${item.remarks}` : '';
+                                const cost = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * (parseFloat(item.unitCost) || 0));
+                                return `
+                                    <tr>
+                                        <td style="font-family: monospace; color: #38bdf8;"><strong>${propNo}</strong></td>
+                                        <td>${art}<span style="color: #94a3b8; font-size: 11px;">${remarks}</span></td>
+                                        <td>${item.location || 'GSO'}</td>
+                                        <td><span class="badge-unserv" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">${item.condition || 'Unserviceable'}</span></td>
+                                        <td style="text-align: right; color: #fbbf24; font-family: monospace;">₱${cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-filter"></i> View Unserviceable in Masterlist`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                filterMasterlistFromHome('Unserviceable');
+            };
+        }
+    } else if (type === 'valuation') {
+        iconBadgeEl.className = 'metric-modal-icon-badge amber-gradient';
+        iconEl.className = 'fas fa-peso-sign';
+        titleEl.textContent = 'Capitalized PPE Asset Valuation & Fund Ledger';
+        badgeEl.textContent = 'Financial Ledger';
+        subtitleEl.textContent = 'Capitalized acquisition costs, high-value asset audit, and financial balance';
+
+        const highValueItems = inventoryData.filter(i => (parseFloat(i.unitCost) || 0) >= 50000 || (parseFloat(i.totalCost) || 0) >= 50000);
+        const semiExpendable = inventoryData.filter(i => (parseFloat(i.unitCost) || 0) < 50000);
+        const avgCost = totalArticles > 0 ? (totalValuation / totalArticles) : 0;
+
+        contentEl.innerHTML = `
+            <div class="metric-modal-kpi-grid">
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-vault text-amber"></i> Total Valuation</span>
+                    <span class="kpi-value text-amber" style="font-size: 16px;">₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span class="kpi-subtext">PPE Acquisition Cost</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-gem text-cyan"></i> High-Value PPE</span>
+                    <span class="kpi-value text-cyan">${highValueItems.length.toLocaleString()}</span>
+                    <span class="kpi-subtext">&ge; ₱50,000 Threshold</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-tags text-blue"></i> Semi-Expendable</span>
+                    <span class="kpi-value text-blue">${semiExpendable.length.toLocaleString()}</span>
+                    <span class="kpi-subtext">&lt; ₱50,000 Threshold</span>
+                </div>
+                <div class="metric-modal-kpi-card">
+                    <span class="kpi-label"><i class="fas fa-chart-line text-success"></i> Average Cost</span>
+                    <span class="kpi-value text-success" style="font-size: 16px;">₱${avgCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span class="kpi-subtext">Per Article Mean</span>
+                </div>
+            </div>
+
+            <div class="metric-modal-section">
+                <div class="metric-modal-section-header">
+                    <h4 class="metric-modal-section-title"><i class="fas fa-crown text-amber"></i> Highest-Valued Capital Assets (Top 5)</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">Major LGU Property Investments</span>
+                </div>
+                <div class="metric-modal-table-wrapper">
+                    <table class="metric-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Property No.</th>
+                                <th>Article & Description</th>
+                                <th>Location</th>
+                                <th style="text-align: right;">Unit Cost</th>
+                                <th style="text-align: right;">Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${[...inventoryData].sort((a, b) => {
+                                const bCost = parseFloat(b.totalCost) || ((parseInt(b.qty, 10) || 0) * (parseFloat(b.unitCost) || 0));
+                                const aCost = parseFloat(a.totalCost) || ((parseInt(a.qty, 10) || 0) * (parseFloat(a.unitCost) || 0));
+                                return bCost - aCost;
+                            }).slice(0, 5).map(item => {
+                                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                                const art = item.article || item.description || 'Equipment';
+                                const unitCost = parseFloat(item.unitCost) || 0;
+                                const totCost = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * unitCost);
+                                return `
+                                    <tr>
+                                        <td style="font-family: monospace; color: #38bdf8;"><strong>${propNo}</strong></td>
+                                        <td>${art}</td>
+                                        <td>${item.location || 'GSO'}</td>
+                                        <td style="text-align: right; color: #cbd5e1; font-family: monospace;">₱${unitCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td style="text-align: right; color: #fbbf24; font-weight: 700; font-family: monospace;">₱${totCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (primaryBtn) {
+            primaryBtn.innerHTML = `<i class="fas fa-chart-pie"></i> Launch Full Analytics`;
+            primaryBtn.onclick = function() {
+                closeMetricModal();
+                switchAdminView('analytics');
+            };
+        }
+    }
+
+    modal.style.display = 'flex';
+};
+
+window.closeMetricModal = function() {
+    const modal = document.getElementById('metric-breakdown-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+function renderMetricQuickRows(items) {
+    if (!items || items.length === 0) {
+        return `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 14px;">No matching assets found.</td></tr>`;
+    }
+    return items.map(item => {
+        const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+        const art = item.article || item.description || 'Equipment';
+        const cond = (item.condition || 'Serviceable').toUpperCase();
+        const badgeClass = cond === 'SERVICEABLE' ? 'badge-serv' : 'badge-unserv';
+        const cost = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * (parseFloat(item.unitCost) || 0));
+        return `
+            <tr>
+                <td style="font-family: monospace; color: #38bdf8;">${propNo}</td>
+                <td><strong>${art}</strong></td>
+                <td>${item.location || 'N/A'}</td>
+                <td><span class="${badgeClass}" style="font-size: 9px; padding: 2px 6px; border-radius: 4px;">${cond}</span></td>
+                <td style="text-align: right; font-family: monospace; color: #fbbf24;">₱${cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.filterMetricModalSearch = function(query) {
+    const tbody = document.getElementById('metric-modal-quick-tbody');
+    if (!tbody) return;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+        tbody.innerHTML = renderMetricQuickRows(inventoryData.slice(0, 15));
+        return;
+    }
+    const filtered = inventoryData.filter(item => {
+        const art = (item.article || '').toLowerCase();
+        const desc = (item.description || '').toLowerCase();
+        const prop = (item.propertyNo || item.propertyNumber || '').toLowerCase();
+        const loc = (item.location || '').toLowerCase();
+        return art.includes(q) || desc.includes(q) || prop.includes(q) || loc.includes(q);
+    });
+    tbody.innerHTML = renderMetricQuickRows(filtered.slice(0, 20));
+};
+
 /**
  * Parses an acquisition date string and calculates the item's age in years.
  * @param {string} dateStr 
