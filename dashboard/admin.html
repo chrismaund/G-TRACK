@@ -345,34 +345,104 @@
                 </div>
             </section>
 
-            <!-- Official Government Audit & System Status Panel -->
-            <section class="gov-summary-card">
-                <div class="gov-summary-grid">
-                    <div class="gov-summary-col">
-                        <h4 class="gov-col-title"><i class="fas fa-layer-group" style="color: #38bdf8;"></i> Primary Account Group Allocations</h4>
-                        <div class="gov-account-pills">
-                            <span class="gov-account-pill"><i class="fas fa-desktop"></i> IT & Communications Equipment</span>
-                            <span class="gov-account-pill"><i class="fas fa-chair"></i> Furniture, Fixtures & Books</span>
-                            <span class="gov-account-pill"><i class="fas fa-car-side"></i> Transportation & Heavy Equipment</span>
-                            <span class="gov-account-pill"><i class="fas fa-print"></i> Office Equipment & Peripherals</span>
+            <!-- Official Government Asset Intelligence & Operational Audit Panels -->
+            <section class="gov-panels-grid">
+                <!-- Panel 1: Primary Account Group Allocations & Breakdown -->
+                <div class="gov-panel-card">
+                    <div class="gov-panel-header">
+                        <h4 class="gov-panel-title"><i class="fas fa-layer-group" style="color: #38bdf8;"></i> PPE Account Allocation</h4>
+                        <span class="gov-panel-badge">COA Accounts</span>
+                    </div>
+                    <div class="gov-category-list" id="gov-home-category-list">
+                        <div class="gov-category-item" onclick="filterByAccountFromHome('IT Equipment and Software')" title="Click to filter by IT Equipment">
+                            <div class="gov-cat-row">
+                                <span class="gov-cat-name"><i class="fas fa-desktop text-blue"></i> IT & Communications</span>
+                                <span class="gov-cat-meta" id="cat-stat-it">0 items</span>
+                            </div>
+                            <div class="gov-progress-track">
+                                <div class="gov-progress-fill fill-blue" id="cat-bar-it" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="gov-category-item" onclick="filterByAccountFromHome('Furniture and Fixtures')" title="Click to filter by Furniture & Fixtures">
+                            <div class="gov-cat-row">
+                                <span class="gov-cat-name"><i class="fas fa-chair text-green"></i> Furniture & Fixtures</span>
+                                <span class="gov-cat-meta" id="cat-stat-furniture">0 items</span>
+                            </div>
+                            <div class="gov-progress-track">
+                                <div class="gov-progress-fill fill-green" id="cat-bar-furniture" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="gov-category-item" onclick="filterByAccountFromHome('Transportation Equipment')" title="Click to filter by Transportation Equipment">
+                            <div class="gov-cat-row">
+                                <span class="gov-cat-name"><i class="fas fa-car-side text-amber"></i> Motor Vehicles / Transport</span>
+                                <span class="gov-cat-meta" id="cat-stat-transport">0 items</span>
+                            </div>
+                            <div class="gov-progress-track">
+                                <div class="gov-progress-fill fill-amber" id="cat-bar-transport" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="gov-category-item" onclick="filterByAccountFromHome('Office Equipment')" title="Click to filter by Office Equipment">
+                            <div class="gov-cat-row">
+                                <span class="gov-cat-name"><i class="fas fa-print text-purple"></i> Office Equipment & Others</span>
+                                <span class="gov-cat-meta" id="cat-stat-office">0 items</span>
+                            </div>
+                            <div class="gov-progress-track">
+                                <div class="gov-progress-fill fill-purple" id="cat-bar-office" style="width: 0%;"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="gov-summary-col">
-                        <h4 class="gov-col-title"><i class="fas fa-shield-check" style="color: #34d399;"></i> Compliance & Data Integrity</h4>
-                        <div class="gov-status-items">
-                            <div class="gov-status-row">
-                                <span class="gov-status-label"><i class="fas fa-circle text-success" style="font-size: 8px;"></i> Cloud Database Sync:</span>
-                                <span class="gov-status-val text-success">Live & Connected</span>
-                            </div>
-                            <div class="gov-status-row">
-                                <span class="gov-status-label"><i class="fas fa-file-contract text-cyan" style="font-size: 8px;"></i> Audit Standard:</span>
-                                <span class="gov-status-val">COA Circular 2020-006</span>
-                            </div>
-                            <div class="gov-status-row">
-                                <span class="gov-status-label"><i class="fas fa-lock text-amber" style="font-size: 8px;"></i> Data Privacy:</span>
-                                <span class="gov-status-val">RA 10173 Protected</span>
-                            </div>
+                </div>
+
+                <!-- Panel 2: Physical Count & Compliance Governance -->
+                <div class="gov-panel-card">
+                    <div class="gov-panel-header">
+                        <h4 class="gov-panel-title"><i class="fas fa-clipboard-check" style="color: #34d399;"></i> Physical Count & Governance</h4>
+                        <span class="gov-panel-badge" style="color: #34d399; background: rgba(52, 211, 153, 0.1); border-color: rgba(52, 211, 153, 0.25);">Audit Status</span>
+                    </div>
+
+                    <div class="gov-stat-box-group">
+                        <div class="gov-stat-mini-box">
+                            <span class="gov-stat-mini-label"><i class="fas fa-file-invoice-dollar text-blue"></i> Voucher Tallied</span>
+                            <span class="gov-stat-mini-val text-success" id="gov-tallied-count">0</span>
                         </div>
+                        <div class="gov-stat-mini-box">
+                            <span class="gov-stat-mini-label"><i class="fas fa-hourglass-half text-amber"></i> Pending Tally</span>
+                            <span class="gov-stat-mini-val text-warning" id="gov-pending-tally-count">0</span>
+                        </div>
+                        <div class="gov-stat-mini-box">
+                            <span class="gov-stat-mini-label"><i class="fas fa-user-shield text-cyan"></i> Custodians</span>
+                            <span class="gov-stat-mini-val" id="gov-custodians-count">0</span>
+                        </div>
+                        <div class="gov-stat-mini-box">
+                            <span class="gov-stat-mini-label"><i class="fas fa-location-dot text-red"></i> Offices / Sites</span>
+                            <span class="gov-stat-mini-val" id="gov-locations-count">0</span>
+                        </div>
+                    </div>
+
+                    <div class="gov-status-items">
+                        <div class="gov-status-row">
+                            <span class="gov-status-label"><i class="fas fa-circle text-success" style="font-size: 7px;"></i> Database Sync:</span>
+                            <span class="gov-status-val text-success">Live & Protected</span>
+                        </div>
+                        <div class="gov-status-row">
+                            <span class="gov-status-label"><i class="fas fa-scale-balanced text-cyan" style="font-size: 7px;"></i> Audit Standard:</span>
+                            <span class="gov-status-val">COA Circular 2020-006</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Recent Physical Inventory Stream / Quick Lookup -->
+                <div class="gov-panel-card">
+                    <div class="gov-panel-header">
+                        <h4 class="gov-panel-title"><i class="fas fa-clock-rotate-left" style="color: #fbbf24;"></i> Live Property Stream</h4>
+                        <span class="gov-panel-badge" style="color: #fbbf24; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.25);">Recent Entries</span>
+                    </div>
+
+                    <div class="gov-recent-stream" id="gov-recent-property-stream">
+                        <!-- Populated dynamically with recent inventory rows -->
                     </div>
                 </div>
             </section>

@@ -2584,31 +2584,6 @@ function updateMetricCardActiveState(condition) {
     if (cardQty) cardQty.classList.toggle('active-filter-card', false);
 }
 
-// Live Official Philippine Standard Time (PST) Clock
-function updateGovClock() {
-    const clockEl = document.getElementById('gov-live-clock');
-    if (!clockEl) return;
-    try {
-        const now = new Date();
-        const formatted = now.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        }) + ' | ' + now.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        });
-        clockEl.innerHTML = `<i class="fas fa-clock" style="color: #38bdf8;"></i> PST: ${formatted}`;
-    } catch(e) {
-        // Fallback
-    }
-}
-setInterval(updateGovClock, 1000);
-updateGovClock();
-
 if (accountFilter) accountFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 if (conditionFilter) conditionFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
 const tallyFilter = document.getElementById('tally-filter');
@@ -3328,6 +3303,93 @@ window.renderHomeDashboard = function() {
     if (homeServiceableEl) homeServiceableEl.textContent = serviceableCount.toLocaleString();
     if (homeAlertsEl) homeAlertsEl.textContent = alertsCount.toLocaleString();
     if (homeValuationEl) homeValuationEl.textContent = `₱${totalValuation.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+    // 1. Dynamic Category Breakdown
+    const itItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('it') || (i.account || '').toLowerCase().includes('software'));
+    const furnitureItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('furniture') || (i.account || '').toLowerCase().includes('fixture'));
+    const transportItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('transport') || (i.account || '').toLowerCase().includes('vehicle') || (i.account || '').toLowerCase().includes('motor'));
+    const officeItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('office') || (i.account || '').toLowerCase().includes('machinery'));
+
+    const setCatBar = (statId, barId, count) => {
+        const statEl = document.getElementById(statId);
+        const barEl = document.getElementById(barId);
+        const pct = totalArticles > 0 ? Math.round((count / totalArticles) * 100) : 0;
+        if (statEl) statEl.textContent = `${count.toLocaleString()} items (${pct}%)`;
+        if (barEl) barEl.style.width = `${pct}%`;
+    };
+
+    setCatBar('cat-stat-it', 'cat-bar-it', itItems.length);
+    setCatBar('cat-stat-furniture', 'cat-bar-furniture', furnitureItems.length);
+    setCatBar('cat-stat-transport', 'cat-bar-transport', transportItems.length);
+    setCatBar('cat-stat-office', 'cat-bar-office', officeItems.length);
+
+    // 2. Physical Count & Governance Stats
+    const talliedCount = inventoryData.filter(i => (i.tallyStatus !== 'Pending' && i.tallied !== false)).length;
+    const pendingTallyCount = totalArticles - talliedCount;
+    const custodiansSet = new Set(inventoryData.map(i => (i.accountablePerson || '').trim()).filter(Boolean));
+    const locationsSet = new Set(inventoryData.map(i => (i.location || '').trim()).filter(Boolean));
+
+    const talliedEl = document.getElementById('gov-tallied-count');
+    const pendingTallyEl = document.getElementById('gov-pending-tally-count');
+    const custodiansEl = document.getElementById('gov-custodians-count');
+    const locationsEl = document.getElementById('gov-locations-count');
+
+    if (talliedEl) talliedEl.textContent = talliedCount.toLocaleString();
+    if (pendingTallyEl) pendingTallyEl.textContent = pendingTallyCount.toLocaleString();
+    if (custodiansEl) custodiansEl.textContent = custodiansSet.size.toLocaleString();
+    if (locationsEl) locationsEl.textContent = locationsSet.size.toLocaleString();
+
+    // 3. Recent Physical Inventory Stream (Latest 5 Items)
+    const streamContainer = document.getElementById('gov-recent-property-stream');
+    if (streamContainer) {
+        if (inventoryData.length === 0) {
+            streamContainer.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 11px; padding: 16px;">No recorded assets found.</div>`;
+        } else {
+            const recentItems = inventoryData.slice(0, 5);
+            streamContainer.innerHTML = recentItems.map(item => {
+                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                const artName = item.article || item.description || 'General Property';
+                const cond = (item.condition || 'Serviceable').toUpperCase();
+                const isServ = cond === 'SERVICEABLE';
+                const badgeClass = isServ ? 'badge-serv' : 'badge-unserv';
+                return `
+                    <div class="gov-stream-item" onclick="jumpToPropertyFromHome('${String(propNo).replace(/'/g, "\\'")}')" title="Click to inspect in Masterlist">
+                        <div class="gov-stream-left">
+                            <span class="gov-stream-prop">${propNo}</span>
+                            <span class="gov-stream-art">${artName}</span>
+                        </div>
+                        <span class="gov-stream-badge ${badgeClass}">${cond}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+};
+
+window.filterByAccountFromHome = function(accountName) {
+    switchAdminView('masterlist');
+    setTimeout(() => {
+        if (accountFilter) {
+            const opts = Array.from(accountFilter.options).map(o => o.value);
+            const matched = opts.find(o => o.toLowerCase().includes(accountName.toLowerCase()) || accountName.toLowerCase().includes(o.toLowerCase())) || 'All Accounts';
+            accountFilter.value = matched;
+            currentPage = 1;
+            renderTable();
+        }
+    }, 40);
+};
+
+window.jumpToPropertyFromHome = function(propertyNo) {
+    switchAdminView('masterlist');
+    setTimeout(() => {
+        const sInput = document.getElementById('search-input');
+        if (sInput) {
+            sInput.value = propertyNo;
+            currentPage = 1;
+            updateClearSearchVisibility();
+            renderTable();
+        }
+    }, 40);
 };
 
 /**

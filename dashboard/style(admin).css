@@ -5261,18 +5261,6 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
    AUTHENTIC GOVERNMENT PPE ASSET MANAGEMENT THEME & DASHBOARD STYLES
    ========================================================================= */
 
-/* Top Government Tricolor Accent Trim */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3.5px;
-    background: linear-gradient(90deg, #0284c7 0%, #38bdf8 35%, #eab308 65%, #dc2626 100%);
-    z-index: 1000;
-}
-
 /* Navbar Brand & Government Hierarchy Titles */
 .nav-brand-group {
     display: flex;
@@ -5462,28 +5450,34 @@ body::before {
     margin-top: 2px;
 }
 
-/* Government Summary & Audit Protocol Card */
-.gov-summary-card {
+/* Rich 3-Column Government Asset Tracking Panels */
+.gov-panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.15fr;
+    gap: 16px;
+}
+
+.gov-panel-card {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 20px 24px;
+    padding: 18px 20px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-
-.gov-summary-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 24px;
-}
-
-.gov-summary-col {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
+    box-sizing: border-box;
 }
 
-.gov-col-title {
+.gov-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.gov-panel-title {
     margin: 0;
     font-size: 13px;
     font-weight: 700;
@@ -5495,58 +5489,177 @@ body::before {
     letter-spacing: 0.4px;
 }
 
-.gov-account-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.gov-panel-badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    padding: 2px 8px;
+    border-radius: 6px;
 }
 
-.gov-account-pill {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+/* Category Progress Bars */
+.gov-category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gov-category-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.gov-category-item:hover {
+    background: rgba(56, 189, 248, 0.06);
+}
+
+.gov-cat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+}
+
+.gov-cat-name {
     color: #cbd5e1;
-    font-size: 11px;
     font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: border-color 0.2s;
 }
 
-.gov-account-pill:hover {
-    border-color: rgba(56, 189, 248, 0.35);
+.gov-cat-meta {
+    font-weight: 700;
     color: #f8fafc;
 }
 
-.gov-status-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.gov-progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.gov-status-row {
+.gov-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.fill-blue { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+.fill-green { background: linear-gradient(90deg, #059669, #34d399); }
+.fill-amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.fill-purple { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.fill-teal { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+
+/* Mini KPI Stat Box Group */
+.gov-stat-box-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.gov-stat-mini-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gov-stat-mini-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.gov-stat-mini-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+/* Recent Property Audit Stream */
+.gov-recent-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 220px;
+}
+
+.gov-stream-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: rgba(15, 23, 42, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 8px;
+    padding: 7px 10px;
     font-size: 11.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.gov-status-label {
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+.gov-stream-item:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: translateX(2px);
 }
 
-.gov-status-val {
+.gov-stream-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.gov-stream-prop {
     font-weight: 700;
-    color: #f8fafc;
+    color: #38bdf8;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.gov-stream-art {
+    color: #e2e8f0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+}
+
+.gov-stream-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.badge-serv {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-unserv {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* Official Government Footer */
@@ -5570,12 +5683,16 @@ body::before {
     color: #94a3b8;
 }
 
-@media (max-width: 900px) {
-    .gov-summary-grid {
+@media (max-width: 1100px) {
+    .gov-panels-grid {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 900px) {
     .gov-clock-badge {
         display: none;
     }
 }
+
 

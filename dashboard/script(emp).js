@@ -316,8 +316,87 @@ function calculateMetrics() {
     if (homeUnserviceable) homeUnserviceable.textContent = unserviceableCount.toLocaleString();
     if (homeQty) homeQty.textContent = totalQuantity.toLocaleString();
 
+    // 1. Dynamic Category Breakdown
+    const itItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('it') || (i.account || '').toLowerCase().includes('software'));
+    const furnitureItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('furniture') || (i.account || '').toLowerCase().includes('fixture'));
+    const transportItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('transport') || (i.account || '').toLowerCase().includes('vehicle') || (i.account || '').toLowerCase().includes('motor'));
+    const officeItems = inventoryData.filter(i => (i.account || '').toLowerCase().includes('office') || (i.account || '').toLowerCase().includes('machinery'));
+
+    const setCatBar = (statId, barId, count) => {
+        const statEl = document.getElementById(statId);
+        const barEl = document.getElementById(barId);
+        const pct = totalArticles > 0 ? Math.round((count / totalArticles) * 100) : 0;
+        if (statEl) statEl.textContent = `${count.toLocaleString()} items (${pct}%)`;
+        if (barEl) barEl.style.width = `${pct}%`;
+    };
+
+    setCatBar('emp-cat-stat-it', 'emp-cat-bar-it', itItems.length);
+    setCatBar('emp-cat-stat-furniture', 'emp-cat-bar-furniture', furnitureItems.length);
+    setCatBar('emp-cat-stat-transport', 'emp-cat-bar-transport', transportItems.length);
+    setCatBar('emp-cat-stat-office', 'emp-cat-bar-office', officeItems.length);
+
+    // 2. My Assigned & Request Counts
+    const myCount = inventoryData.filter(item => isMatchingAccountablePerson(item.accountablePerson, currentEmployeeName)).length;
+    const reqHistory = JSON.parse(localStorage.getItem('gtrack_emp_requests') || '[]');
+    const myCountEl = document.getElementById('emp-gov-my-count');
+    const reqCountEl = document.getElementById('emp-gov-req-count');
+    if (myCountEl) myCountEl.textContent = myCount.toLocaleString();
+    if (reqCountEl) reqCountEl.textContent = reqHistory.length.toLocaleString();
+
+    // 3. Recent Equipment Stream
+    const streamContainer = document.getElementById('emp-gov-recent-stream');
+    if (streamContainer) {
+        if (inventoryData.length === 0) {
+            streamContainer.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 11px; padding: 16px;">No equipment records found.</div>`;
+        } else {
+            const recentItems = inventoryData.slice(0, 5);
+            streamContainer.innerHTML = recentItems.map(item => {
+                const propNo = item.propertyNo || item.propertyNumber || 'N/A';
+                const artName = item.article || item.description || 'General Property';
+                const cond = (item.condition || 'Serviceable').toUpperCase();
+                const isServ = cond === 'SERVICEABLE';
+                const badgeClass = isServ ? 'badge-serv' : 'badge-unserv';
+                return `
+                    <div class="gov-stream-item" onclick="jumpToPropertyFromHomeEmp('${String(propNo).replace(/'/g, "\\'")}')" title="Click to inspect in Directory">
+                        <div class="gov-stream-left">
+                            <span class="gov-stream-prop">${propNo}</span>
+                            <span class="gov-stream-art">${artName}</span>
+                        </div>
+                        <span class="gov-stream-badge ${badgeClass}">${cond}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
     sessionStorage.setItem('gtrack_total_articles', String(totalArticles));
 }
+
+window.filterByAccountFromHomeEmp = function(accountName) {
+    switchEmpView('directory');
+    setTimeout(() => {
+        if (accountFilter) {
+            const opts = Array.from(accountFilter.options).map(o => o.value);
+            const matched = opts.find(o => o.toLowerCase().includes(accountName.toLowerCase()) || accountName.toLowerCase().includes(o.toLowerCase())) || 'All Accounts';
+            accountFilter.value = matched;
+            currentPage = 1;
+            renderTable();
+        }
+    }, 40);
+};
+
+window.jumpToPropertyFromHomeEmp = function(propertyNo) {
+    switchEmpView('directory');
+    setTimeout(() => {
+        const sInput = document.getElementById('search-input');
+        if (sInput) {
+            sInput.value = propertyNo;
+            currentPage = 1;
+            updateClearSearchVisibility();
+            renderTable();
+        }
+    }, 40);
+};
 
 function updateAccountDropdown() {
     const accounts = ['All Accounts', ...new Set(inventoryData.map(item => item.account).filter(Boolean))];
