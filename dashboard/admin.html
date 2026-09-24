@@ -419,19 +419,19 @@
         <!-- ========================================================================= -->
         <div id="masterlist-view" class="masterlist-view hidden">
             <section class="metrics-grid">
-                <div class="metric-card clickable-metric-card" id="metric-card-total" onclick="applyConditionFilter('All Conditions')" title="Show all articles">
+                <div class="metric-card" id="metric-card-total">
                     <span class="card-title">Total Articles</span>
                     <span id="total-items-count" class="card-number">0</span>
                 </div>
-                <div class="metric-card clickable-metric-card" id="metric-card-serviceable" onclick="applyConditionFilter('Serviceable')" title="Filter to Serviceable items only">
+                <div class="metric-card" id="metric-card-serviceable">
                     <span class="card-title">Serviceable</span>
                     <span id="serviceable-items-count" class="card-number text-success">0</span>
                 </div>
-                <div class="metric-card clickable-metric-card" id="metric-card-unserviceable" onclick="applyConditionFilter('Unserviceable')" title="Filter to Unserviceable items only">
+                <div class="metric-card" id="metric-card-unserviceable">
                     <span class="card-title">Unserviceable</span>
                     <span id="unserviceable-items-count" class="card-number text-danger">0</span>
                 </div>
-                <div class="metric-card clickable-metric-card" id="metric-card-qty" onclick="applyConditionFilter('All Conditions')" title="Total inventory quantity">
+                <div class="metric-card" id="metric-card-qty">
                     <span class="card-title">Total Quantity</span>
                     <span id="total-qty-count" class="card-number text-blue">0</span>
                 </div>
@@ -538,7 +538,7 @@
         <div id="analytics-view" class="analytics-view hidden">
             <!-- KPI Cards (4 Cards) -->
             <section class="analytics-kpi-grid">
-                <div class="analytics-kpi-card kpi-card-valuation clickable-kpi-card" onclick="switchAdminView('masterlist')" title="View inventory in Masterlist">
+                <div class="analytics-kpi-card kpi-card-valuation">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <span class="kpi-pill">Total Asset Value</span>
@@ -547,7 +547,7 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-health clickable-kpi-card" onclick="filterMasterlistFromHome('Serviceable')" title="Filter to Serviceable items in Masterlist">
+                <div class="analytics-kpi-card kpi-card-health">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <span class="kpi-pill pill-success">Serviceable Items</span>
@@ -556,7 +556,7 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-alerts clickable-kpi-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter to Needs Repair / Unserviceable items in Masterlist">
+                <div class="analytics-kpi-card kpi-card-alerts">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <span class="kpi-pill pill-danger">Needs Repair</span>
@@ -565,7 +565,7 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-forecast clickable-kpi-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter items requiring replacement">
+                <div class="analytics-kpi-card kpi-card-forecast">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <span class="kpi-pill pill-amber">Est. Replacement Cost</span>
