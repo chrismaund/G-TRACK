@@ -3345,7 +3345,7 @@ window.renderHomeDashboard = function() {
         if (inventoryData.length === 0) {
             streamContainer.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 11px; padding: 16px;">No recorded assets found.</div>`;
         } else {
-            const recentItems = inventoryData.slice(0, 5);
+            const recentItems = inventoryData.slice(0, 8);
             streamContainer.innerHTML = recentItems.map(item => {
                 const propNo = item.propertyNo || item.propertyNumber || 'N/A';
                 const artName = item.article || item.description || 'General Property';
