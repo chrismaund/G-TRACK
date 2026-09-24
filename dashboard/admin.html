@@ -213,14 +213,11 @@
             <section class="home-hero-card">
                 <span class="hero-badge"><i class="fas fa-shield-alt"></i> Administrator Portal</span>
                 <h2 class="hero-title">Welcome to G-TRACK Admin Hub</h2>
-                <p class="hero-desc">
-                    Centralized web-based inventory management, property accountability monitoring, and predictive lifecycle analytics for the General Services Office of the Local Government of Pagbilao, Quezon.
-                </p>
             </section>
 
             <!-- Quick Live Stats Row -->
             <section class="home-stats-bar">
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('All Conditions')" title="View all inventory articles in Masterlist">
                     <div class="stat-icon-circle blue-gradient">
                         <i class="fas fa-boxes-stacked"></i>
                     </div>
@@ -230,7 +227,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Serviceable')" title="Filter by Serviceable items in Masterlist">
                     <div class="stat-icon-circle green-gradient">
                         <i class="fas fa-circle-check"></i>
                     </div>
@@ -240,7 +237,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter by Maintenance / Alerts in Masterlist">
                     <div class="stat-icon-circle red-gradient">
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
@@ -250,7 +247,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="switchAdminView('analytics')" title="View full asset valuation & lifecycle analytics">
                     <div class="stat-icon-circle amber-gradient">
                         <i class="fas fa-peso-sign"></i>
                     </div>
@@ -272,9 +269,6 @@
                             </div>
                             <h4 class="action-card-title">Inventory Masterlist</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Browse, search, filter, encode new items, edit records, or batch delete municipal assets in real-time.
-                        </p>
                         <span class="action-card-btn">Open Masterlist <i class="fas fa-arrow-right"></i></span>
                     </div>
 
@@ -285,9 +279,6 @@
                             </div>
                             <h4 class="action-card-title">Analytics & Predictions</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Examine condition distributions, category valuation breakdown, equipment lifecycle aging, and replacement forecasts.
-                        </p>
                         <span class="action-card-btn">View Analytics <i class="fas fa-arrow-right"></i></span>
                     </div>
 
@@ -298,9 +289,6 @@
                             </div>
                             <h4 class="action-card-title">User Authorizations</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Review pending employee registrations, approve or revoke staff access, and manage user accounts securely.
-                        </p>
                         <span class="action-card-btn">Manage Users <i class="fas fa-arrow-right"></i></span>
                     </div>
 
@@ -311,24 +299,9 @@
                             </div>
                             <h4 class="action-card-title">Generate PPE Report</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Produce printable, COA-compliant Physical Count of Property, Plant & Equipment (PPE) audit reports.
-                        </p>
                         <span class="action-card-btn">Print Report <i class="fas fa-arrow-right"></i></span>
                     </div>
                 </div>
-            </section>
-
-            <!-- GSO Governance & Accountability Summary Card -->
-            <section class="guidelines-card">
-                <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-circle-info" style="color: #38bdf8;"></i> GSO Administrative Directives & Data Integrity Standards
-                </h4>
-                <ul class="guidelines-list">
-                    <li><strong>Real-time Cloud Coordination:</strong> All updates made to property records sync across all connected municipal office terminals immediately.</li>
-                    <li><strong>Predictive Maintenance Advisory:</strong> Monitor items flagged under <em>Needs Repair</em> or <em>Aging (&gt;5 Years)</em> in the Analytics view to prepare annual budget requests.</li>
-                    <li><strong>Property Accountability:</strong> Verify accountable officers and office locations prior to approving physical transfers or batch removals.</li>
-                </ul>
             </section>
         </div>
 
@@ -337,19 +310,19 @@
         <!-- ========================================================================= -->
         <div id="masterlist-view" class="masterlist-view hidden">
             <section class="metrics-grid">
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="metric-card-total" onclick="applyConditionFilter('All Conditions')" title="Show all articles">
                     <span class="card-title">Total Articles</span>
                     <span id="total-items-count" class="card-number">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="metric-card-serviceable" onclick="applyConditionFilter('Serviceable')" title="Filter to Serviceable items only">
                     <span class="card-title">Serviceable</span>
                     <span id="serviceable-items-count" class="card-number text-success">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="metric-card-unserviceable" onclick="applyConditionFilter('Unserviceable')" title="Filter to Unserviceable items only">
                     <span class="card-title">Unserviceable</span>
                     <span id="unserviceable-items-count" class="card-number text-danger">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="metric-card-qty" onclick="applyConditionFilter('All Conditions')" title="Total inventory quantity">
                     <span class="card-title">Total Quantity</span>
                     <span id="total-qty-count" class="card-number text-blue">0</span>
                 </div>
@@ -456,14 +429,11 @@
         <div id="analytics-view" class="analytics-view hidden">
             <!-- KPI Cards (4 Cards) -->
             <section class="analytics-kpi-grid">
-                <div class="analytics-kpi-card kpi-card-valuation">
+                <div class="analytics-kpi-card kpi-card-valuation clickable-kpi-card" onclick="switchAdminView('masterlist')" title="View inventory in Masterlist">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <div class="kpi-pill"><i class="fas fa-coins"></i> Total Asset Value</div>
                             <span id="kpi-total-valuation" class="kpi-value">₱0.00</span>
-                            <div class="kpi-footer-note">
-                                <i class="fas fa-check text-cyan"></i> Recorded inventory value
-                            </div>
                         </div>
                         <div class="kpi-icon-box blue-gradient">
                             <i class="fas fa-peso-sign"></i>
@@ -471,14 +441,11 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-health">
+                <div class="analytics-kpi-card kpi-card-health clickable-kpi-card" onclick="filterMasterlistFromHome('Serviceable')" title="Filter to Serviceable items in Masterlist">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <div class="kpi-pill pill-success"><i class="fas fa-heart-pulse"></i> Serviceable Items</div>
                             <span id="kpi-serviceable-rate" class="kpi-value text-success">0%</span>
-                            <div class="kpi-footer-note" id="kpi-serviceable-ratio">
-                                <i class="fas fa-check-circle text-success"></i> 0 of 0 items in good condition
-                            </div>
                         </div>
                         <div class="kpi-icon-box green-gradient">
                             <i class="fas fa-shield-halved"></i>
@@ -486,14 +453,11 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-alerts">
+                <div class="analytics-kpi-card kpi-card-alerts clickable-kpi-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter to Needs Repair / Unserviceable items in Masterlist">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <div class="kpi-pill pill-danger"><i class="fas fa-triangle-exclamation"></i> Needs Repair</div>
                             <span id="kpi-repair-alerts" class="kpi-value text-danger">0</span>
-                            <div class="kpi-footer-note text-warning">
-                                <i class="fas fa-wrench text-warning"></i> Items requiring repair
-                            </div>
                         </div>
                         <div class="kpi-icon-box red-gradient">
                             <i class="fas fa-screwdriver-wrench"></i>
@@ -501,14 +465,11 @@
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-forecast">
+                <div class="analytics-kpi-card kpi-card-forecast clickable-kpi-card" onclick="filterMasterlistFromHome('Unserviceable')" title="Filter items requiring replacement">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
                             <div class="kpi-pill pill-amber"><i class="fas fa-calendar-check"></i> Est. Replacement Cost</div>
                             <span id="kpi-replacement-budget" class="kpi-value text-amber">₱0.00</span>
-                            <div class="kpi-footer-note">
-                                <i class="fas fa-wallet text-amber"></i> Needed for old / broken items
-                            </div>
                         </div>
                         <div class="kpi-icon-box amber-gradient">
                             <i class="fas fa-hand-holding-dollar"></i>

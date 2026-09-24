@@ -404,6 +404,7 @@ function renderTable() {
 
     const selectedAccount = accountFilter ? accountFilter.value || 'All Accounts' : 'All Accounts';
     const selectedCondition = conditionFilter ? conditionFilter.value || 'All Conditions' : 'All Conditions';
+    updateEmpMetricCardActiveState(selectedCondition);
     const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     const filteredData = inventoryData.filter(item => {
@@ -1384,6 +1385,41 @@ function updateClearSearchVisibility() {
     if (clearSearchBtn && searchInput) {
         clearSearchBtn.style.display = searchInput.value.length > 0 ? 'inline-flex' : 'none';
     }
+}
+
+window.filterDirectoryFromHome = function(condition) {
+    switchEmpView('directory');
+    setTimeout(() => {
+        applyConditionFilterEmp(condition);
+    }, 40);
+};
+
+window.applyConditionFilterEmp = function(condition) {
+    if (conditionFilter) {
+        const opts = Array.from(conditionFilter.options).map(o => o.value);
+        const match = opts.find(o => o.toLowerCase() === (condition || '').toLowerCase()) || 'All Conditions';
+        conditionFilter.value = match;
+    }
+    currentPage = 1;
+    updateEmpMetricCardActiveState(condition);
+    renderTable();
+};
+
+function updateEmpMetricCardActiveState(condition) {
+    const cardTotal = document.getElementById('emp-metric-card-total');
+    const cardServ = document.getElementById('emp-metric-card-serviceable');
+    const cardUnserv = document.getElementById('emp-metric-card-unserviceable');
+    const cardQty = document.getElementById('emp-metric-card-qty');
+
+    const cond = (condition || (conditionFilter ? conditionFilter.value : '') || '').toLowerCase();
+    const isAll = cond.includes('all') || !cond;
+    const isServ = cond === 'serviceable';
+    const isUnserv = cond === 'unserviceable' || cond.includes('repair') || cond.includes('alert');
+
+    if (cardTotal) cardTotal.classList.toggle('active-filter-card', isAll);
+    if (cardServ) cardServ.classList.toggle('active-filter-card', isServ);
+    if (cardUnserv) cardUnserv.classList.toggle('active-filter-card', isUnserv);
+    if (cardQty) cardQty.classList.toggle('active-filter-card', false);
 }
 
 // Table Filter & Pagination Listeners

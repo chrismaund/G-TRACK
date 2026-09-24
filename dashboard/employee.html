@@ -150,14 +150,11 @@
             <section class="home-hero-card">
                 <span class="hero-badge green-badge"><i class="fas fa-id-badge"></i> Staff Lookup & Requests</span>
                 <h2 class="hero-title">Welcome to G-TRACK, <span id="emp-hero-name" style="color: #38bdf8;">Employee</span></h2>
-                <p class="hero-desc">
-                    Access the official equipment lookup directory, verify property accountability records, and submit verified requests to the General Services Office of Pagbilao, Quezon.
-                </p>
             </section>
 
             <!-- Quick Live Stats Row -->
             <section class="home-stats-bar">
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterDirectoryFromHome('All Conditions')" title="View all equipment articles in Directory">
                     <div class="stat-icon-circle blue-gradient">
                         <i class="fas fa-boxes-stacked"></i>
                     </div>
@@ -167,7 +164,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterDirectoryFromHome('SERVICEABLE')" title="Filter by Serviceable items in Directory">
                     <div class="stat-icon-circle green-gradient">
                         <i class="fas fa-circle-check"></i>
                     </div>
@@ -177,7 +174,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterDirectoryFromHome('UNSERVICEABLE')" title="Filter by Unserviceable items in Directory">
                     <div class="stat-icon-circle red-gradient">
                         <i class="fas fa-triangle-exclamation"></i>
                     </div>
@@ -187,7 +184,7 @@
                     </div>
                 </div>
 
-                <div class="home-stat-item">
+                <div class="home-stat-item clickable-stat-card" onclick="filterDirectoryFromHome('All Conditions')" title="View all units in Directory">
                     <div class="stat-icon-circle amber-gradient">
                         <i class="fas fa-cubes"></i>
                     </div>
@@ -209,9 +206,6 @@
                             </div>
                             <h4 class="action-card-title">Equipment Directory</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Search and filter official inventory records, property numbers, account groups, and assigned personnel.
-                        </p>
                         <span class="action-card-btn">Browse Directory <i class="fas fa-arrow-right"></i></span>
                     </div>
 
@@ -222,9 +216,6 @@
                             </div>
                             <h4 class="action-card-title">Request Masterlist Copy</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Send an official request to the GSO Admin for an export copy of the equipment inventory.
-                        </p>
                         <span class="action-card-btn">Submit Request <i class="fas fa-arrow-right"></i></span>
                     </div>
 
@@ -235,24 +226,9 @@
                             </div>
                             <h4 class="action-card-title">Request History</h4>
                         </div>
-                        <p class="action-card-desc">
-                            Track the status of your submitted requests and download approved CSV reports directly.
-                        </p>
                         <span class="action-card-btn">View History <i class="fas fa-arrow-right"></i></span>
                     </div>
                 </div>
-            </section>
-
-            <!-- Staff Responsibilities & Guidelines -->
-            <section class="guidelines-card">
-                <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-circle-info" style="color: #38bdf8;"></i> Equipment Accountability & Operating Guidelines
-                </h4>
-                <ul class="guidelines-list">
-                    <li><strong>Read-Only Lookup Clearance:</strong> Employees have secure lookup permissions to trace equipment availability without altering official municipal asset records.</li>
-                    <li><strong>Requesting Approved Exports:</strong> To generate audit reports or obtain full spreadsheets, submit a request via the <em>Request Copy</em> button. Once approved by Admin, download the CSV directly from your sidebar history.</li>
-                    <li><strong>Reporting Equipment Condition:</strong> If any municipal property requires maintenance or servicing, notify the GSO custodian promptly with the corresponding Property No.</li>
-                </ul>
             </section>
         </div>
 
@@ -261,19 +237,19 @@
         <!-- ========================================================================= -->
         <div id="directory-view" class="directory-view hidden">
             <section class="metrics-grid">
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="emp-metric-card-total" onclick="applyConditionFilterEmp('All Conditions')" title="Show all articles">
                     <span class="card-title">Total Articles</span>
                     <span id="total-items-count" class="card-number">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="emp-metric-card-serviceable" onclick="applyConditionFilterEmp('SERVICEABLE')" title="Filter to Serviceable items only">
                     <span class="card-title">Serviceable</span>
                     <span id="serviceable-items-count" class="card-number text-success">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="emp-metric-card-unserviceable" onclick="applyConditionFilterEmp('UNSERVICEABLE')" title="Filter to Unserviceable items only">
                     <span class="card-title">Unserviceable</span>
                     <span id="unserviceable-items-count" class="card-number text-danger">0</span>
                 </div>
-                <div class="metric-card">
+                <div class="metric-card clickable-metric-card" id="emp-metric-card-qty" onclick="applyConditionFilterEmp('All Conditions')" title="Total inventory quantity">
                     <span class="card-title">Total Quantity</span>
                     <span id="total-qty-count" class="card-number text-blue">0</span>
                 </div>

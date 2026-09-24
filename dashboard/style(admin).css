@@ -152,11 +152,35 @@ body {
     flex-direction: column; 
     gap: 6px; 
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.metric-card:hover {
-    border-color: rgba(56, 189, 248, 0.3);
+.metric-card.clickable-metric-card,
+.clickable-stat-card,
+.clickable-kpi-card {
+    cursor: pointer;
+    user-select: none;
+}
+
+.metric-card.clickable-metric-card:hover,
+.clickable-stat-card:hover,
+.clickable-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.45);
+}
+
+.metric-card.clickable-metric-card:active,
+.clickable-stat-card:active,
+.clickable-kpi-card:active {
+    transform: scale(0.985);
+}
+
+/* Active filter indicator on metric cards */
+.metric-card.active-filter-card {
+    border-color: rgba(56, 189, 248, 0.6) !important;
+    background: rgba(56, 189, 248, 0.08) !important;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.2) !important;
 }
 
 .card-title { 
@@ -3659,6 +3683,7 @@ body.dark-theme-mode .btn-cancel:hover {
     align-items: center;
     gap: 14px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-icon-circle {
