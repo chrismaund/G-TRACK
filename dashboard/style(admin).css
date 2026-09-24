@@ -3684,34 +3684,6 @@ body.dark-theme-mode .btn-cancel:hover {
     justify-content: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.home-stat-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.home-stat-item.stat-card-blue::before {
-    background: #38bdf8;
-}
-
-.home-stat-item.stat-card-green::before {
-    background: #34d399;
-}
-
-.home-stat-item.stat-card-red::before {
-    background: #f87171;
-}
-
-.home-stat-item.stat-card-amber::before {
-    background: #fbbf24;
 }
 
 .home-stat-item .stat-info {
