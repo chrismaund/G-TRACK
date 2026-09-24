@@ -3678,44 +3678,63 @@ body.dark-theme-mode .btn-cancel:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    padding: 16px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-icon-circle {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 17px;
-    flex-shrink: 0;
-}
-
-.stat-info {
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.home-stat-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.home-stat-item.stat-card-blue::before {
+    background: #38bdf8;
+}
+
+.home-stat-item.stat-card-green::before {
+    background: #34d399;
+}
+
+.home-stat-item.stat-card-red::before {
+    background: #f87171;
+}
+
+.home-stat-item.stat-card-amber::before {
+    background: #fbbf24;
+}
+
+.home-stat-item .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     min-width: 0;
 }
 
-.stat-label {
-    font-size: 11px;
-    font-weight: 600;
+.home-stat-item .stat-label {
+    font-size: 11.5px;
+    font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }
 
-.stat-val {
-    font-size: 18px;
+.home-stat-item .stat-val {
+    font-size: 24px;
     font-weight: 800;
     color: #f8fafc;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3734,7 +3753,7 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .home-actions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
 }
 
@@ -3742,12 +3761,13 @@ body.dark-theme-mode .btn-cancel:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 22px;
+    padding: 20px 22px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
+    gap: 14px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
     text-decoration: none;
     position: relative;
@@ -3756,61 +3776,45 @@ body.dark-theme-mode .btn-cancel:hover {
 .action-card:hover {
     transform: translateY(-3px);
     border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(22, 32, 52, 0.85);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
 .action-card-header {
     display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.action-card-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .action-card-title {
     margin: 0;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     color: #f8fafc;
+    letter-spacing: -0.2px;
 }
 
-.action-card-desc {
-    margin: 0;
-    font-size: 12.5px;
+.action-card-subtitle {
+    display: block;
+    font-size: 11.5px;
     color: #94a3b8;
-    line-height: 1.5;
-    flex: 1;
+    margin-top: 2px;
+    line-height: 1.4;
 }
 
 .action-card-btn {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     font-size: 12px;
     font-weight: 700;
     color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 6px 14px;
-    border-radius: 8px;
-    margin-top: 6px;
-    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .action-card:hover .action-card-btn {
-    background: #0284c7;
-    color: #ffffff;
-    border-color: #0284c7;
+    color: #7dd3fc;
+    transform: translateX(3px);
 }
 
 /* Home Guidelines & Info Card */
