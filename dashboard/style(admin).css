@@ -4629,35 +4629,21 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .analytics-kpi-card {
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    padding: 18px 20px;
+    border-radius: 12px;
+    padding: 16px 20px;
     position: relative;
     overflow: hidden;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .analytics-kpi-card:hover {
     transform: translateY(-2px);
     border-color: rgba(56, 189, 248, 0.35);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
-
-.analytics-kpi-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-}
-
-.kpi-card-valuation::after { background: #38bdf8; }
-.kpi-card-health::after { background: #22c55e; }
-.kpi-card-alerts::after { background: #ef4444; }
-.kpi-card-forecast::after { background: #f59e0b; }
 
 .kpi-card-inner {
     display: flex;
@@ -4669,7 +4655,7 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .kpi-info {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     flex: 1;
 }
 
@@ -4689,7 +4675,7 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .kpi-pill.pill-amber { color: #fbbf24; }
 
 .kpi-value {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
     color: #f8fafc;
     letter-spacing: -0.5px;
@@ -4703,42 +4689,6 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     align-items: center;
     gap: 5px;
     margin-top: 2px;
-}
-
-.kpi-icon-box {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-}
-
-.blue-gradient {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(2, 132, 199, 0.35) 100%);
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    color: #38bdf8;
-}
-
-.green-gradient {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(21, 128, 61, 0.35) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.4);
-    color: #4ade80;
-}
-
-.red-gradient {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.35) 100%);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #f87171;
-}
-
-.amber-gradient {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(180, 83, 9, 0.35) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    color: #fbbf24;
 }
 
 /* 3. Visual Analytics Charts Grid */
