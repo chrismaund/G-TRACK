@@ -3345,7 +3345,7 @@ window.renderHomeDashboard = function() {
         if (inventoryData.length === 0) {
             streamContainer.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 11px; padding: 16px;">No recorded assets found.</div>`;
         } else {
-            const recentItems = inventoryData.slice(0, 8);
+            const recentItems = inventoryData.slice(0, 5);
             streamContainer.innerHTML = recentItems.map(item => {
                 const propNo = item.propertyNo || item.propertyNumber || 'N/A';
                 const artName = item.article || item.description || 'General Property';
@@ -4291,49 +4291,34 @@ function renderPredictiveDepreciationChart(totalValuation) {
         totalValuation
     ];
 
-    const canvas2d = ctx.getContext('2d');
-    let fillGradient = 'rgba(16, 185, 129, 0.15)';
-    if (canvas2d) {
-        const g = canvas2d.createLinearGradient(0, 0, 0, 240);
-        g.addColorStop(0, 'rgba(16, 185, 129, 0.30)');
-        g.addColorStop(0.7, 'rgba(16, 185, 129, 0.08)');
-        g.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-        fillGradient = g;
-    }
-
     predictiveDepreciationChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Original Cost Baseline',
+                    label: 'Original Cost (₱)',
                     data: acquisitionBaseline,
-                    borderColor: 'rgba(56, 189, 248, 0.85)',
-                    backgroundColor: 'transparent',
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.08)',
                     borderWidth: 2,
-                    borderDash: [6, 6],
+                    borderDash: [5, 5],
                     fill: false,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
+                    pointRadius: 3,
                     pointBackgroundColor: '#38bdf8',
-                    pointBorderColor: '#0f172a',
-                    pointBorderWidth: 2,
                     tension: 0.1
                 },
                 {
-                    label: 'Estimated Current Value',
+                    label: 'Estimated Value (₱)',
                     data: depreciatedValues,
                     borderColor: '#10b981',
-                    backgroundColor: fillGradient,
+                    backgroundColor: 'rgba(16, 185, 129, 0.18)',
                     borderWidth: 2.5,
                     fill: true,
-                    pointRadius: 4.5,
-                    pointHoverRadius: 7,
+                    pointRadius: 4,
                     pointBackgroundColor: '#10b981',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    tension: 0.38
+                    pointHoverRadius: 6,
+                    tension: 0.35
                 }
             ]
         },
@@ -4353,17 +4338,16 @@ function renderPredictiveDepreciationChart(totalValuation) {
                         color: '#cbd5e1',
                         font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
                         boxWidth: 12,
-                        padding: 12,
-                        usePointStyle: true
+                        padding: 12
                     }
                 },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     titleColor: '#f8fafc',
                     bodyColor: '#94a3b8',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
-                    padding: 11,
+                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             const val = context.raw || 0;
@@ -4396,7 +4380,7 @@ function renderPredictiveDepreciationChart(totalValuation) {
 }
 
 /**
- * Graph 2: PPE Account Group Valuation Breakdown (Clean Horizontal Bar Chart)
+ * Graph 2: PPE Account Group Polar Area Spectrum
  */
 function renderAccountPolarChart(valuations) {
     if (accountPolarChartInstance) {
@@ -4407,44 +4391,31 @@ function renderAccountPolarChart(valuations) {
     const ctx = getFreshCanvas('accountPolarChart');
     if (!ctx) return;
 
-    // Filter and sort categories by valuation descending
-    const rawEntries = Object.entries(valuations).filter(([_, val]) => val > 0);
-    rawEntries.sort((a, b) => b[1] - a[1]);
-
-    const displayEntries = rawEntries.length > 0 ? rawEntries : Object.entries(valuations);
-    const labels = displayEntries.map(e => e[0]);
-    const data = displayEntries.map(e => e[1]);
-    const totalVal = data.reduce((a, b) => a + b, 0);
+    const labels = Object.keys(valuations);
+    const data = labels.map(k => valuations[k]);
 
     const palette = [
-        { bg: 'rgba(56, 189, 248, 0.85)', border: '#38bdf8' },
-        { bg: 'rgba(129, 140, 248, 0.85)', border: '#818cf8' },
-        { bg: 'rgba(16, 185, 129, 0.85)', border: '#10b981' },
-        { bg: 'rgba(245, 158, 11, 0.85)', border: '#f59e0b' },
-        { bg: 'rgba(236, 72, 153, 0.85)', border: '#ec4899' },
-        { bg: 'rgba(168, 85, 247, 0.85)', border: '#a855f7' },
-        { bg: 'rgba(14, 165, 233, 0.85)', border: '#0ea5e9' }
+        'rgba(56, 189, 248, 0.75)',
+        'rgba(129, 140, 248, 0.75)',
+        'rgba(16, 185, 129, 0.75)',
+        'rgba(245, 158, 11, 0.75)',
+        'rgba(236, 72, 153, 0.75)',
+        'rgba(168, 85, 247, 0.75)',
+        'rgba(14, 165, 233, 0.75)'
     ];
 
-    const bgColors = labels.map((_, i) => palette[i % palette.length].bg);
-    const borderColors = labels.map((_, i) => palette[i % palette.length].border);
-
     accountPolarChartInstance = new Chart(ctx, {
-        type: 'bar',
+        type: 'polarArea',
         data: {
             labels: labels.length ? labels : ['No Accounts'],
             datasets: [{
-                label: 'Account Valuation (₱)',
-                data: data.length ? data : [0],
-                backgroundColor: bgColors,
-                borderColor: borderColors,
-                borderWidth: 1.5,
-                borderRadius: 6,
-                maxBarThickness: 24
+                data: data.length ? data : [1],
+                backgroundColor: palette.slice(0, labels.length || 1),
+                borderColor: '#121a2b',
+                borderWidth: 2
             }]
         },
         options: {
-            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             resizeDelay: 100,
@@ -4453,43 +4424,34 @@ function renderAccountPolarChart(valuations) {
                 easing: 'easeOutQuart'
             },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#cbd5e1',
+                        font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' },
+                        boxWidth: 10,
+                        padding: 8
+                    }
+                },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     titleColor: '#f8fafc',
                     bodyColor: '#94a3b8',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
-                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             const val = context.raw || 0;
-                            const share = totalVal > 0 ? ((val / totalVal) * 100).toFixed(1) : '0.0';
-                            return ` Valuation: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })} (${share}% share)`;
+                            return ` Total Value: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
                         }
                     }
                 }
             },
             scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { family: 'Plus Jakarta Sans', size: 10 },
-                        callback: function(value) {
-                            if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
-                            if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
-                            return '₱' + value;
-                        }
-                    },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                },
-                y: {
-                    ticks: {
-                        color: '#cbd5e1',
-                        font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' }
-                    },
-                    grid: { display: false }
+                r: {
+                    ticks: { display: false },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    angleLines: { color: 'rgba(255, 255, 255, 0.08)' }
                 }
             }
         }
@@ -4519,10 +4481,10 @@ function renderLifecycleStageChart(buckets, totalArticles) {
                 label: 'Equipment Fleet Count',
                 data: data,
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.80)',
-                    'rgba(56, 189, 248, 0.80)',
-                    'rgba(245, 158, 11, 0.80)',
-                    'rgba(239, 68, 68, 0.80)'
+                    'rgba(16, 185, 129, 0.75)',
+                    'rgba(56, 189, 248, 0.75)',
+                    'rgba(245, 158, 11, 0.75)',
+                    'rgba(239, 68, 68, 0.75)'
                 ],
                 borderColor: [
                     '#10b981',
@@ -4550,14 +4512,13 @@ function renderLifecycleStageChart(buckets, totalArticles) {
                     backgroundColor: '#0f172a',
                     titleColor: '#f8fafc',
                     bodyColor: '#94a3b8',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
-                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             const count = context.raw || 0;
                             const pct = totalArticles > 0 ? ((count / totalArticles) * 100).toFixed(1) : 0;
-                            return ` ${count} items (${pct}% of active fleet)`;
+                            return ` ${count} items (${pct}% of fleet)`;
                         }
                     }
                 }
@@ -4628,7 +4589,7 @@ function renderServiceabilityDonutChart(counts) {
             responsive: true,
             maintainAspectRatio: false,
             resizeDelay: 100,
-            cutout: '72%',
+            cutout: '66%',
             animation: {
                 animateScale: true,
                 animateRotate: true,
@@ -4670,12 +4631,12 @@ function renderServiceabilityDonutChart(counts) {
                     bodyColor: '#94a3b8',
                     borderColor: 'rgba(255, 255, 255, 0.12)',
                     borderWidth: 1,
-                    padding: 10,
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
                             const val = context.raw || 0;
-                            const pct = totalItems > 0 ? ((val / totalItems) * 100).toFixed(1) : '0.0';
-                            return ` ${context.label}: ${val} items (${pct}%)`;
+                            const pct = totalItems > 0 ? ((val / totalItems) * 100).toFixed(1) : 0;
+                            return ` ${val} items • ${pct}% of total inventory`;
                         }
                     }
                 }
