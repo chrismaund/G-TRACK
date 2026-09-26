@@ -558,10 +558,7 @@
     <!-- ========================================================================= -->
     <div id="emp-profile-modal" class="modal-overlay hidden">
         <div class="modal-card" style="position: relative;">
-            <button type="button" onclick="closeEmpProfileModal()" class="modal-close-btn" aria-label="Close profile drawer">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="modal-header" style="padding-right: 40px;">
+            <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
                         <i class="fas fa-user-circle"></i>
@@ -800,9 +797,6 @@
                         <span style="font-size: 11px; color: #94a3b8;">Request equipment transfer to another department</span>
                     </div>
                 </div>
-                <button type="button" onclick="closeTransferModal()" class="modal-close-btn" aria-label="Close transfer drawer">
-                    <i class="fas fa-times"></i>
-                </button>
             </div>
 
             <form id="emp-transfer-form" class="modal-body" onsubmit="submitEquipmentTransfer(event)">
@@ -1034,9 +1028,6 @@
                         <p id="metric-modal-subtitle" class="metric-modal-subtitle">Official asset registry breakdown and analytical report</p>
                     </div>
                 </div>
-                <button type="button" class="metric-modal-close-btn" onclick="closeMetricModal()" title="Close Inspection">
-                    <i class="fas fa-times"></i>
-                </button>
             </div>
 
             <div class="metric-modal-body" id="metric-modal-content">

@@ -826,6 +826,12 @@ window.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
     const profilesModal = document.getElementById('profiles-modal');
     if (profilesModal && e.target === profilesModal) closeProfilesModal();
+    const requestsModal = document.getElementById('requests-modal');
+    if (requestsModal && e.target === requestsModal) closeRequestsModal();
+    const reassignModal = document.getElementById('admin-reassign-modal');
+    if (reassignModal && e.target === reassignModal) closeAdminReassignModal();
+    const metricModal = document.getElementById('metric-breakdown-modal');
+    if (metricModal && e.target === metricModal) closeMetricModal();
     
     // Close delete popover when clicking outside the delete button wrapper
     if (!e.target.closest('.delete-btn-wrapper')) {
@@ -835,6 +841,16 @@ window.addEventListener('click', (e) => {
     // Close any open kebab menu when clicking outside
     if (!e.target.closest('.kebab-menu-btn') && !e.target.closest('.kebab-dropdown-menu')) {
         window.closeAllKebabMenus();
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeModal();
+        if (typeof window.closeProfilesModal === 'function') window.closeProfilesModal();
+        if (typeof window.closeRequestsModal === 'function') window.closeRequestsModal();
+        if (typeof window.closeAdminReassignModal === 'function') window.closeAdminReassignModal();
+        if (typeof window.closeMetricModal === 'function') window.closeMetricModal();
     }
 });
 

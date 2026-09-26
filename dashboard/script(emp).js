@@ -2120,12 +2120,35 @@ window.selectCustomDept = function(hiddenInputId, textSpanId, triggerId, wrapper
     }
 };
 
-// Close dropdowns on outside click
+// Close dropdowns and modals on outside click
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-select-wrapper')) {
         document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
             el.classList.remove('open');
         });
+    }
+
+    const profileModal = document.getElementById('emp-profile-modal');
+    if (profileModal && e.target === profileModal && typeof window.closeEmpProfileModal === 'function') {
+        window.closeEmpProfileModal();
+    }
+
+    const transferModal = document.getElementById('emp-transfer-modal');
+    if (transferModal && e.target === transferModal && typeof window.closeTransferModal === 'function') {
+        window.closeTransferModal();
+    }
+
+    const metricModal = document.getElementById('metric-breakdown-modal');
+    if (metricModal && e.target === metricModal && typeof window.closeMetricModal === 'function') {
+        window.closeMetricModal();
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (typeof window.closeEmpProfileModal === 'function') window.closeEmpProfileModal();
+        if (typeof window.closeTransferModal === 'function') window.closeTransferModal();
+        if (typeof window.closeMetricModal === 'function') window.closeMetricModal();
     }
 });
 
