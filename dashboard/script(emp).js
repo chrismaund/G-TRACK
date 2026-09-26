@@ -1905,15 +1905,10 @@ function updateEmpMetricCardActiveState(condition) {
     const cardUnserv = document.getElementById('emp-metric-card-unserviceable');
     const cardQty = document.getElementById('emp-metric-card-qty');
 
-    const cond = (condition || (conditionFilter ? conditionFilter.value : '') || '').toLowerCase();
-    const isAll = cond.includes('all') || !cond;
-    const isServ = cond === 'serviceable';
-    const isUnserv = cond === 'unserviceable' || cond.includes('repair') || cond.includes('alert');
-
-    if (cardTotal) cardTotal.classList.toggle('active-filter-card', isAll);
-    if (cardServ) cardServ.classList.toggle('active-filter-card', isServ);
-    if (cardUnserv) cardUnserv.classList.toggle('active-filter-card', isUnserv);
-    if (cardQty) cardQty.classList.toggle('active-filter-card', false);
+    if (cardTotal) cardTotal.classList.remove('active-filter-card');
+    if (cardServ) cardServ.classList.remove('active-filter-card');
+    if (cardUnserv) cardUnserv.classList.remove('active-filter-card');
+    if (cardQty) cardQty.classList.remove('active-filter-card');
 }
 
 // Live Official Philippine Standard Time (PST) Clock
