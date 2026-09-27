@@ -499,6 +499,77 @@ body {
     color: #38bdf8;
 }
 
+/* Remember Me & Login Options Row */
+.login-options-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: -6px;
+    margin-bottom: 2px;
+}
+
+.remember-me-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.remember-me-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background: rgba(11, 15, 25, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+}
+
+.custom-checkbox i {
+    font-size: 10px;
+    color: transparent;
+    transition: all 0.15s ease;
+    transform: scale(0.6);
+}
+
+.remember-me-label input[type="checkbox"]:checked + .custom-checkbox {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+.remember-me-label input[type="checkbox"]:checked + .custom-checkbox i {
+    color: #ffffff;
+    transform: scale(1);
+}
+
+.remember-me-label:hover .custom-checkbox {
+    border-color: #38bdf8;
+}
+
+.remember-text {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #cbd5e1;
+    transition: color 0.15s ease;
+}
+
+.remember-me-label:hover .remember-text {
+    color: #f8fafc;
+}
+
 /* Accent Glowing Action Button */
 .sign-in-btn {
     width: 100%;

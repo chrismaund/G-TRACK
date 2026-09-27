@@ -226,6 +226,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const regErrorMessage = document.getElementById('reg-error-message');
     const regSuccessMessage = document.getElementById('reg-success-message');
 
+    // =========================================================================
+    // REMEMBER ME AUTO-FILL & PREFERENCES
+    // =========================================================================
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    const emailInput = document.getElementById('email');
+    const savedRememberMe = localStorage.getItem('gtrack_remember_me');
+    const savedEmail = localStorage.getItem('gtrack_remember_email');
+    const savedRole = localStorage.getItem('gtrack_remember_role');
+
+    if (rememberMeCheckbox) {
+        rememberMeCheckbox.checked = (savedRememberMe !== 'false');
+    }
+
+    if (savedEmail && emailInput) {
+        emailInput.value = savedEmail;
+    }
+
+    if (savedRole && typeof window.switchRole === 'function') {
+        window.switchRole(savedRole);
+    }
+
+    // =========================================================================
+    // SEAMLESS AUTO-LOGIN & LIVE SESSION VERIFICATION
+    // =========================================================================
+    let isAutoLoggingIn = false;
+    auth.onAuthStateChanged(async (user) => {
+        // Automatically transition user to their dashboard if an active session is preserved
+        if (user && !isAutoLoggingIn) {
+            const savedRememberPref = localStorage.getItem('gtrack_remember_me');
+            if (savedRememberPref !== 'false') {
+                isAutoLoggingIn = true;
+                const submitBtn = document.getElementById('signInBtn') || (loginForm ? loginForm.querySelector('button[type="submit"]') : null);
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Verifying session...</span>';
+                }
+
+                try {
+                    const docSnap = await db.collection("users").doc(user.uid).get();
+                    if (!docSnap.exists) {
+                        isAutoLoggingIn = false;
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+                        }
+                        return;
+                    }
+
+                    const userData = docSnap.data();
+                    if (userData.role === 'admin') {
+                        sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
+                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || 'Administrator');
+                        sessionStorage.setItem('gtrack_user_role', 'admin');
+                        window.location.replace("../dashboard/admin.html");
+                        return;
+                    } else if (userData.role === 'employee') {
+                        if (userData.status === 'pending' || userData.status === 'rejected') {
+                            await auth.signOut();
+                            isAutoLoggingIn = false;
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+                            }
+                            return;
+                        }
+                        sessionStorage.setItem('gtrack_user_dept', userData.department || '');
+                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || '');
+                        sessionStorage.setItem('gtrack_user_role', 'employee');
+                        window.location.replace("../dashboard/employee.html");
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Auto-session verification notice:", err);
+                    isAutoLoggingIn = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+                    }
+                }
+            }
+        }
+    });
+
     // EMPLOYEE REGISTRATION WITH FIRESTORE WRITE
     if (registerForm) {
         registerForm.addEventListener('submit', function(e) {
@@ -313,63 +396,93 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // LOGIN VERIFICATION WITH APPROVAL CHECK
+    // LOGIN VERIFICATION WITH REMEMBER ME PERSISTENCE & APPROVAL CHECK
     if (loginForm) {
-        loginForm.addEventListener('submit', function(event) {
+        loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
             const email = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
             const role = document.getElementById('selectedRole') ? document.getElementById('selectedRole').value : 'admin';
+            const rememberMeCheckbox = document.getElementById('rememberMe');
+            const isRememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : true;
+            const submitBtn = document.getElementById('signInBtn') || loginForm.querySelector('button[type="submit"]');
 
             if (errorMessage) errorMessage.style.display = "none";
 
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    return db.collection("users").doc(user.uid).get();
-                })
-                .then((docSnap) => {
-                    if (!docSnap.exists) {
-                        throw new Error("Invalid account for this role (profile not found).");
-                    }
+            const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '<span>Sign In</span> <i class="fas fa-arrow-right"></i>';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Authenticating...</span>';
+            }
 
-                    const userData = docSnap.data();
+            try {
+                // Set persistence mode according to Remember Me selection
+                const persistenceMode = isRememberMe 
+                    ? firebase.auth.Auth.Persistence.LOCAL 
+                    : firebase.auth.Auth.Persistence.SESSION;
+                
+                await auth.setPersistence(persistenceMode);
 
-                    if (role === 'admin') {
-                        if (userData.role !== 'admin') {
-                            auth.signOut();
-                            throw new Error("Unauthorized access. Account is not an Admin.");
-                        }
-                        sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
-                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || 'Administrator');
-                        sessionStorage.setItem('gtrack_user_role', 'admin');
-                        window.location.href = "../dashboard/admin.html";
-                    } else {
-                        if (userData.role !== 'employee') {
-                            auth.signOut();
-                            throw new Error("Invalid account for the Employee role.");
-                        }
-                        if (userData.status === 'pending') {
-                            auth.signOut();
-                            throw new Error("Your account is awaiting Admin authorization.");
-                        }
-                        if (userData.status === 'rejected') {
-                            auth.signOut();
-                            throw new Error("Your registration request was rejected by an administrator.");
-                        }
-                        sessionStorage.setItem('gtrack_user_dept', userData.department || '');
-                        sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || '');
-                        sessionStorage.setItem('gtrack_user_role', 'employee');
-                        window.location.href = "../dashboard/employee.html";
+                // Save or clear Remember Me preferences
+                if (isRememberMe) {
+                    localStorage.setItem('gtrack_remember_me', 'true');
+                    localStorage.setItem('gtrack_remember_email', email);
+                    localStorage.setItem('gtrack_remember_role', role);
+                } else {
+                    localStorage.setItem('gtrack_remember_me', 'false');
+                    localStorage.removeItem('gtrack_remember_email');
+                    localStorage.removeItem('gtrack_remember_role');
+                }
+
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                const docSnap = await db.collection("users").doc(user.uid).get();
+
+                if (!docSnap.exists) {
+                    throw new Error("Invalid account for this role (profile not found).");
+                }
+
+                const userData = docSnap.data();
+
+                if (role === 'admin') {
+                    if (userData.role !== 'admin') {
+                        await auth.signOut();
+                        throw new Error("Unauthorized access. Account is not an Admin.");
                     }
-                })
-                .catch((error) => {
-                    if (errorMessage) {
-                        errorMessage.textContent = formatAuthError(error);
-                        errorMessage.style.display = "block";
+                    sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
+                    sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || 'Administrator');
+                    sessionStorage.setItem('gtrack_user_role', 'admin');
+                    window.location.replace("../dashboard/admin.html");
+                } else {
+                    if (userData.role !== 'employee') {
+                        await auth.signOut();
+                        throw new Error("Invalid account for the Employee role.");
                     }
-                });
+                    if (userData.status === 'pending') {
+                        await auth.signOut();
+                        throw new Error("Your account is awaiting Admin authorization.");
+                    }
+                    if (userData.status === 'rejected') {
+                        await auth.signOut();
+                        throw new Error("Your registration request was rejected by an administrator.");
+                    }
+                    sessionStorage.setItem('gtrack_user_dept', userData.department || '');
+                    sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || '');
+                    sessionStorage.setItem('gtrack_user_role', 'employee');
+                    window.location.replace("../dashboard/employee.html");
+                }
+            } catch (error) {
+                if (errorMessage) {
+                    errorMessage.textContent = formatAuthError(error);
+                    errorMessage.style.display = "block";
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHTML;
+                }
+            }
         });
     }
 });
