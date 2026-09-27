@@ -608,7 +608,7 @@ if (addForm) {
             }
         } catch (err) {
             console.error("Error saving record:", err);
-            alert("Error saving record: " + (err.message || err));
+            window.showGTrackToast('error', 'Save Failed', "Error saving record: " + (err.message || err));
         }
     });
 }
@@ -769,7 +769,7 @@ if (deleteModeBtn) {
         } else {
             // Second click: open compact popover right beneath the delete button
             if (selectedItemIds.size === 0) {
-                alert("Please select at least one item to delete by ticking the checkboxes.");
+                window.showGTrackToast('info', 'Selection Needed', 'Please select at least one item to delete by ticking the checkboxes.');
                 return;
             }
 
@@ -931,22 +931,30 @@ if (profilesDrawerModal) {
 }
 
 // Permanently Delete User Account from Firestore
-window.deleteUserAccount = function(userId, userEmail) {
+window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) {
     if (!userId || userId === 'undefined') {
         console.error("Invalid user ID passed to deleteUserAccount");
         return;
     }
 
     const displayName = userEmail ? `"${userEmail}"` : "this user account";
-    if (confirm(`Are you sure you want to permanently delete ${displayName}?\nThis account will be permanently removed from the system and can no longer log in.`)) {
-        db.collection("users").doc(userId).delete()
-            .then(() => {
-                console.log(`User account ${userId} permanently deleted.`);
-            })
-            .catch((error) => {
-                console.error("Error deleting user account: ", error);
-                alert("Error deleting user account: " + error.message);
-            });
+    const ok = await window.showGTrackConfirm(
+        "Delete User Account?",
+        `Are you sure you want to permanently delete ${displayName}? This account will be permanently removed from the system and can no longer log in.`,
+        "Delete Account",
+        "Cancel",
+        true,
+        triggerBtn
+    );
+
+    if (!ok) return;
+
+    try {
+        await db.collection("users").doc(userId).delete();
+        window.showGTrackToast('info', 'Account Deleted', `User account ${displayName} was permanently deleted.`);
+    } catch (error) {
+        console.error("Error deleting user account: ", error);
+        window.showGTrackToast('error', 'Delete Failed', "Error deleting user account: " + (error.message || error));
     }
 };
 
@@ -1125,7 +1133,7 @@ function initUserProfilesListener() {
                         </button>
                         ${!item.isSelf ? `
                             <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
-                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                                 <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
                             </button>
                         ` : ''}
@@ -2425,7 +2433,7 @@ document.addEventListener('DOMContentLoaded', initRequestsListener);
 // =========================================================================
 window.exportToCSV = function() {
     if (inventoryData.length === 0) {
-        alert("No data available to export.");
+        window.showGTrackToast('info', 'Export Notice', 'No data available to export.');
         return;
     }
 

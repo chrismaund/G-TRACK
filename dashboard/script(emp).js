@@ -2158,7 +2158,7 @@ document.addEventListener('keydown', (e) => {
 window.openTransferModal = function(itemId) {
     const item = inventoryData.find(i => String(i.id) === String(itemId));
     if (!item) {
-        alert("Selected equipment record could not be found.");
+        window.showGTrackToast('error', 'Item Not Found', 'Selected equipment record could not be found.');
         return;
     }
 
@@ -2234,7 +2234,7 @@ window.submitEquipmentTransfer = async function(event) {
 
     const item = inventoryData.find(i => String(i.id) === String(itemId));
     if (!item) {
-        alert("Invalid item selected.");
+        window.showGTrackToast('error', 'Invalid Selection', 'Invalid item selected for transfer.');
         return;
     }
 
