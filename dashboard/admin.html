@@ -726,22 +726,7 @@
     </div>
     <form id="add-item-form" class="modal-body">
       <div class="form-grid">
-        <div class="form-group">
-          <label for="add-date">Date Acquired</label>
-          <input type="date" id="add-date" required>
-        </div>
-        <div class="form-group">
-          <label for="add-qty">Quantity</label>
-          <input type="number" id="add-qty" min="1" required>
-        </div>
-        <div class="form-group">
-          <label for="add-unit">Unit of Measure</label>
-          <input type="text" id="add-unit" placeholder="e.g., pcs, set, unit" required>
-        </div>
-        <div class="form-group">
-          <label for="add-unit-cost">Unit Cost (₱)</label>
-          <input type="number" id="add-unit-cost" step="0.01" min="0" placeholder="0.00" required>
-        </div>
+        <!-- Row 1: Article & Description -->
         <div class="form-group">
           <label for="add-article">Article</label>
           <input type="text" id="add-article" placeholder="e.g., Desktop Computer" required>
@@ -750,10 +735,38 @@
           <label for="add-description">Description</label>
           <input type="text" id="add-description" placeholder="Brand, model, specs" required>
         </div>
+
+        <!-- Row 2: Property No. & Date Acquired -->
         <div class="form-group">
           <label for="add-property">Property No.</label>
           <input type="text" id="add-property" placeholder="PROP-2026-001" required>
         </div>
+        <div class="form-group">
+          <label for="add-date">Date Acquired</label>
+          <input type="date" id="add-date" required>
+        </div>
+
+        <!-- Row 3: Quantity & Unit of Measure -->
+        <div class="form-group">
+          <label for="add-qty">Quantity</label>
+          <input type="number" id="add-qty" min="1" required>
+        </div>
+        <div class="form-group">
+          <label for="add-unit">Unit of Measure</label>
+          <input type="text" id="add-unit" placeholder="e.g., pcs, set, unit" required>
+        </div>
+
+        <!-- Row 4: Unit Cost & Account Group -->
+        <div class="form-group">
+          <label for="add-unit-cost">Unit Cost (₱)</label>
+          <input type="number" id="add-unit-cost" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label for="add-account">Account Group</label>
+          <input type="text" id="add-account" placeholder="e.g., ICT Equipment" required>
+        </div>
+
+        <!-- Row 5: Location & Accountable Person -->
         <div class="form-group">
           <label for="add-location">Location</label>
           <input type="text" id="add-location" placeholder="e.g., Computer Lab 1" required>
@@ -762,7 +775,9 @@
           <label for="add-accountable">Accountable Person</label>
           <input type="text" id="add-accountable" placeholder="Full Name" required>
         </div>
-        <div class="form-group">
+
+        <!-- Row 6: Condition (Full Width) -->
+        <div class="form-group full-width">
           <label for="add-condition">Condition</label>
           <select id="add-condition" required>
             <option value="Serviceable">Serviceable</option>
@@ -770,28 +785,26 @@
             <option value="For Disposal">For Disposal</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="add-account">Account Group</label>
-          <input type="text" id="add-account" placeholder="e.g., ICT Equipment" required>
-        </div>
+
+        <!-- Row 7: Remarks (Full Width) -->
         <div class="form-group full-width">
           <label for="add-remarks">Remarks</label>
           <textarea id="add-remarks" rows="2" placeholder="Additional notes or comments"></textarea>
         </div>
         <div id="item-modal-tally-info" class="form-group full-width" style="display: none; border-radius: 8px; padding: 10px 14px; margin-top: 4px;">
           <span style="font-size: 11px; color: #94a3b8; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Accounting Office Voucher Status</span>
-          <span id="item-modal-tally-text" style="font-size: 12.5px; font-weight: 700; color: #f8fafc; margin-top: 2px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">-</span>
+          <span id="item-modal-tally-text" style="font-size: 12.5px; font-weight: 700; color: #f87171; margin-top: 2px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">-</span>
         </div>
       </div>
       <div class="modal-actions">
         <button type="button" id="cancel-add-btn" class="add-eq-btn secondary-btn" onclick="closeModal()">
-            <i class="fas fa-times"></i> Cancel
+            Cancel
         </button>
         <button type="submit" class="add-eq-btn btn-blue">
             <i class="fas fa-plus"></i> Save Item
         </button>
       </div>
-</form>
+    </form>
   </div>
 </div>
 
