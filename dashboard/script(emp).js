@@ -26,7 +26,7 @@ const inventoryRef = database.ref('inventoryData');
 const requestsRef = database.ref('masterlistRequests');
 
 function sanitizeText(str) {
-    if (!str) return '';
+    if (str === null || str === undefined) return '';
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -296,7 +296,7 @@ function calculateMetrics() {
     ).length;
     const unserviceableCount = inventoryData.filter(item => {
         const cond = (item.condition || '').toUpperCase();
-        return cond === 'UNSERVICEABLE' || cond === 'FOR DISPOSAL';
+        return cond === 'UNSERVICEABLE' || cond === 'FOR DISPOSAL' || cond.includes('REPAIR');
     }).length;
     const totalQuantity = inventoryData.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
 
@@ -349,7 +349,7 @@ function calculateMetrics() {
         if (inventoryData.length === 0) {
             streamContainer.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 11px; padding: 16px;">No equipment records found.</div>`;
         } else {
-            const recentItems = inventoryData.slice(0, 5);
+            const recentItems = inventoryData.slice(0, 8);
             streamContainer.innerHTML = recentItems.map(item => {
                 const propNo = item.propertyNo || item.propertyNumber || 'N/A';
                 const artName = item.article || item.description || 'General Property';

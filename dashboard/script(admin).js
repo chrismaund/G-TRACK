@@ -255,7 +255,7 @@ function calculateMetrics() {
     const serviceableCount = inventoryData.filter(item => (item.condition || '').toUpperCase() === 'SERVICEABLE').length;
     const unserviceableCount = inventoryData.filter(item => {
         const cond = (item.condition || '').toUpperCase();
-        return cond === 'UNSERVICEABLE' || cond === 'FOR DISPOSAL';
+        return cond === 'UNSERVICEABLE' || cond === 'FOR DISPOSAL' || cond.includes('REPAIR');
     }).length;
     
     const totalQuantity = inventoryData.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
