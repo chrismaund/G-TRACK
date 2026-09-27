@@ -1204,33 +1204,45 @@ if (darkModeToggle) {
 }
 
 // =========================================================================
-// REQUEST MASTERLIST COPY WORKFLOW (FIREBASE & SUPABASE)
+// EMPLOYEE REQUESTS DRAWER MODAL & MASTERLIST COPY WORKFLOW
 // =========================================================================
-const sidebarRequestBtn = document.getElementById('sidebar-request-btn');
-const historyLogContainer = document.getElementById('request-history-log');
-const historyQuickBtn = document.getElementById('sidebar-history-quick-btn');
-const historyWrapper = document.getElementById('request-history-wrapper');
-const historyBadge = document.getElementById('emp-history-badge');
+let currentEmpRequestTab = 'all';
 
-window.toggleHistoryStack = function(forceOpen) {
-    if (window.innerWidth <= 768) {
-        if (sidebarDrawer) sidebarDrawer.classList.add('open');
-        if (sidebarOverlay) sidebarOverlay.classList.add('show');
-    } else {
-        if (sidebarDrawer && !sidebarDrawer.classList.contains('expanded')) {
-            sidebarDrawer.classList.add('expanded');
-            document.body.classList.add('sidebar-expanded');
-            localStorage.setItem('gtrack_sidebar_expanded', 'true');
-        }
+window.openEmpRequestsModal = function() {
+    const modal = document.getElementById('emp-requests-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        void modal.offsetWidth;
+        modal.classList.add('open');
+        document.body.classList.add('modal-open');
+        renderEmpRequestsPanel();
     }
+};
 
-    if (historyWrapper) {
-        if (forceOpen === true) {
-            historyWrapper.classList.add('open');
-        } else {
-            historyWrapper.classList.toggle('open');
-        }
+window.closeEmpRequestsModal = function() {
+    const modal = document.getElementById('emp-requests-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            if (!modal.classList.contains('open')) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }, 350);
+        document.body.classList.remove('modal-open');
     }
+};
+
+window.filterEmpRequestsTab = function(tabName, btn) {
+    currentEmpRequestTab = tabName;
+    document.querySelectorAll('#emp-requests-modal .request-tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderEmpRequestsPanel();
+};
+
+window.openRequestHistory = function() {
+    window.openEmpRequestsModal();
 };
 
 window.sendMasterlistRequest = async function() {
@@ -1250,186 +1262,474 @@ window.sendMasterlistRequest = async function() {
     try {
         await database.ref(`masterlistRequests/${newId}`).set(newRequest);
         if (supabaseClient) {
-            await supabaseClient.from('masterlist_requests').insert([{
-                id: newId,
-                user_email: userEmail,
-                user_name: userName,
-                status: 'pending',
-                requested_at: new Date().toISOString()
-            }]);
+            try {
+                await supabaseClient.from('masterlist_requests').insert([{
+                    id: newId,
+                    user_email: userEmail,
+                    user_name: userName,
+                    status: 'pending',
+                    requested_at: new Date().toISOString()
+                }]);
+            } catch (supaErr) {
+                console.warn("Supabase masterlist insert notice:", supaErr);
+            }
         }
-        window.toggleHistoryStack(true);
+        window.showGTrackToast('success', 'Request Submitted', 'Masterlist copy request has been submitted for GSO Admin authorization.');
+        window.openEmpRequestsModal();
     } catch (err) {
         console.error("Error submitting masterlist request:", err);
+        window.showGTrackToast('error', 'Request Failed', err.message || 'Could not submit request.');
     }
 };
 
-if (sidebarRequestBtn) {
-    sidebarRequestBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        window.sendMasterlistRequest();
+function buildMasterlistCSVString() {
+    const headers = [
+        "Date Acquired",
+        "Quantity",
+        "Unit",
+        "Unit Cost",
+        "Article",
+        "Description",
+        "Property No.",
+        "Total Cost",
+        "Office / Location",
+        "Accountable Person",
+        "Condition",
+        "Account Classification",
+        "Remarks"
+    ];
+
+    const rows = inventoryData.map(item => {
+        const qtyVal = parseInt(item.qty, 10) || 0;
+        const unitCostVal = parseFloat(item.unitCost) || 0;
+        const totalCostVal = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        return [
+            `"${(item.date || '').replace(/"/g, '""')}"`,
+            qtyVal,
+            `"${(item.unit || '').replace(/"/g, '""')}"`,
+            unitCostVal.toFixed(2),
+            `"${(item.article || '').replace(/"/g, '""')}"`,
+            `"${(item.description || '').replace(/"/g, '""')}"`,
+            `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
+            totalCostVal.toFixed(2),
+            `"${(item.location || '').replace(/"/g, '""')}"`,
+            `"${(item.accountablePerson || '').replace(/"/g, '""')}"`,
+            `"${(item.condition || 'Serviceable').replace(/"/g, '""')}"`,
+            `"${(item.account || '').replace(/"/g, '""')}"`,
+            `"${(item.remarks || '').replace(/"/g, '""')}"`
+        ].join(',');
+    });
+
+    return [headers.join(','), ...rows].join('\r\n');
+}
+
+window.downloadApprovedMasterlistCopy = function(requestId, btn) {
+    try {
+        const csvContent = buildMasterlistCSVString();
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.setAttribute("href", url);
+        downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        window.showGTrackToast('success', 'Download Complete', 'Authorized GSO Masterlist CSV copy has been downloaded.');
+    } catch (err) {
+        console.error("Error downloading masterlist copy:", err);
+        window.showGTrackToast('error', 'Download Failed', 'Failed to generate masterlist file.');
+    }
+};
+
+window.empClearRequestsLogs = async function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const icon = document.querySelector('#emp-clear-requests-btn i');
+    if (icon) icon.classList.add('fa-spin');
+
+    try {
+        await renderEmpRequestsPanel();
+        window.showGTrackToast('info', 'Requests Refreshed', 'Latest status of all your requests has been updated.');
+    } finally {
+        setTimeout(() => {
+            if (icon) icon.classList.remove('fa-spin');
+        }, 500);
+    }
+};
+
+function initEmpRequestsListeners() {
+    database.ref('equipmentTransfers').on('value', () => {
+        renderEmpRequestsPanel();
+    });
+    database.ref('masterlistRequests').on('value', () => {
+        renderEmpRequestsPanel();
+    });
+    database.ref('deptTransferRequests').on('value', () => {
+        renderEmpRequestsPanel();
+    });
+    database.ref('roleElevationRequests').on('value', () => {
+        renderEmpRequestsPanel();
     });
 }
 
-function renderHistory() {
-    if (!historyLogContainer) return;
+async function renderEmpRequestsPanel() {
+    const modalContainer = document.getElementById('emp-requests-container');
+    const badgeEl = document.getElementById('emp-history-badge');
 
-    requestsRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        historyLogContainer.innerHTML = ''; 
-        
-        const emptyStateHTML = `
-            <div style="padding: 16px; border-radius: 8px; border: 1.5px dashed #334155; text-align: center; color: #94a3b8; font-size: 12px;">
-                <i class="far fa-folder-open" style="font-size: 18px; margin-bottom: 6px; display: block; color: #475569;"></i>
-                No recent requests found.
-            </div>
-        `;
+    try {
+        const [transfersSnap, masterlistSnap, deptTransfersSnap, roleSnap] = await Promise.all([
+            database.ref('equipmentTransfers').once('value'),
+            database.ref('masterlistRequests').once('value'),
+            database.ref('deptTransferRequests').once('value'),
+            database.ref('roleElevationRequests').once('value')
+        ]);
 
-        if (!data) {
-            historyLogContainer.innerHTML = emptyStateHTML;
-            if (historyBadge) historyBadge.style.display = 'none';
-            return;
-        }
+        const allCards = [];
+        let countDept = 0;
+        let countTransfer = 0;
+        let countMasterlist = 0;
+        let countRole = 0;
+        let pendingCount = 0;
 
-        const userEmail = currentEmployeeEmail || "employee@gso.com";
-        const currentRequests = Object.keys(data)
-            .map(key => ({ id: key, ...data[key] }))
-            .filter(req => req.user === userEmail || req.userName === currentEmployeeName)
-            .reverse();
+        const currentEmailClean = (currentEmployeeEmail || '').toLowerCase().trim();
+        const currentNameClean = cleanPersonName(currentEmployeeName);
+        const currentUid = auth.currentUser ? auth.currentUser.uid : '';
 
-        if (historyBadge) {
-            historyBadge.textContent = currentRequests.length;
-            historyBadge.style.display = currentRequests.length > 0 ? 'inline-block' : 'none';
-        }
+        // 1. Process Equipment Transfers
+        if (transfersSnap.exists()) {
+            transfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.requestedByEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.requestedByName);
+                const isMine = (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean));
 
-        if (currentRequests.length === 0) {
-            historyLogContainer.innerHTML = emptyStateHTML;
-            return;
-        }
+                if (isMine) {
+                    const isPending = (req.status || 'Pending').toLowerCase() === 'pending';
+                    if (isPending) pendingCount++;
+                    countTransfer++;
 
-        const fragment = document.createDocumentFragment();
-
-        currentRequests.forEach(req => {
-            const block = document.createElement('div');
-            block.style.backgroundColor = '#1e293b';
-            block.style.border = '1.5px solid #334155';
-            block.style.borderRadius = '8px';
-            block.style.padding = '12px 14px';
-            block.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            block.style.display = 'flex';
-            block.style.flexDirection = 'column';
-            block.style.gap = '8px';
-            
-            let statusContainer = '';
-
-            if ((req.status || '').toUpperCase() === "PENDING") {
-                statusContainer = `
-                    <div style="display: flex; flex-direction: column; gap: 4px; background-color: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); padding: 8px 10px; border-radius: 6px; width: 100%; box-sizing: border-box;">
-                        <span style="color: #fef08a; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-clock"></i> Pending Approval
-                        </span>
-                        <span style="font-size: 10.5px; color: #cbd5e1; line-height: 1.3;">
-                            Waiting for administrator authorization.
-                        </span>
-                    </div>
-                `;
-            } else if ((req.status || '').toUpperCase() === "COMPLETED") {
-                statusContainer = `
-                   <div style="display: flex; flex-direction: column; gap: 6px; background-color: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); padding: 8px 10px; border-radius: 6px; width: 100%; box-sizing: border-box;">
-                        <span style="color: #bbf7d0; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-check-circle"></i> Ready for Download
-                        </span>
-                        <button class="dl-action-btn" data-id="${req.id}" style="width: 100%; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; border: none; padding: 6px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s;">
-                            <i class="fas fa-cloud-download-alt"></i> Download CSV
-                        </button>
-                    </div>
-                `;
-            }
-
-            block.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 600; font-size: 11px; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
-                        <i class="far fa-user" style="color: #94a3b8; margin-right: 4px;"></i> ${sanitizeText(req.userName || req.user)}
-                    </span>
-                    <span style="font-size: 10px; color: #94a3b8;">${sanitizeText(req.time)}</span>
-                </div>
-                <div style="display: flex; width: 100%;">
-                    ${statusContainer}
-                </div>
-            `;
-
-            fragment.appendChild(block);
-
-            if ((req.status || '').toUpperCase() === "COMPLETED") {
-                const triggerBtn = block.querySelector('.dl-action-btn');
-                if (triggerBtn) {
-                    triggerBtn.addEventListener('click', (e) => {
-                        e.preventDefault();   
-                        e.stopPropagation();
-
-                        const csvContent = req.csvDataString || buildCSVString();
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const url = URL.createObjectURL(blob);
-                        const downloadLink = document.createElement("a");
-                        downloadLink.setAttribute("href", url);
-                        downloadLink.setAttribute("download", `GSO_Masterlist_Received_${req.id.slice(-4)}.csv`);
-                        document.body.appendChild(downloadLink);
-                        downloadLink.click();
-                        document.body.removeChild(downloadLink);
+                    allCards.push({
+                        id: child.key,
+                        type: 'transfer',
+                        data: req,
+                        time: req.createdAt ? new Date(req.createdAt).getTime() : 0,
+                        isPending: isPending
                     });
                 }
-            }
+            });
+        }
+
+        // 2. Process Department Transfers
+        if (deptTransfersSnap.exists()) {
+            deptTransfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.userEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName);
+                const reqUserId = req.userId || '';
+                const isMine = (reqUserId && reqUserId === currentUid) || (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean));
+
+                if (isMine) {
+                    const isPending = (req.status || 'Pending').toLowerCase() === 'pending';
+                    if (isPending) pendingCount++;
+                    countDept++;
+
+                    allCards.push({
+                        id: child.key,
+                        type: 'dept_transfer',
+                        data: req,
+                        time: req.createdAt ? new Date(req.createdAt).getTime() : 0,
+                        isPending: isPending
+                    });
+                }
+            });
+        }
+
+        // 3. Process Masterlist Requests
+        if (masterlistSnap.exists()) {
+            masterlistSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.user || req.user_email || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName || req.user_name);
+                const isMine = (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean));
+
+                if (isMine) {
+                    const isPending = (req.status || 'Pending').toLowerCase() === 'pending';
+                    if (isPending) pendingCount++;
+                    countMasterlist++;
+
+                    allCards.push({
+                        id: child.key,
+                        type: 'masterlist',
+                        data: req,
+                        time: req.requestedAt ? new Date(req.requestedAt).getTime() : (req.time ? new Date(req.time).getTime() : 0),
+                        isPending: isPending
+                    });
+                }
+            });
+        }
+
+        // 4. Process Role Elevation Requests
+        if (roleSnap.exists()) {
+            roleSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.userEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName);
+                const reqUserId = req.userId || '';
+                const isMine = (reqUserId && reqUserId === currentUid) || (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean));
+
+                if (isMine) {
+                    const isPending = (req.status || 'Pending').toLowerCase() === 'pending';
+                    if (isPending) pendingCount++;
+                    countRole++;
+
+                    allCards.push({
+                        id: child.key,
+                        type: 'role_elevation',
+                        data: req,
+                        time: req.requestedAt ? new Date(req.requestedAt).getTime() : 0,
+                        isPending: isPending
+                    });
+                }
+            });
+        }
+
+        // Update Sidebar Badge
+        if (badgeEl) {
+            badgeEl.textContent = allCards.length;
+            badgeEl.style.display = allCards.length > 0 ? 'inline-block' : 'none';
+        }
+
+        // Update Tab Badges
+        const tabCountAll = document.getElementById('tab-count-emp-all');
+        const tabCountMasterlist = document.getElementById('tab-count-emp-masterlist');
+        const tabCountTransfer = document.getElementById('tab-count-emp-transfer');
+        const tabCountDept = document.getElementById('tab-count-emp-dept');
+        const tabCountRole = document.getElementById('tab-count-emp-role');
+
+        if (tabCountAll) tabCountAll.textContent = allCards.length;
+        if (tabCountMasterlist) tabCountMasterlist.textContent = countMasterlist;
+        if (tabCountTransfer) tabCountTransfer.textContent = countTransfer;
+        if (tabCountDept) tabCountDept.textContent = countDept;
+        if (tabCountRole) tabCountRole.textContent = countRole;
+
+        if (!modalContainer) return;
+
+        // Filter cards according to active tab
+        let filtered = allCards;
+        if (currentEmpRequestTab === 'dept') {
+            filtered = allCards.filter(c => c.type === 'dept_transfer');
+        } else if (currentEmpRequestTab === 'transfer') {
+            filtered = allCards.filter(c => c.type === 'transfer');
+        } else if (currentEmpRequestTab === 'masterlist') {
+            filtered = allCards.filter(c => c.type === 'masterlist');
+        } else if (currentEmpRequestTab === 'role') {
+            filtered = allCards.filter(c => c.type === 'role_elevation');
+        }
+
+        if (filtered.length === 0) {
+            modalContainer.innerHTML = `
+                <div style="padding: 48px 20px; text-align: center; color: #64748b;">
+                    <i class="far fa-bell-slash" style="font-size: 32px; display: block; margin-bottom: 12px; opacity: 0.5;"></i>
+                    <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: #cbd5e1;">No Requests Found</h4>
+                    <p style="margin: 0; font-size: 12px; color: #64748b;">You have not submitted any requests under this filter category.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort: Pending items first, then newest timestamps
+        filtered.sort((a, b) => {
+            if (a.isPending && !b.isPending) return -1;
+            if (!a.isPending && b.isPending) return 1;
+            return b.time - a.time;
         });
 
-        historyLogContainer.appendChild(fragment);
-    });
-}
+        modalContainer.innerHTML = '';
 
-// Clear History Button handler (Direct spin-to-clear without alert popup)
-const clearHistoryBtn = document.getElementById('clear-history-btn');
-if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        filtered.forEach((item) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'req-item-card';
 
-        const icon = clearHistoryBtn.querySelector('i');
-        if (icon) icon.classList.add('fa-spin');
-        clearHistoryBtn.style.pointerEvents = 'none';
+            const d = item.data;
+            const status = d.status || 'Pending';
+            const isPending = item.isPending;
+            const isApproved = status === 'Approved' || status === 'Completed' || status === 'Handled';
+            const isRejected = status === 'Rejected' || status === 'Declined';
 
-        try {
-            const userEmail = currentEmployeeEmail || "employee@gso.com";
-            const snapshot = await requestsRef.once('value');
-            const data = snapshot.val();
-
-            if (data) {
-                const deletePromises = [];
-                Object.keys(data).forEach((key) => {
-                    if (data[key].user === userEmail || data[key].userName === currentEmployeeName) {
-                        deletePromises.push(database.ref(`masterlistRequests/${key}`).remove());
-                    }
-                });
-
-                if (supabaseClient) {
-                    deletePromises.push(
-                        supabaseClient
-                            .from('masterlist_requests')
-                            .delete()
-                            .or(`user_email.eq.${userEmail},user_name.eq.${currentEmployeeName}`)
-                    );
-                }
-
-                await Promise.all(deletePromises);
+            let statusStyle = 'background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3);';
+            if (isApproved) {
+                statusStyle = 'background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3);';
+            } else if (isRejected) {
+                statusStyle = 'background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3);';
             }
-        } catch (err) {
-            console.error("Error clearing request history:", err);
-        } finally {
-            setTimeout(() => {
-                if (icon) icon.classList.remove('fa-spin');
-                clearHistoryBtn.style.pointerEvents = 'auto';
-            }, 450);
-        }
-    });
+
+            const formattedDate = d.createdAt ? new Date(d.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : (d.time || 'Recent');
+
+            if (item.type === 'dept_transfer') {
+                cardEl.innerHTML = `
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+                            <i class="fas fa-building"></i> Department Transfer Request
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Member</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || currentEmployeeName)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Email Address</span>
+                            <span class="req-data-val">${sanitizeText(d.userEmail || currentEmployeeEmail)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Current Department</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.originDepartment || 'Current Office')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Target Department</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> ${sanitizeText(d.targetDepartment || '-')}</span>
+                        </div>
+                        <div class="req-data-row" style="grid-column: 1 / -1;">
+                            <span class="req-data-label">Administrative Status</span>
+                            <span class="req-data-val" style="color: ${isApproved ? '#4ade80' : (isRejected ? '#f87171' : '#fde047')};">
+                                ${isApproved ? '<i class="fas fa-check-circle"></i> Approved by GSO Administrator.' : (isRejected ? '<i class="fas fa-times-circle"></i> Reassignment request declined by Administrator.' : '<i class="fas fa-clock"></i> Awaiting Administrator review and reassignment.')}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else if (item.type === 'transfer') {
+                cardEl.innerHTML = `
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                            <i class="fas fa-exchange-alt"></i> Equipment Transfer Request
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Equipment Article</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.article || 'Equipment')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Property Number</span>
+                            <span class="req-data-val" style="font-family: monospace; color: #38bdf8;">${sanitizeText(d.propertyNo || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Origin Office</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.originLocation || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Destination Office</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> ${sanitizeText(d.targetDepartment || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">New Custodian</span>
+                            <span class="req-data-val" style="color: #ffffff;">${sanitizeText(d.newCustodian || '-')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Transfer Justification</span>
+                            <span class="req-data-val" style="color: #cbd5e1; font-style: italic;">"${sanitizeText(d.reason || '-')}"</span>
+                        </div>
+                        <div class="req-data-row" style="grid-column: 1 / -1;">
+                            <span class="req-data-label">Transfer Status</span>
+                            <span class="req-data-val" style="color: ${isApproved ? '#4ade80' : (isRejected ? '#f87171' : '#fde047')};">
+                                ${isApproved ? '<i class="fas fa-check-circle"></i> Transfer approved and property ledger updated!' : (isRejected ? '<i class="fas fa-times-circle"></i> Transfer request declined by Administrator.' : '<i class="fas fa-clock"></i> Transfer request submitted. Awaiting Administrator approval.')}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else if (item.type === 'role_elevation') {
+                cardEl.innerHTML = `
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+                            <i class="fas fa-user-shield"></i> Admin Role Elevation Request
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Member</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || currentEmployeeName)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Email</span>
+                            <span class="req-data-val">${sanitizeText(d.userEmail || currentEmployeeEmail)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Assigned Office</span>
+                            <span class="req-data-val" style="color: #94a3b8;">${sanitizeText(d.department || currentEmployeeDept || 'GSO')}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Requested Access</span>
+                            <span class="req-data-val" style="color: #c084fc; font-weight: 700;"><i class="fas fa-arrow-right" style="font-size: 10px; margin-right: 4px;"></i> Administrator Role</span>
+                        </div>
+                        <div class="req-data-row" style="grid-column: 1 / -1;">
+                            <span class="req-data-label">Authorization Status</span>
+                            <span class="req-data-val" style="color: ${isApproved ? '#4ade80' : (isRejected ? '#f87171' : '#fde047')};">
+                                ${isApproved ? '<i class="fas fa-check-circle"></i> Administrator privileges granted! Please sign in again to activate.' : (isRejected ? '<i class="fas fa-times-circle"></i> Role elevation declined by system administrator.' : '<i class="fas fa-clock"></i> Access elevation request submitted. Awaiting Admin verification.')}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                cardEl.innerHTML = `
+                    <div class="req-header">
+                        <span class="req-tag" style="background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3);">
+                            <i class="fas fa-file-export"></i> Masterlist Copy Request
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="req-status-badge" style="${statusStyle}">${sanitizeText(status)}</span>
+                            <span style="font-size: 11px; color: #64748b;">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="req-body-grid">
+                        <div class="req-data-row">
+                            <span class="req-data-label">Requested By</span>
+                            <span class="req-data-val" style="color: #ffffff; font-weight: 700;">${sanitizeText(d.userName || currentEmployeeName)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Staff Email</span>
+                            <span class="req-data-val">${sanitizeText(d.user || currentEmployeeEmail)}</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Request Type</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Full Inventory Masterlist Export (CSV)</span>
+                        </div>
+                        <div class="req-data-row">
+                            <span class="req-data-label">Authorization Status</span>
+                            <span class="req-data-val" style="color: ${isApproved ? '#4ade80' : (isRejected ? '#f87171' : '#fde047')};">
+                                ${isApproved ? '<i class="fas fa-check-circle"></i> Approved by Admin • Ready for CSV download.' : (isRejected ? '<i class="fas fa-times-circle"></i> Request declined by Administrator.' : '<i class="fas fa-clock"></i> Waiting for administrator authorization.')}
+                            </span>
+                        </div>
+                    </div>
+                    ${isApproved ? `
+                        <div class="req-actions" style="margin-top: 4px;">
+                            <button onclick="downloadApprovedMasterlistCopy('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
+                                <i class="fas fa-cloud-download-alt"></i> Download CSV Copy
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            modalContainer.appendChild(cardEl);
+        });
+
+    } catch (e) {
+        console.error("Error rendering employee requests panel:", e);
+    }
 }
 
 // =========================================================================
@@ -2008,7 +2308,8 @@ if (pageSelectEl) {
 }
 
 setupConditionDropdown();
-renderHistory();
+initEmpRequestsListeners();
+renderEmpRequestsPanel();
 
 // =========================================================================
 // CUSTOM SEARCHABLE DEPARTMENT DROPDOWN HELPERS
@@ -2138,6 +2439,11 @@ document.addEventListener('click', (e) => {
         window.closeTransferModal();
     }
 
+    const reqModal = document.getElementById('emp-requests-modal');
+    if (reqModal && e.target === reqModal && typeof window.closeEmpRequestsModal === 'function') {
+        window.closeEmpRequestsModal();
+    }
+
     const metricModal = document.getElementById('metric-breakdown-modal');
     if (metricModal && e.target === metricModal && typeof window.closeMetricModal === 'function') {
         window.closeMetricModal();
@@ -2146,6 +2452,7 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        if (typeof window.closeEmpRequestsModal === 'function') window.closeEmpRequestsModal();
         if (typeof window.closeEmpProfileModal === 'function') window.closeEmpProfileModal();
         if (typeof window.closeTransferModal === 'function') window.closeTransferModal();
         if (typeof window.closeMetricModal === 'function') window.closeMetricModal();

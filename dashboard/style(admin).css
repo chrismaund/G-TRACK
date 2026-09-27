@@ -1215,8 +1215,9 @@ body,
     left: 0; 
 }
 
-/* Pending Requests Left-Side Sliding Drawer (Admin) - Matches User Profiles UI */
-#requests-modal.modal-overlay { 
+/* Pending Requests Left-Side Sliding Drawer (Admin & Employee) - Matches User Profiles UI */
+#requests-modal.modal-overlay,
+#emp-requests-modal.modal-overlay { 
     justify-content: flex-start; 
     align-items: stretch; 
     z-index: 1100; 
@@ -1225,12 +1226,14 @@ body,
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#requests-modal.modal-overlay.open {
+#requests-modal.modal-overlay.open,
+#emp-requests-modal.modal-overlay.open {
     opacity: 1;
     pointer-events: auto;
 }
 
-#requests-modal .modal-card { 
+#requests-modal .modal-card,
+#emp-requests-modal .modal-card { 
     position: fixed; 
     top: 0; 
     left: -880px; 
@@ -1256,11 +1259,13 @@ body,
     color: #f8fafc;
 }
 
-#requests-modal.open .modal-card { 
+#requests-modal.open .modal-card,
+#emp-requests-modal.open .modal-card { 
     left: 0; 
 }
 
-#requests-modal .modal-header {
+#requests-modal .modal-header,
+#emp-requests-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1270,7 +1275,8 @@ body,
     flex-shrink: 0;
 }
 
-#requests-modal .modal-body {
+#requests-modal .modal-body,
+#emp-requests-modal .modal-body {
     flex: 1;
     display: flex;
     flex-direction: column;
