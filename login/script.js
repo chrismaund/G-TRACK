@@ -161,6 +161,103 @@ window.showLoginForm = function(e) {
     }
 };
 
+window.openForgotPasswordModal = function(e) {
+    if (e) e.preventDefault();
+    const modal = document.getElementById('forgot-password-modal');
+    const resetEmailInput = document.getElementById('resetEmail');
+    const loginEmailInput = document.getElementById('email');
+    const errorMsg = document.getElementById('reset-error-msg');
+    const successMsg = document.getElementById('reset-success-msg');
+
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (successMsg) successMsg.style.display = 'none';
+
+    if (loginEmailInput && loginEmailInput.value.trim() && resetEmailInput) {
+        resetEmailInput.value = loginEmailInput.value.trim();
+    }
+
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.offsetHeight; // trigger reflow for smooth CSS animation
+        modal.classList.add('open');
+        if (resetEmailInput) {
+            setTimeout(() => resetEmailInput.focus(), 80);
+        }
+    }
+};
+
+window.closeForgotPasswordModal = function() {
+    const modal = document.getElementById('forgot-password-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 200);
+    }
+};
+
+window.handleSendPasswordReset = async function(e) {
+    if (e) e.preventDefault();
+    const resetEmailInput = document.getElementById('resetEmail');
+    const errorMsg = document.getElementById('reset-error-msg');
+    const successMsg = document.getElementById('reset-success-msg');
+    const sendBtn = document.getElementById('sendResetBtn');
+
+    if (!resetEmailInput) return;
+    const email = resetEmailInput.value.trim().toLowerCase();
+
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (successMsg) successMsg.style.display = 'none';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        if (errorMsg) {
+            errorMsg.textContent = 'Please enter a valid email address.';
+            errorMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    const originalHTML = sendBtn ? sendBtn.innerHTML : '<span>Send Reset Link</span> <i class="fas fa-paper-plane"></i>';
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Sending link...</span>';
+    }
+
+    try {
+        await auth.sendPasswordResetEmail(email);
+        if (successMsg) {
+            successMsg.textContent = `Password reset email sent to ${email}. Please check your inbox or spam folder.`;
+            successMsg.style.display = 'block';
+        }
+        resetEmailInput.value = '';
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = formatAuthError(err);
+            errorMsg.style.display = 'block';
+        }
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalHTML;
+        }
+    }
+};
+
+// Dismiss Forgot Password modal on backdrop click or Escape key
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('forgot-password-modal');
+    if (modal && e.target === modal) {
+        window.closeForgotPasswordModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.closeForgotPasswordModal();
+    }
+});
+
 function formatAuthError(error) {
     if (!error) return "An unknown error occurred. Please try again.";
     
@@ -178,15 +275,17 @@ function formatAuthError(error) {
         return msg;
     }
 
+    if (code === 'auth/user-not-found' || msg.includes('user-not-found')) {
+        return "No registered account found with this email address.";
+    }
+
     // Role / Credential mismatches
     if (code === 'auth/invalid-credential' || 
         code === 'auth/wrong-password' || 
-        code === 'auth/user-not-found' || 
         code === 'auth/invalid-login-credentials' ||
         msg.includes('INVALID_LOGIN_CREDENTIALS') ||
         msg.includes('invalid-credential') ||
-        msg.includes('wrong-password') ||
-        msg.includes('user-not-found')) {
+        msg.includes('wrong-password')) {
         return "Invalid email or password for this role.";
     }
 
