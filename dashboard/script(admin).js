@@ -492,45 +492,152 @@ function renderTable() {
 }
 
 // =========================================================================
-// SMART SEARCHABLE SUGGESTIONS (DATALISTS) FOR ADD PROPERTY ITEM MODAL
+// SMART GLASSMORPHIC CUSTOM DROPDOWNS FOR ADD/EDIT PROPERTY ITEM MODAL
 // =========================================================================
 let cachedStaffNames = [];
 
-function populateAddModalSuggestions() {
-    // 1. Accountable Person Suggestions (Masterlist items + Registered personnel)
-    const accountableDatalist = document.getElementById('accountable-suggestions');
-    if (accountableDatalist) {
-        const namesSet = new Set();
-        
-        // Extract all accountable persons recorded in masterlist inventory
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.accountablePerson && typeof item.accountablePerson === 'string') {
-                    const cleanName = item.accountablePerson.trim();
-                    if (cleanName && cleanName !== 'N/A' && cleanName !== '-' && cleanName !== 'None') {
-                        namesSet.add(cleanName);
-                    }
-                }
-            });
+window.toggleAddCustomDropdown = function(wrapperId, e) {
+    if (e) e.stopPropagation();
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    // Close all other open custom dropdowns
+    document.querySelectorAll('#add-modal .custom-select-wrapper').forEach(w => {
+        if (w !== wrapper) {
+            w.classList.remove('open');
+            w.classList.remove('drop-up');
         }
-        
-        // Extract active registered personnel
-        if (Array.isArray(cachedStaffNames)) {
-            cachedStaffNames.forEach(name => {
-                if (name && typeof name === 'string') {
-                    const cleanName = name.trim();
-                    if (cleanName) namesSet.add(cleanName);
-                }
-            });
+    });
+
+    const willOpen = !wrapper.classList.contains('open');
+    if (willOpen) {
+        const trigger = wrapper.querySelector('.custom-select-trigger') || wrapper;
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedMenuHeight = 260;
+
+        if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
+            wrapper.classList.add('drop-up');
+        } else {
+            wrapper.classList.remove('drop-up');
         }
 
-        const sortedNames = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
-        accountableDatalist.innerHTML = sortedNames.map(name => `<option value="${sanitizeText(name)}"></option>`).join('');
+        wrapper.classList.add('open');
+        const searchInput = wrapper.querySelector('.dept-search-wrapper input');
+        if (searchInput) {
+            searchInput.value = '';
+            const field = wrapperId.replace('SelectWrapper', '');
+            window.filterAddDropdownOptions(field, '');
+            setTimeout(() => searchInput.focus(), 50);
+        }
+    } else {
+        wrapper.classList.remove('open');
+        wrapper.classList.remove('drop-up');
+    }
+};
+
+window.filterAddDropdownOptions = function(field, query) {
+    const q = (query || '').toLowerCase().trim();
+    const optionsList = document.getElementById(`${field}OptionsList`);
+    if (!optionsList) return;
+
+    const options = optionsList.querySelectorAll('.custom-option');
+    let hasMatch = false;
+
+    options.forEach(opt => {
+        if (opt.classList.contains('custom-entry-option')) {
+            opt.remove();
+            return;
+        }
+        const text = (opt.textContent || '').toLowerCase();
+        if (!q || text.includes(q)) {
+            opt.style.display = 'flex';
+            hasMatch = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (q) {
+        const exactMatch = Array.from(options).some(opt => (opt.getAttribute('data-value') || '').toLowerCase() === q);
+        if (!exactMatch) {
+            const customOpt = document.createElement('div');
+            customOpt.className = 'custom-option custom-entry-option';
+            customOpt.setAttribute('data-value', query.trim());
+            customOpt.innerHTML = `
+                <span class="opt-label"><i class="fas fa-pen" style="font-size: 10px; margin-right: 6px; color: #38bdf8;"></i> Use: <strong>"${sanitizeText(query.trim())}"</strong></span>
+                <i class="fas fa-plus opt-check" style="font-size: 10px; color: #38bdf8;"></i>
+            `;
+            customOpt.onclick = () => window.selectAddDropdownOption(field, query.trim(), query.trim());
+            optionsList.insertBefore(customOpt, optionsList.firstChild);
+        }
+    }
+};
+
+window.handleAddDropdownCustomEnter = function(field, inputEl, event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        const val = (inputEl.value || '').trim();
+        if (val) {
+            window.selectAddDropdownOption(field, val, val);
+        }
+    }
+};
+
+window.selectAddDropdownOption = function(field, value, label) {
+    window.setAddDropdownValue(field, value, label);
+};
+
+window.setAddDropdownValue = function(field, value, label) {
+    const hiddenInput = document.getElementById(`add-${field}`);
+    const textSpan = document.getElementById(`${field}SelectText`);
+    const trigger = document.getElementById(`${field}SelectTrigger`);
+    const wrapper = document.getElementById(`${field}SelectWrapper`);
+
+    const val = (value || '').trim();
+    const lbl = label || val;
+
+    if (hiddenInput) hiddenInput.value = val;
+    if (textSpan) {
+        textSpan.textContent = val ? lbl : `Select or type ${field}...`;
+    }
+    if (trigger) {
+        if (val) trigger.classList.add('selected');
+        else trigger.classList.remove('selected');
     }
 
-    // 2. Article Suggestions (Standard Presets + Masterlist Articles)
-    const articleDatalist = document.getElementById('article-suggestions');
-    if (articleDatalist) {
+    if (wrapper) {
+        const options = wrapper.querySelectorAll('.custom-option');
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === val) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        wrapper.classList.remove('open');
+        wrapper.classList.remove('drop-up');
+    }
+};
+
+// Dismiss custom dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    const customDropdowns = document.querySelectorAll('#add-modal .custom-select-wrapper');
+    customDropdowns.forEach(wrapper => {
+        if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove('open');
+            wrapper.classList.remove('drop-up');
+        }
+    });
+});
+
+function populateAddModalSuggestions() {
+    // 1. Article Options
+    const articleList = document.getElementById('articleOptionsList');
+    if (articleList) {
+        const currentVal = document.getElementById('add-article')?.value || '';
         const standardArticles = [
             "Desktop Computer",
             "Laptop / Notebook Computer",
@@ -558,13 +665,75 @@ function populateAddModalSuggestions() {
                 }
             });
         }
-        const sortedArticles = Array.from(articleSet).sort((a, b) => a.localeCompare(b));
-        articleDatalist.innerHTML = sortedArticles.map(art => `<option value="${sanitizeText(art)}"></option>`).join('');
+        const sorted = Array.from(articleSet).sort((a, b) => a.localeCompare(b));
+        articleList.innerHTML = sorted.map(art => `
+            <div class="custom-option ${art === currentVal ? 'selected' : ''}" data-value="${sanitizeText(art)}" onclick="selectAddDropdownOption('article', '${sanitizeText(art)}', '${sanitizeText(art)}')">
+                <span class="opt-label">${sanitizeText(art)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
     }
 
-    // 3. Location Suggestions (27 LGU Municipal Offices + Masterlist Locations)
-    const locationDatalist = document.getElementById('location-suggestions');
-    if (locationDatalist) {
+    // 2. Unit Options
+    const unitList = document.getElementById('unitOptionsList');
+    if (unitList) {
+        const currentVal = document.getElementById('add-unit')?.value || '';
+        const standardUnits = ["unit", "set", "pc", "pcs", "box", "lot", "pack", "roll"];
+        const unitSet = new Set(standardUnits);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.unit && typeof item.unit === 'string') {
+                    const clean = item.unit.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') unitSet.add(clean);
+                }
+            });
+        }
+        const sorted = Array.from(unitSet).sort((a, b) => a.localeCompare(b));
+        unitList.innerHTML = sorted.map(u => `
+            <div class="custom-option ${u === currentVal ? 'selected' : ''}" data-value="${sanitizeText(u)}" onclick="selectAddDropdownOption('unit', '${sanitizeText(u)}', '${sanitizeText(u)}')">
+                <span class="opt-label">${sanitizeText(u)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
+    }
+
+    // 3. Account Group Options
+    const accountList = document.getElementById('accountOptionsList');
+    if (accountList) {
+        const currentVal = document.getElementById('add-account')?.value || '';
+        const standardAccounts = [
+            "ICT Equipment",
+            "Office Equipment",
+            "Furniture and Fixtures",
+            "Transportation Equipment",
+            "Communication Equipment",
+            "Machinery and Equipment",
+            "Medical, Dental and Laboratory Equipment",
+            "Disaster Response and Rescue Equipment",
+            "Other Property, Plant and Equipment"
+        ];
+        const accSet = new Set(standardAccounts);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.account && typeof item.account === 'string') {
+                    const clean = item.account.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') accSet.add(clean);
+                }
+            });
+        }
+        const sorted = Array.from(accSet).sort((a, b) => a.localeCompare(b));
+        accountList.innerHTML = sorted.map(acc => `
+            <div class="custom-option ${acc === currentVal ? 'selected' : ''}" data-value="${sanitizeText(acc)}" onclick="selectAddDropdownOption('account', '${sanitizeText(acc)}', '${sanitizeText(acc)}')">
+                <span class="opt-label">${sanitizeText(acc)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
+    }
+
+    // 4. Location Options
+    const locationList = document.getElementById('locationOptionsList');
+    if (locationList) {
+        const currentVal = document.getElementById('add-location')?.value || '';
         const standardLocations = [
             "Accounting Office (ACCOUNTING)",
             "Agriculture Office (AGRI)",
@@ -603,52 +772,45 @@ function populateAddModalSuggestions() {
                 }
             });
         }
-        const sortedLocations = Array.from(locSet).sort((a, b) => a.localeCompare(b));
-        locationDatalist.innerHTML = sortedLocations.map(loc => `<option value="${sanitizeText(loc)}"></option>`).join('');
+        const sorted = Array.from(locSet).sort((a, b) => a.localeCompare(b));
+        locationList.innerHTML = sorted.map(loc => `
+            <div class="custom-option ${loc === currentVal ? 'selected' : ''}" data-value="${sanitizeText(loc)}" onclick="selectAddDropdownOption('location', '${sanitizeText(loc)}', '${sanitizeText(loc)}')">
+                <span class="opt-label">${sanitizeText(loc)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
     }
 
-    // 4. Account Group Suggestions (Standard COA Asset Groups + Masterlist Accounts)
-    const accountDatalist = document.getElementById('account-suggestions');
-    if (accountDatalist) {
-        const standardAccounts = [
-            "ICT Equipment",
-            "Office Equipment",
-            "Furniture and Fixtures",
-            "Transportation Equipment",
-            "Communication Equipment",
-            "Machinery and Equipment",
-            "Medical, Dental and Laboratory Equipment",
-            "Disaster Response and Rescue Equipment",
-            "Other Property, Plant and Equipment"
-        ];
-        const accSet = new Set(standardAccounts);
+    // 5. Accountable Person Options
+    const accountableList = document.getElementById('accountableOptionsList');
+    if (accountableList) {
+        const currentVal = document.getElementById('add-accountable')?.value || '';
+        const namesSet = new Set();
         if (Array.isArray(inventoryData)) {
             inventoryData.forEach(item => {
-                if (item && item.account && typeof item.account === 'string') {
-                    const clean = item.account.trim();
-                    if (clean && clean !== 'N/A' && clean !== '-') accSet.add(clean);
+                if (item && item.accountablePerson && typeof item.accountablePerson === 'string') {
+                    const cleanName = item.accountablePerson.trim();
+                    if (cleanName && cleanName !== 'N/A' && cleanName !== '-' && cleanName !== 'None') {
+                        namesSet.add(cleanName);
+                    }
                 }
             });
         }
-        const sortedAccounts = Array.from(accSet).sort((a, b) => a.localeCompare(b));
-        accountDatalist.innerHTML = sortedAccounts.map(acc => `<option value="${sanitizeText(acc)}"></option>`).join('');
-    }
-
-    // 5. Unit of Measure Suggestions
-    const unitDatalist = document.getElementById('unit-suggestions');
-    if (unitDatalist) {
-        const standardUnits = ["unit", "set", "pc", "pcs", "box", "lot", "pack", "roll"];
-        const unitSet = new Set(standardUnits);
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.unit && typeof item.unit === 'string') {
-                    const clean = item.unit.trim();
-                    if (clean && clean !== 'N/A' && clean !== '-') unitSet.add(clean);
+        if (Array.isArray(cachedStaffNames)) {
+            cachedStaffNames.forEach(name => {
+                if (name && typeof name === 'string') {
+                    const cleanName = name.trim();
+                    if (cleanName) namesSet.add(cleanName);
                 }
             });
         }
-        const sortedUnits = Array.from(unitSet).sort((a, b) => a.localeCompare(b));
-        unitDatalist.innerHTML = sortedUnits.map(u => `<option value="${sanitizeText(u)}"></option>`).join('');
+        const sorted = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
+        accountableList.innerHTML = sorted.map(name => `
+            <div class="custom-option ${name === currentVal ? 'selected' : ''}" data-value="${sanitizeText(name)}" onclick="selectAddDropdownOption('accountable', '${sanitizeText(name)}', '${sanitizeText(name)}')">
+                <span class="opt-label">${sanitizeText(name)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
     }
 }
 
@@ -681,6 +843,10 @@ function closeModal() {
     if (toast) toast.style.display = 'none';
     const tallyInfoBox = document.getElementById('item-modal-tally-info');
     if (tallyInfoBox) tallyInfoBox.style.display = 'none';
+
+    // Reset custom dropdowns
+    ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+    window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
 }
 
 if (addBtn) {
@@ -690,6 +856,8 @@ if (addBtn) {
         const toast = document.getElementById('add-success-toast');
         if (toast) toast.style.display = 'none';
         if (addForm) addForm.reset();
+        ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+        window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
         openModal();
     });
 }
@@ -757,6 +925,8 @@ if (addForm) {
 
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
+                ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+                window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
                 const toast = document.getElementById('add-success-toast');
                 if (toast) {
                     toast.style.display = 'inline-flex';
@@ -787,16 +957,17 @@ window.openEditModal = function(id) {
 
     if (document.getElementById('add-date')) document.getElementById('add-date').value = item.date || '';
     if (document.getElementById('add-qty')) document.getElementById('add-qty').value = item.qty || 0;
-    if (document.getElementById('add-unit')) document.getElementById('add-unit').value = item.unit || '';
     if (document.getElementById('add-unit-cost')) document.getElementById('add-unit-cost').value = item.unitCost || 0;
-    if (document.getElementById('add-article')) document.getElementById('add-article').value = item.article || '';
     if (document.getElementById('add-description')) document.getElementById('add-description').value = item.description || '';
     if (document.getElementById('add-property')) document.getElementById('add-property').value = item.propertyNo || '';
-    if (document.getElementById('add-location')) document.getElementById('add-location').value = item.location || '';
-    if (document.getElementById('add-accountable')) document.getElementById('add-accountable').value = item.accountablePerson || '';
-    if (document.getElementById('add-account')) document.getElementById('add-account').value = item.account || '';
-    if (document.getElementById('add-condition')) document.getElementById('add-condition').value = item.condition || 'Serviceable';
     if (document.getElementById('add-remarks')) document.getElementById('add-remarks').value = item.remarks || '';
+
+    window.setAddDropdownValue('article', item.article || '');
+    window.setAddDropdownValue('unit', item.unit || '');
+    window.setAddDropdownValue('account', item.account || '');
+    window.setAddDropdownValue('location', item.location || '');
+    window.setAddDropdownValue('accountable', item.accountablePerson || '');
+    window.setAddDropdownValue('condition', item.condition || 'Serviceable');
 
     // Render Accounting Office Voucher Verification Status
     const tallyInfoBox = document.getElementById('item-modal-tally-info');
