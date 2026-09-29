@@ -492,9 +492,171 @@ function renderTable() {
 }
 
 // =========================================================================
+// SMART SEARCHABLE SUGGESTIONS (DATALISTS) FOR ADD PROPERTY ITEM MODAL
+// =========================================================================
+let cachedStaffNames = [];
+
+function populateAddModalSuggestions() {
+    // 1. Accountable Person Suggestions (Masterlist items + Registered personnel)
+    const accountableDatalist = document.getElementById('accountable-suggestions');
+    if (accountableDatalist) {
+        const namesSet = new Set();
+        
+        // Extract all accountable persons recorded in masterlist inventory
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.accountablePerson && typeof item.accountablePerson === 'string') {
+                    const cleanName = item.accountablePerson.trim();
+                    if (cleanName && cleanName !== 'N/A' && cleanName !== '-' && cleanName !== 'None') {
+                        namesSet.add(cleanName);
+                    }
+                }
+            });
+        }
+        
+        // Extract active registered personnel
+        if (Array.isArray(cachedStaffNames)) {
+            cachedStaffNames.forEach(name => {
+                if (name && typeof name === 'string') {
+                    const cleanName = name.trim();
+                    if (cleanName) namesSet.add(cleanName);
+                }
+            });
+        }
+
+        const sortedNames = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
+        accountableDatalist.innerHTML = sortedNames.map(name => `<option value="${sanitizeText(name)}"></option>`).join('');
+    }
+
+    // 2. Article Suggestions (Standard Presets + Masterlist Articles)
+    const articleDatalist = document.getElementById('article-suggestions');
+    if (articleDatalist) {
+        const standardArticles = [
+            "Desktop Computer",
+            "Laptop / Notebook Computer",
+            "Printer / Multi-Function Printer",
+            "Photocopier / Scanner",
+            "Uninterruptible Power Supply (UPS)",
+            "Air Conditioning Unit (Split/Window)",
+            "Office Chair (Executive / Clerical)",
+            "Office Table / Executive Desk",
+            "Steel Filing Cabinet / Vault",
+            "Projector / Display Screen",
+            "Motor Vehicle / Service Truck",
+            "Motorcycle",
+            "Generator Set",
+            "Communication Radio / Walkie-Talkie",
+            "Water Dispenser",
+            "Heavy Equipment / Backhoe / Grader"
+        ];
+        const articleSet = new Set(standardArticles);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.article && typeof item.article === 'string') {
+                    const clean = item.article.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') articleSet.add(clean);
+                }
+            });
+        }
+        const sortedArticles = Array.from(articleSet).sort((a, b) => a.localeCompare(b));
+        articleDatalist.innerHTML = sortedArticles.map(art => `<option value="${sanitizeText(art)}"></option>`).join('');
+    }
+
+    // 3. Location Suggestions (27 LGU Municipal Offices + Masterlist Locations)
+    const locationDatalist = document.getElementById('location-suggestions');
+    if (locationDatalist) {
+        const standardLocations = [
+            "Accounting Office (ACCOUNTING)",
+            "Agriculture Office (AGRI)",
+            "Assessor's Office (ASSESSOR)",
+            "Bureau of Fire Protection (BFP)",
+            "CCTV / IT Unit (CCTV/IT)",
+            "COMELEC Office (COMELEC)",
+            "DILG Office (DILG)",
+            "General Services Office (GSO)",
+            "Human Resource Management Office (HRMO)",
+            "Liga ng mga Barangay (LIGA)",
+            "Municipal Budget Office (MBO)",
+            "Municipal Civil Registry (MCR)",
+            "Disaster Risk Reduction & Management Office (MDRRMO)",
+            "Environment & Natural Resources Office (MENRO)",
+            "Municipal Engineering Office (MEO)",
+            "Municipal Health Office (MHO)",
+            "Planning & Development Office (MPDO)",
+            "Social Welfare & Development Office (MSWDO)",
+            "Municipal Trial Court (MTC)",
+            "Municipal Treasurer's Office (MTO)",
+            "Office of the Municipal Mayor (OMM)",
+            "Office of the Municipal Vice-Mayor (OMVM)",
+            "Philippine National Police (PNP)",
+            "Sangguniang Bayan (SB)",
+            "Secretary to the Sangguniang Bayan (SSB)",
+            "Tourism & Cultural Affairs (TOURISM)",
+            "Traffic Management Office (TRAFFIC)"
+        ];
+        const locSet = new Set(standardLocations);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.location && typeof item.location === 'string') {
+                    const clean = item.location.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') locSet.add(clean);
+                }
+            });
+        }
+        const sortedLocations = Array.from(locSet).sort((a, b) => a.localeCompare(b));
+        locationDatalist.innerHTML = sortedLocations.map(loc => `<option value="${sanitizeText(loc)}"></option>`).join('');
+    }
+
+    // 4. Account Group Suggestions (Standard COA Asset Groups + Masterlist Accounts)
+    const accountDatalist = document.getElementById('account-suggestions');
+    if (accountDatalist) {
+        const standardAccounts = [
+            "ICT Equipment",
+            "Office Equipment",
+            "Furniture and Fixtures",
+            "Transportation Equipment",
+            "Communication Equipment",
+            "Machinery and Equipment",
+            "Medical, Dental and Laboratory Equipment",
+            "Disaster Response and Rescue Equipment",
+            "Other Property, Plant and Equipment"
+        ];
+        const accSet = new Set(standardAccounts);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.account && typeof item.account === 'string') {
+                    const clean = item.account.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') accSet.add(clean);
+                }
+            });
+        }
+        const sortedAccounts = Array.from(accSet).sort((a, b) => a.localeCompare(b));
+        accountDatalist.innerHTML = sortedAccounts.map(acc => `<option value="${sanitizeText(acc)}"></option>`).join('');
+    }
+
+    // 5. Unit of Measure Suggestions
+    const unitDatalist = document.getElementById('unit-suggestions');
+    if (unitDatalist) {
+        const standardUnits = ["unit", "set", "pc", "pcs", "box", "lot", "pack", "roll"];
+        const unitSet = new Set(standardUnits);
+        if (Array.isArray(inventoryData)) {
+            inventoryData.forEach(item => {
+                if (item && item.unit && typeof item.unit === 'string') {
+                    const clean = item.unit.trim();
+                    if (clean && clean !== 'N/A' && clean !== '-') unitSet.add(clean);
+                }
+            });
+        }
+        const sortedUnits = Array.from(unitSet).sort((a, b) => a.localeCompare(b));
+        unitDatalist.innerHTML = sortedUnits.map(u => `<option value="${sanitizeText(u)}"></option>`).join('');
+    }
+}
+
+// =========================================================================
 // FORM & MODAL HANDLERS (RIGHT-SIDE SLIDING DRAWER)
 // =========================================================================
 function openModal() {
+    populateAddModalSuggestions();
     if (modal) {
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
@@ -979,6 +1141,7 @@ function initUserProfilesListener() {
         profilesTableBody.innerHTML = '';
         let pendingCount = 0;
         const employeeUsers = [];
+        cachedStaffNames = [];
 
         if (snapshot.empty) {
             profilesTableBody.innerHTML = `
@@ -997,6 +1160,10 @@ function initUserProfilesListener() {
             const user = doc.data();
             const userId = doc.id;
             const isSelf = Boolean(auth.currentUser && userId === auth.currentUser.uid);
+
+            if (user.fullName || user.name) {
+                cachedStaffNames.push(user.fullName || user.name);
+            }
 
             const userRole = (user.role || 'employee').toLowerCase();
             const userStatus = (user.status || 'pending').toLowerCase();
@@ -1147,6 +1314,8 @@ function initUserProfilesListener() {
             pendingBadge.textContent = pendingCount;
             pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
         }
+
+        populateAddModalSuggestions();
     }, (error) => {
         console.error("Firestore Listener Error:", error.message);
     });
