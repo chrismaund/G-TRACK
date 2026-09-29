@@ -732,15 +732,10 @@
           <div class="custom-select-wrapper" id="articleSelectWrapper">
             <input type="hidden" id="add-article" required>
             <div class="custom-select-trigger" id="articleSelectTrigger" onclick="toggleAddCustomDropdown('articleSelectWrapper', event)">
-              <i class="fas fa-box input-icon"></i>
-              <span class="custom-select-text" id="articleSelectText">Select or type article...</span>
+              <span class="custom-select-text" id="articleSelectText">Select Article</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>
             <div class="custom-select-options" id="articleSelectOptions">
-              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
-                <i class="fas fa-search dept-search-icon"></i>
-                <input type="text" id="articleSearchInput" placeholder="Search or type custom article..." oninput="filterAddDropdownOptions('article', this.value)" onkeydown="handleAddDropdownCustomEnter('article', this, event)" autocomplete="off">
-              </div>
               <div class="dept-options-list" id="articleOptionsList">
                 <!-- Dynamically populated from presets & masterlist items -->
               </div>
@@ -765,22 +760,17 @@
         <!-- Row 3: Quantity & Unit of Measure -->
         <div class="form-group">
           <label for="add-qty">Quantity</label>
-          <input type="number" id="add-qty" min="1" required>
+          <input type="number" id="add-qty" min="1" placeholder="1" required>
         </div>
         <div class="form-group">
           <label for="add-unit">Unit of Measure</label>
           <div class="custom-select-wrapper" id="unitSelectWrapper">
             <input type="hidden" id="add-unit" required>
             <div class="custom-select-trigger" id="unitSelectTrigger" onclick="toggleAddCustomDropdown('unitSelectWrapper', event)">
-              <i class="fas fa-ruler-combined input-icon"></i>
-              <span class="custom-select-text" id="unitSelectText">Select or type unit...</span>
+              <span class="custom-select-text" id="unitSelectText">Select Unit</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>
             <div class="custom-select-options" id="unitSelectOptions">
-              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
-                <i class="fas fa-search dept-search-icon"></i>
-                <input type="text" id="unitSearchInput" placeholder="Search or type custom unit..." oninput="filterAddDropdownOptions('unit', this.value)" onkeydown="handleAddDropdownCustomEnter('unit', this, event)" autocomplete="off">
-              </div>
               <div class="dept-options-list" id="unitOptionsList">
                 <!-- Dynamically populated -->
               </div>
@@ -798,15 +788,10 @@
           <div class="custom-select-wrapper" id="accountSelectWrapper">
             <input type="hidden" id="add-account" required>
             <div class="custom-select-trigger" id="accountSelectTrigger" onclick="toggleAddCustomDropdown('accountSelectWrapper', event)">
-              <i class="fas fa-layer-group input-icon"></i>
-              <span class="custom-select-text" id="accountSelectText">Select or type account...</span>
+              <span class="custom-select-text" id="accountSelectText">Select Account Group</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>
             <div class="custom-select-options" id="accountSelectOptions">
-              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
-                <i class="fas fa-search dept-search-icon"></i>
-                <input type="text" id="accountSearchInput" placeholder="Search or type custom account..." oninput="filterAddDropdownOptions('account', this.value)" onkeydown="handleAddDropdownCustomEnter('account', this, event)" autocomplete="off">
-              </div>
               <div class="dept-options-list" id="accountOptionsList">
                 <!-- Dynamically populated -->
               </div>
@@ -820,15 +805,10 @@
           <div class="custom-select-wrapper" id="locationSelectWrapper">
             <input type="hidden" id="add-location" required>
             <div class="custom-select-trigger" id="locationSelectTrigger" onclick="toggleAddCustomDropdown('locationSelectWrapper', event)">
-              <i class="fas fa-building input-icon"></i>
-              <span class="custom-select-text" id="locationSelectText">Select or type location...</span>
+              <span class="custom-select-text" id="locationSelectText">Select Location / Office</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>
             <div class="custom-select-options" id="locationSelectOptions">
-              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
-                <i class="fas fa-search dept-search-icon"></i>
-                <input type="text" id="locationSearchInput" placeholder="Search or type location..." oninput="filterAddDropdownOptions('location', this.value)" onkeydown="handleAddDropdownCustomEnter('location', this, event)" autocomplete="off">
-              </div>
               <div class="dept-options-list" id="locationOptionsList">
                 <!-- Dynamically populated with 27 LGU departments + masterlist locations -->
               </div>
@@ -840,15 +820,10 @@
           <div class="custom-select-wrapper" id="accountableSelectWrapper">
             <input type="hidden" id="add-accountable" required>
             <div class="custom-select-trigger" id="accountableSelectTrigger" onclick="toggleAddCustomDropdown('accountableSelectWrapper', event)">
-              <i class="fas fa-user-check input-icon"></i>
-              <span class="custom-select-text" id="accountableSelectText">Select or type accountable person...</span>
+              <span class="custom-select-text" id="accountableSelectText">Select Accountable Person</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>
             <div class="custom-select-options" id="accountableSelectOptions">
-              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
-                <i class="fas fa-search dept-search-icon"></i>
-                <input type="text" id="accountableSearchInput" placeholder="Search or type personnel name..." oninput="filterAddDropdownOptions('accountable', this.value)" onkeydown="handleAddDropdownCustomEnter('accountable', this, event)" autocomplete="off">
-              </div>
               <div class="dept-options-list" id="accountableOptionsList">
                 <!-- Dynamically populated from Masterlist + Registered Employees -->
               </div>
@@ -862,7 +837,6 @@
           <div class="custom-select-wrapper" id="conditionSelectWrapper">
             <input type="hidden" id="add-condition" value="Serviceable" required>
             <div class="custom-select-trigger selected" id="conditionSelectTrigger" onclick="toggleAddCustomDropdown('conditionSelectWrapper', event)">
-              <i class="fas fa-shield-alt input-icon"></i>
               <span class="custom-select-text" id="conditionSelectText">Serviceable</span>
               <i class="fas fa-chevron-down select-chevron"></i>
             </div>

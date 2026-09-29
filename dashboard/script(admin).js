@@ -515,7 +515,7 @@ window.toggleAddCustomDropdown = function(wrapperId, e) {
         const rect = trigger.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const estimatedMenuHeight = 260;
+        const estimatedMenuHeight = 220;
 
         if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
             wrapper.classList.add('drop-up');
@@ -524,65 +524,9 @@ window.toggleAddCustomDropdown = function(wrapperId, e) {
         }
 
         wrapper.classList.add('open');
-        const searchInput = wrapper.querySelector('.dept-search-wrapper input');
-        if (searchInput) {
-            searchInput.value = '';
-            const field = wrapperId.replace('SelectWrapper', '');
-            window.filterAddDropdownOptions(field, '');
-            setTimeout(() => searchInput.focus(), 50);
-        }
     } else {
         wrapper.classList.remove('open');
         wrapper.classList.remove('drop-up');
-    }
-};
-
-window.filterAddDropdownOptions = function(field, query) {
-    const q = (query || '').toLowerCase().trim();
-    const optionsList = document.getElementById(`${field}OptionsList`);
-    if (!optionsList) return;
-
-    const options = optionsList.querySelectorAll('.custom-option');
-    let hasMatch = false;
-
-    options.forEach(opt => {
-        if (opt.classList.contains('custom-entry-option')) {
-            opt.remove();
-            return;
-        }
-        const text = (opt.textContent || '').toLowerCase();
-        if (!q || text.includes(q)) {
-            opt.style.display = 'flex';
-            hasMatch = true;
-        } else {
-            opt.style.display = 'none';
-        }
-    });
-
-    if (q) {
-        const exactMatch = Array.from(options).some(opt => (opt.getAttribute('data-value') || '').toLowerCase() === q);
-        if (!exactMatch) {
-            const customOpt = document.createElement('div');
-            customOpt.className = 'custom-option custom-entry-option';
-            customOpt.setAttribute('data-value', query.trim());
-            customOpt.innerHTML = `
-                <span class="opt-label"><i class="fas fa-pen" style="font-size: 10px; margin-right: 6px; color: #38bdf8;"></i> Use: <strong>"${sanitizeText(query.trim())}"</strong></span>
-                <i class="fas fa-plus opt-check" style="font-size: 10px; color: #38bdf8;"></i>
-            `;
-            customOpt.onclick = () => window.selectAddDropdownOption(field, query.trim(), query.trim());
-            optionsList.insertBefore(customOpt, optionsList.firstChild);
-        }
-    }
-};
-
-window.handleAddDropdownCustomEnter = function(field, inputEl, event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        const val = (inputEl.value || '').trim();
-        if (val) {
-            window.selectAddDropdownOption(field, val, val);
-        }
     }
 };
 
@@ -597,11 +541,21 @@ window.setAddDropdownValue = function(field, value, label) {
     const wrapper = document.getElementById(`${field}SelectWrapper`);
 
     const val = (value || '').trim();
-    const lbl = label || val;
+    
+    const defaultLabels = {
+        article: 'Select Article',
+        unit: 'Select Unit',
+        account: 'Select Account Group',
+        location: 'Select Location / Office',
+        accountable: 'Select Accountable Person',
+        condition: 'Serviceable'
+    };
+
+    const lbl = label || val || defaultLabels[field] || `Select ${field}`;
 
     if (hiddenInput) hiddenInput.value = val;
     if (textSpan) {
-        textSpan.textContent = val ? lbl : `Select or type ${field}...`;
+        textSpan.textContent = val ? lbl : (defaultLabels[field] || `Select ${field}`);
     }
     if (trigger) {
         if (val) trigger.classList.add('selected');
