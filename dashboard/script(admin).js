@@ -1514,7 +1514,7 @@ function initUserProfilesListener() {
         });
 
         if (pendingBadge) {
-            pendingBadge.textContent = pendingCount;
+            pendingBadge.textContent = '';
             pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
         }
 
@@ -2051,9 +2051,9 @@ async function renderAdminRequestsPanel() {
             });
         }
 
-        // Update Notification Badge (Only count PENDING items so sidebar only alerts when action is needed)
+        // Update Notification Badge (Only show dot when action is needed)
         if (badgeEl) {
-            badgeEl.textContent = pendingTotal;
+            badgeEl.textContent = '';
             badgeEl.style.display = pendingTotal > 0 ? 'inline-block' : 'none';
         }
 

@@ -1526,9 +1526,9 @@ async function renderEmpRequestsPanel() {
             });
         }
 
-        // Update Sidebar Badge
+        // Update Sidebar Badge (Clean indicator dot)
         if (badgeEl) {
-            badgeEl.textContent = allCards.length;
+            badgeEl.textContent = '';
             badgeEl.style.display = allCards.length > 0 ? 'inline-block' : 'none';
         }
 

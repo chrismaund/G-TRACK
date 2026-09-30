@@ -5840,6 +5840,18 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 /* ========================================================================= */
 /* REAL-TIME NOTIFICATION CENTER (MINIMALIST & CLEAN)                       */
 /* ========================================================================= */
+/* Sidebar subtle notification indicator dot (no numbers) */
+.sidebar-notif-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
 .notif-wrapper {
     position: relative;
     display: inline-flex;
