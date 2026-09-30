@@ -3696,12 +3696,12 @@ body.dark-theme-mode .btn-cancel:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 18px 20px;
+    padding: 22px 24px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 12px;
-    min-height: 108px;
+    gap: 14px;
+    min-height: 125px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
@@ -5371,8 +5371,6 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
-    flex: 1;
-    min-height: 240px;
     margin-bottom: 4px;
     box-sizing: border-box;
     width: 100%;
@@ -5382,15 +5380,14 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 16px 18px;
+    padding: 18px 20px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: 12px;
+    gap: 14px;
     box-sizing: border-box;
-    height: 100%;
-    min-height: 0;
+    min-height: 250px;
 }
 
 .gov-panel-header {
@@ -5428,8 +5425,6 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex: 1;
-    min-height: 0;
     overflow-y: auto;
 }
 
@@ -5438,8 +5433,8 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     flex-direction: column;
     gap: 6px;
     cursor: pointer;
-    padding: 8px 10px;
-    border-radius: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
     background: rgba(15, 23, 42, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.2s ease;
@@ -5495,22 +5490,20 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .gov-stat-box-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    flex: 1;
-    min-height: 0;
+    gap: 10px;
 }
 
 .gov-stat-mini-box {
     background: rgba(15, 23, 42, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 2px;
+    gap: 3px;
     box-sizing: border-box;
+    min-height: 70px;
 }
 
 .gov-stat-mini-label {
