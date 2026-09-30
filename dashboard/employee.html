@@ -121,7 +121,7 @@
             </div>
         </div>
         <div class="nav-right">
-            <!-- Real-Time Notification Center -->
+            <!-- Real-Time Notification Center (Clean & Minimalist) -->
             <div class="notif-wrapper" id="notif-wrapper">
                 <button type="button" class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifDropdown(event)" title="Notifications" aria-label="Notifications">
                     <i class="fas fa-bell"></i>
@@ -134,29 +134,6 @@
                     </div>
                     <div class="notif-list" id="notif-list">
                         <div class="notif-empty">No notifications yet</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Profile Account Chip Dropdown -->
-            <div class="user-chip-wrapper" id="user-chip-wrapper">
-                <button type="button" class="user-chip-btn" id="user-chip-btn" onclick="toggleUserDropdown(event)" title="Account Menu">
-                    <div class="user-chip-avatar" id="user-chip-avatar">EM</div>
-                    <span class="user-chip-name" id="user-chip-name">Employee</span>
-                    <i class="fas fa-chevron-down user-chip-chevron"></i>
-                </button>
-                <div class="user-chip-dropdown" id="user-chip-dropdown">
-                    <div class="user-dropdown-header">
-                        <span class="user-dropdown-fullname" id="user-dropdown-fullname">Employee</span>
-                        <span class="user-dropdown-role" id="user-dropdown-role">Staff Access</span>
-                    </div>
-                    <div class="user-dropdown-menu">
-                        <button type="button" class="user-dropdown-item" onclick="if (typeof openEmpProfileModal === 'function') openEmpProfileModal(); toggleUserDropdown();">
-                            <i class="fas fa-user-circle"></i> My Profile
-                        </button>
-                        <button type="button" class="user-dropdown-item text-danger" onclick="toggleSignOutPopover(event); toggleUserDropdown();">
-                            <i class="fas fa-sign-out-alt"></i> Sign Out
-                        </button>
                     </div>
                 </div>
             </div>
