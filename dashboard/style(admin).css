@@ -5380,8 +5380,8 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 12px;
     box-sizing: border-box;
     height: 100%;
     min-height: 0;
@@ -5421,25 +5421,28 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .gov-category-list {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
     flex: 1;
     min-height: 0;
-    padding: 2px 0;
+    overflow-y: auto;
 }
 
 .gov-category-item {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 6px;
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: background 0.2s ease;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
 }
 
 .gov-category-item:hover {
-    background: rgba(56, 189, 248, 0.06);
+    background: rgba(56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.25);
+    transform: translateX(2px);
 }
 
 .gov-cat-row {
@@ -5493,10 +5496,10 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-stat-mini-box {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(15, 23, 42, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -5509,13 +5512,21 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
 }
 
 .gov-stat-mini-val {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #f8fafc;
+    line-height: 1.1;
+}
+
+.gov-stat-mini-subtext {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 1px;
 }
 
 /* Status Row Summary */
@@ -5555,16 +5566,17 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     flex: 1;
     min-height: 0;
     max-height: 280px;
+    padding-right: 2px;
 }
 
 .gov-stream-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    padding: 6px 10px;
+    padding: 7px 10px;
     font-size: 11.5px;
     cursor: pointer;
     transition: all 0.2s ease;
