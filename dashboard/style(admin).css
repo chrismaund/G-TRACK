@@ -125,7 +125,14 @@ body {
 }
 
 /* Masterlist, Directory, Analytics and Home Views Layout Separation & Smooth Transitions */
-.dashboard-home-view:not(.hidden),
+.dashboard-home-view:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .masterlist-view:not(.hidden),
 .directory-view:not(.hidden),
 .analytics-view:not(.hidden) {
@@ -3541,8 +3548,7 @@ body.dark-theme-mode .btn-cancel:hover {
 .dashboard-home-view {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    flex: 1;
+    gap: 14px;
     animation: fadeIn 0.35s ease;
     margin-bottom: 0;
 }
@@ -5569,9 +5575,9 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 
 /* Official Government Footer */
 .gov-dashboard-footer {
-    margin-top: auto;
+    margin-top: 12px;
     padding-top: 14px;
-    padding-bottom: 4px;
+    padding-bottom: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
