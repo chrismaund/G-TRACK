@@ -220,7 +220,29 @@
                     </div>
                 </div>
             </div>
-            <span class="user-email"><i class="fas fa-user-shield"></i> Administrator</span>
+
+            <!-- User Profile Account Chip Dropdown -->
+            <div class="user-chip-wrapper" id="user-chip-wrapper">
+                <button type="button" class="user-chip-btn" id="user-chip-btn" onclick="toggleUserDropdown(event)" title="Account Menu">
+                    <div class="user-chip-avatar" id="user-chip-avatar">SA</div>
+                    <span class="user-chip-name" id="user-chip-name">Admin</span>
+                    <i class="fas fa-chevron-down user-chip-chevron"></i>
+                </button>
+                <div class="user-chip-dropdown" id="user-chip-dropdown">
+                    <div class="user-dropdown-header">
+                        <span class="user-dropdown-fullname" id="user-dropdown-fullname">System Administrator</span>
+                        <span class="user-dropdown-role" id="user-dropdown-role">GSO Administrator</span>
+                    </div>
+                    <div class="user-dropdown-menu">
+                        <button type="button" class="user-dropdown-item" onclick="if (typeof openProfilesModal === 'function') openProfilesModal(); toggleUserDropdown();">
+                            <i class="fas fa-users-cog"></i> User Authorizations
+                        </button>
+                        <button type="button" class="user-dropdown-item text-danger" onclick="toggleSignOutPopover(event); toggleUserDropdown();">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 

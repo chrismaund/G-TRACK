@@ -134,12 +134,26 @@ auth.onAuthStateChanged(async (user) => {
             const nameEl = document.getElementById('emp-profile-name');
             const roleTagEl = document.getElementById('emp-profile-email');
             const heroNameEl = document.getElementById('emp-hero-name');
-            const navbarEmailEl = document.querySelector('.navbar .user-email');
 
             if (nameEl) nameEl.textContent = currentEmployeeName;
             if (roleTagEl) roleTagEl.textContent = `Staff • ${currentEmployeeDept}`;
             if (heroNameEl) heroNameEl.textContent = currentEmployeeName;
-            if (navbarEmailEl) navbarEmailEl.textContent = `${currentEmployeeName} (Staff • ${currentEmployeeDept})`;
+
+            // Update user chip and dropdown
+            const chipAvatar = document.getElementById('user-chip-avatar');
+            const chipName = document.getElementById('user-chip-name');
+            const dropFullname = document.getElementById('user-dropdown-fullname');
+            const dropRole = document.getElementById('user-dropdown-role');
+
+            const nameParts = (currentEmployeeName || 'Employee').trim().split(/\s+/);
+            const initials = nameParts.length >= 2 
+                ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+                : (currentEmployeeName || 'EM').substring(0, 2).toUpperCase();
+
+            if (chipAvatar) chipAvatar.textContent = initials || 'EM';
+            if (chipName) chipName.textContent = nameParts[0] || 'Employee';
+            if (dropFullname) dropFullname.textContent = currentEmployeeName || 'Employee';
+            if (dropRole) dropRole.textContent = `Staff • ${currentEmployeeDept || 'LGU Member'}`;
 
             // Profile modal fields
             const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
@@ -3508,11 +3522,32 @@ window.handleEmpNotifClick = async function(notifId, type) {
     }
 };
 
-// Dismiss notification dropdown when clicking outside
+// User Account Dropdown Toggle
+window.toggleUserDropdown = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const wrapper = document.getElementById('user-chip-wrapper');
+    const dropdown = document.getElementById('user-chip-dropdown');
+    if (wrapper && dropdown) {
+        wrapper.classList.toggle('open');
+        dropdown.classList.toggle('open');
+    }
+};
+
+// Dismiss dropdowns when clicking outside
 document.addEventListener('click', function(e) {
     const wrapper = document.getElementById('notif-wrapper');
     const dropdown = document.getElementById('notif-dropdown');
     if (wrapper && dropdown && !wrapper.contains(e.target)) {
         dropdown.classList.remove('open');
+    }
+
+    const chipWrapper = document.getElementById('user-chip-wrapper');
+    const chipDropdown = document.getElementById('user-chip-dropdown');
+    if (chipWrapper && chipDropdown && !chipWrapper.contains(e.target)) {
+        chipWrapper.classList.remove('open');
+        chipDropdown.classList.remove('open');
     }
 });

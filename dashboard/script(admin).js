@@ -67,11 +67,25 @@ auth.onAuthStateChanged(async (user) => {
             const adminName = userData.fullName || userData.name || user.displayName || user.email || 'Administrator';
             const adminNameEl = document.getElementById('admin-profile-name') || document.querySelector('.sidebar-user-profile .user-name');
             const adminRoleEl = document.getElementById('admin-profile-role') || document.querySelector('.sidebar-user-profile .user-role-tag');
-            const adminNavEl = document.getElementById('admin-navbar-user') || document.querySelector('.navbar .user-email');
 
             if (adminNameEl) adminNameEl.textContent = adminName;
             if (adminRoleEl) adminRoleEl.textContent = 'Admin Access';
-            if (adminNavEl) adminNavEl.textContent = `${adminName} (Administrator)`;
+
+            // Update user chip and dropdown
+            const chipAvatar = document.getElementById('user-chip-avatar');
+            const chipName = document.getElementById('user-chip-name');
+            const dropFullname = document.getElementById('user-dropdown-fullname');
+            const dropRole = document.getElementById('user-dropdown-role');
+
+            const nameParts = adminName.trim().split(/\s+/);
+            const initials = nameParts.length >= 2 
+                ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+                : adminName.substring(0, 2).toUpperCase();
+
+            if (chipAvatar) chipAvatar.textContent = initials || 'SA';
+            if (chipName) chipName.textContent = nameParts[0] || 'Admin';
+            if (dropFullname) dropFullname.textContent = adminName;
+            if (dropRole) dropRole.textContent = 'GSO Administrator';
         }, (err) => {
             console.error("Admin user listener error:", err);
         });
@@ -2934,12 +2948,33 @@ window.handleAdminNotifClick = async function(notifId, type) {
     }
 };
 
-// Dismiss notification dropdown when clicking outside
+// User Account Dropdown Toggle
+window.toggleUserDropdown = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const wrapper = document.getElementById('user-chip-wrapper');
+    const dropdown = document.getElementById('user-chip-dropdown');
+    if (wrapper && dropdown) {
+        wrapper.classList.toggle('open');
+        dropdown.classList.toggle('open');
+    }
+};
+
+// Dismiss dropdowns when clicking outside
 document.addEventListener('click', function(e) {
     const wrapper = document.getElementById('notif-wrapper');
     const dropdown = document.getElementById('notif-dropdown');
     if (wrapper && dropdown && !wrapper.contains(e.target)) {
         dropdown.classList.remove('open');
+    }
+
+    const chipWrapper = document.getElementById('user-chip-wrapper');
+    const chipDropdown = document.getElementById('user-chip-dropdown');
+    if (chipWrapper && chipDropdown && !chipWrapper.contains(e.target)) {
+        chipWrapper.classList.remove('open');
+        chipDropdown.classList.remove('open');
     }
 });
 // =========================================================================
