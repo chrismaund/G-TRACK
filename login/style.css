@@ -12,6 +12,7 @@ body {
     color: #f8fafc;
     height: 100vh;
     overflow: hidden;
+    zoom: 80%;
 }
 
 /* Base Container */
