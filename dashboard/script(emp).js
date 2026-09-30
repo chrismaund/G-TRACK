@@ -163,6 +163,7 @@ auth.onAuthStateChanged(async (user) => {
             }
 
             checkAdminRoleRequestStatus(user.uid);
+            initEmpNotifications();
         }, (err) => {
             console.warn("User doc listener error:", err);
         });
@@ -1274,6 +1275,22 @@ window.sendMasterlistRequest = async function() {
                 console.warn("Supabase masterlist insert notice:", supaErr);
             }
         }
+
+        // Notify GSO Administrator in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'New Copy Request',
+                message: `${userName} (${currentEmployeeDept || 'Staff'}) submitted a request for an authorized masterlist copy.`,
+                type: 'copy_request',
+                targetRole: 'admin',
+                createdAt: Date.now()
+            });
+        } catch (nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('success', 'Request Submitted', 'Masterlist copy request has been submitted for GSO Admin authorization.');
         window.openEmpRequestsModal();
     } catch (err) {
@@ -3134,6 +3151,23 @@ window.toggleAccountingTally = async function(itemId) {
 
         renderAccountingView();
 
+        // Notify Administrator when Accounting tallies an item
+        if (newStatus === 'Tallied') {
+            try {
+                const notifRef = database.ref('notifications').push();
+                await notifRef.set({
+                    id: notifRef.key,
+                    title: 'Item Verified by Accounting',
+                    message: `${item.article || 'Item'} (${item.propertyNo || '-'}) was marked as Tallied & Reconciled by ${currentEmployeeName || 'Municipal Accounting Office'}.`,
+                    type: 'item_tallied',
+                    targetRole: 'admin',
+                    createdAt: Date.now()
+                });
+            } catch (nErr) {
+                console.warn("Notification dispatch notice:", nErr);
+            }
+        }
+
         window.showGTrackToast(
             'success',
             newStatus === 'Tallied' ? '✅ Voucher Verified & Tallied' : '⏳ Tally Marked Pending',
@@ -3333,3 +3367,152 @@ window.exportCOARPCPPEReport = function() {
         });
     }
 })();
+
+// =========================================================================
+// REAL-TIME NOTIFICATION SYSTEM (EMPLOYEE PORTAL)
+// =========================================================================
+let empNotifications = [];
+
+function formatEmpNotifTime(ts) {
+    if (!ts) return 'Just now';
+    const diff = Math.floor((Date.now() - Number(ts)) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 172800) return 'Yesterday';
+    return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function initEmpNotifications() {
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+
+    database.ref('notifications').orderByChild('createdAt').limitToLast(40).on('value', snapshot => {
+        const data = snapshot.val();
+        empNotifications = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                if (!item) return;
+                // Employee sees notifications targeted to 'all' or 'employee'
+                if (item.targetRole === 'all' || item.targetRole === 'employee' || !item.targetRole) {
+                    empNotifications.push({
+                        ...item,
+                        id: item.id || key
+                    });
+                }
+            });
+        }
+
+        // Sort descending by createdAt
+        empNotifications.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        renderEmpNotifications(userKey);
+    });
+}
+
+function renderEmpNotifications(userKey) {
+    const notifBadge = document.getElementById('notif-badge');
+    const notifList = document.getElementById('notif-list');
+    if (!notifList) return;
+
+    const activeUserKey = userKey || currentEmployeeUid || 'emp_user';
+
+    let unreadCount = 0;
+    empNotifications.forEach(n => {
+        const isRead = n.readBy && n.readBy[activeUserKey];
+        if (!isRead) unreadCount++;
+    });
+
+    if (notifBadge) {
+        if (unreadCount > 0) {
+            notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            notifBadge.style.display = 'inline-block';
+        } else {
+            notifBadge.style.display = 'none';
+        }
+    }
+
+    if (empNotifications.length === 0) {
+        notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+        return;
+    }
+
+    notifList.innerHTML = empNotifications.map(n => {
+        const isRead = n.readBy && n.readBy[activeUserKey];
+        return `
+            <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleEmpNotifClick('${n.id}', '${n.type || ''}')">
+                <div class="notif-item-top">
+                    <div class="notif-item-title-box">
+                        <span class="notif-item-dot"></span>
+                        <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+                    </div>
+                </div>
+                <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
+                <span class="notif-item-time">${formatEmpNotifTime(n.createdAt)}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleNotifDropdown = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('open');
+    }
+};
+
+window.markAllNotificationsAsRead = async function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    const updates = {};
+    empNotifications.forEach(n => {
+        if (!n.readBy || !n.readBy[userKey]) {
+            updates[`notifications/${n.id}/readBy/${userKey}`] = true;
+        }
+    });
+
+    if (Object.keys(updates).length > 0) {
+        try {
+            await database.ref().update(updates);
+        } catch (err) {
+            console.warn("Error marking all read:", err);
+        }
+    }
+
+    renderEmpNotifications(userKey);
+};
+
+window.handleEmpNotifClick = async function(notifId, type) {
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    if (notifId) {
+        try {
+            await database.ref(`notifications/${notifId}/readBy/${userKey}`).set(true);
+        } catch (err) {
+            console.warn("Error marking notif read:", err);
+        }
+    }
+
+    // Close dropdown
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) dropdown.classList.remove('open');
+
+    // Route to directory tab if new item
+    if (type === 'new_item' && typeof switchEmpView === 'function') {
+        switchEmpView('directory');
+    }
+};
+
+// Dismiss notification dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notif-wrapper');
+    const dropdown = document.getElementById('notif-dropdown');
+    if (wrapper && dropdown && !wrapper.contains(e.target)) {
+        dropdown.classList.remove('open');
+    }
+});

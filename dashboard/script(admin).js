@@ -909,6 +909,22 @@ if (addForm) {
                         .insert([supabasePayload]);
                 }
 
+                // Broadcast notification to all members / assigned office
+                try {
+                    const notifRef = database.ref('notifications').push();
+                    await notifRef.set({
+                        id: notifRef.key,
+                        title: 'New Property Item Added',
+                        message: `${formData.article || 'Property Item'} (${formData.propertyNo || 'Unassigned'}) was added and assigned to ${formData.location || 'GSO'}.`,
+                        type: 'new_item',
+                        targetRole: 'all',
+                        targetOffice: formData.location || 'all',
+                        createdAt: Date.now()
+                    });
+                } catch (nErr) {
+                    console.warn("Notification dispatch notice:", nErr);
+                }
+
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
                 window.setAddDropdownValue('location', '', '');
@@ -2769,7 +2785,163 @@ window.rejectAdminRole = async function(reqId, triggerBtn = null) {
     }
 };
 
-document.addEventListener('DOMContentLoaded', initRequestsListener);
+document.addEventListener('DOMContentLoaded', () => {
+    initRequestsListener();
+    initAdminNotifications();
+});
+
+// =========================================================================
+// REAL-TIME NOTIFICATION SYSTEM (ADMIN PORTAL)
+// =========================================================================
+let adminNotifications = [];
+const notifsRef = database.ref('notifications');
+
+function formatNotifTime(ts) {
+    if (!ts) return 'Just now';
+    const diff = Math.floor((Date.now() - Number(ts)) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 172800) return 'Yesterday';
+    return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function initAdminNotifications() {
+    const userKey = 'admin_user';
+
+    notifsRef.orderByChild('createdAt').limitToLast(40).on('value', snapshot => {
+        const data = snapshot.val();
+        adminNotifications = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                if (!item) return;
+                // Admin sees notifications targeted to 'all' or 'admin'
+                if (item.targetRole === 'all' || item.targetRole === 'admin' || !item.targetRole) {
+                    adminNotifications.push({
+                        ...item,
+                        id: item.id || key
+                    });
+                }
+            });
+        }
+
+        // Sort descending by createdAt
+        adminNotifications.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        renderAdminNotifications(userKey);
+    });
+}
+
+function renderAdminNotifications(userKey = 'admin_user') {
+    const notifBadge = document.getElementById('notif-badge');
+    const notifList = document.getElementById('notif-list');
+    if (!notifList) return;
+
+    let unreadCount = 0;
+    adminNotifications.forEach(n => {
+        const isRead = n.readBy && n.readBy[userKey];
+        if (!isRead) unreadCount++;
+    });
+
+    if (notifBadge) {
+        if (unreadCount > 0) {
+            notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            notifBadge.style.display = 'inline-block';
+        } else {
+            notifBadge.style.display = 'none';
+        }
+    }
+
+    if (adminNotifications.length === 0) {
+        notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+        return;
+    }
+
+    notifList.innerHTML = adminNotifications.map(n => {
+        const isRead = n.readBy && n.readBy[userKey];
+        return `
+            <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleAdminNotifClick('${n.id}', '${n.type || ''}')">
+                <div class="notif-item-top">
+                    <div class="notif-item-title-box">
+                        <span class="notif-item-dot"></span>
+                        <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+                    </div>
+                </div>
+                <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
+                <span class="notif-item-time">${formatNotifTime(n.createdAt)}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleNotifDropdown = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('open');
+    }
+};
+
+window.markAllNotificationsAsRead = async function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const userKey = 'admin_user';
+    const updates = {};
+    adminNotifications.forEach(n => {
+        if (!n.readBy || !n.readBy[userKey]) {
+            updates[`notifications/${n.id}/readBy/${userKey}`] = true;
+        }
+    });
+
+    if (Object.keys(updates).length > 0) {
+        try {
+            await database.ref().update(updates);
+        } catch (err) {
+            console.warn("Error marking all read:", err);
+        }
+    }
+
+    renderAdminNotifications(userKey);
+};
+
+window.handleAdminNotifClick = async function(notifId, type) {
+    const userKey = 'admin_user';
+    if (notifId) {
+        try {
+            await database.ref(`notifications/${notifId}/readBy/${userKey}`).set(true);
+        } catch (err) {
+            console.warn("Error marking notif read:", err);
+        }
+    }
+
+    // Close dropdown
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) dropdown.classList.remove('open');
+
+    // Action routing
+    if (type === 'copy_request') {
+        if (typeof openRequestsModal === 'function') {
+            openRequestsModal();
+        } else if (typeof switchAdminView === 'function') {
+            const reqBtn = document.getElementById('sidebar-requests-btn') || document.getElementById('pending-requests-btn');
+            if (reqBtn) reqBtn.click();
+        }
+    }
+};
+
+// Dismiss notification dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notif-wrapper');
+    const dropdown = document.getElementById('notif-dropdown');
+    if (wrapper && dropdown && !wrapper.contains(e.target)) {
+        dropdown.classList.remove('open');
+    }
+});
 // =========================================================================
 // CSV EXPORT LOGIC
 // =========================================================================
