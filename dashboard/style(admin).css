@@ -3673,10 +3673,10 @@ body.dark-theme-mode .btn-cancel:hover {
 
 /* Quick Action Navigation Grid */
 .home-section-title {
-    font-size: 15px;
+    font-size: 15.5px;
     font-weight: 700;
     color: #f8fafc;
-    margin: 0 0 12px 0;
+    margin: 0 0 14px 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3693,11 +3693,12 @@ body.dark-theme-mode .btn-cancel:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 16px 18px;
+    padding: 20px 22px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 12px;
+    gap: 14px;
+    min-height: 105px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
@@ -3722,7 +3723,7 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .action-card-title {
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: #f8fafc;
     letter-spacing: -0.2px;
@@ -3730,19 +3731,19 @@ body.dark-theme-mode .btn-cancel:hover {
 
 .action-card-subtitle {
     display: block;
-    font-size: 11.5px;
+    font-size: 12px;
     color: #94a3b8;
     margin-top: 2px;
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
 .action-card-btn {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
     color: #38bdf8;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     transition: color 0.15s ease, transform 0.15s ease;
 }
 
