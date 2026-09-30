@@ -3640,6 +3640,8 @@ body.dark-theme-mode .btn-cancel:hover {
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     min-width: 0;
     box-sizing: border-box;
+    height: 100%;
+    min-height: 84px;
 }
 
 .home-stat-item .stat-info {
@@ -3673,10 +3675,10 @@ body.dark-theme-mode .btn-cancel:hover {
 
 /* Quick Action Navigation Grid */
 .home-section-title {
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 700;
     color: #f8fafc;
-    margin: 0 0 14px 0;
+    margin: 0 0 12px 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3687,18 +3689,19 @@ body.dark-theme-mode .btn-cancel:hover {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .action-card {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 20px 22px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 14px;
-    min-height: 105px;
+    gap: 12px;
+    min-height: 108px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
@@ -3706,6 +3709,7 @@ body.dark-theme-mode .btn-cancel:hover {
     position: relative;
     min-width: 0;
     box-sizing: border-box;
+    height: 100%;
 }
 
 .action-card:hover {
@@ -3809,6 +3813,10 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 16px;
     }
+    .gov-panels-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
 }
 
 /* ── Large Laptops & Standard Desktops (1200px - 1440px) ── */
@@ -3849,6 +3857,10 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     }
     .home-actions-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .gov-panels-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
     }
     .table-container {
@@ -3937,12 +3949,12 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
         gap: 10px;
     }
     .home-actions-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 10px;
     }
     .gov-panels-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
     }
     .table-container {
         height: calc(100vh - 240px);
@@ -5354,17 +5366,10 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     border-radius: 8px;
 }
 
-.action-card-subtitle {
-    display: block;
-    font-size: 11px;
-    color: #94a3b8;
-    margin-top: 2px;
-}
-
 /* Rich 3-Column Government Asset Tracking Panels */
 .gov-panels-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1.15fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
     flex: 1;
     min-height: 240px;
@@ -5652,12 +5657,6 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 
 .gov-footer-content strong {
     color: #94a3b8;
-}
-
-@media (max-width: 1100px) {
-    .gov-panels-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 900px) {
