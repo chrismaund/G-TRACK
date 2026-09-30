@@ -729,18 +729,7 @@
         <!-- Row 1: Article & Description -->
         <div class="form-group">
           <label for="add-article">Article</label>
-          <div class="custom-select-wrapper" id="articleSelectWrapper">
-            <input type="hidden" id="add-article" required>
-            <div class="custom-select-trigger" id="articleSelectTrigger" onclick="toggleAddCustomDropdown('articleSelectWrapper', event)">
-              <span class="custom-select-text" id="articleSelectText">Select Article</span>
-              <i class="fas fa-chevron-down select-chevron"></i>
-            </div>
-            <div class="custom-select-options" id="articleSelectOptions">
-              <div class="dept-options-list" id="articleOptionsList">
-                <!-- Dynamically populated from presets & masterlist items -->
-              </div>
-            </div>
-          </div>
+          <input type="text" id="add-article" placeholder="e.g. Desktop Computer, Power Tiller" required>
         </div>
         <div class="form-group">
           <label for="add-description">Description</label>
@@ -750,7 +739,7 @@
         <!-- Row 2: Property No. & Date Acquired -->
         <div class="form-group">
           <label for="add-property">Property No.</label>
-          <input type="text" id="add-property" placeholder="PROP-2026-001" required>
+          <input type="text" id="add-property" placeholder="101-26-13-01" required>
         </div>
         <div class="form-group">
           <label for="add-date">Date Acquired</label>
@@ -764,18 +753,7 @@
         </div>
         <div class="form-group">
           <label for="add-unit">Unit of Measure</label>
-          <div class="custom-select-wrapper" id="unitSelectWrapper">
-            <input type="hidden" id="add-unit" required>
-            <div class="custom-select-trigger" id="unitSelectTrigger" onclick="toggleAddCustomDropdown('unitSelectWrapper', event)">
-              <span class="custom-select-text" id="unitSelectText">Select Unit</span>
-              <i class="fas fa-chevron-down select-chevron"></i>
-            </div>
-            <div class="custom-select-options" id="unitSelectOptions">
-              <div class="dept-options-list" id="unitOptionsList">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
+          <input type="text" id="add-unit" placeholder="unit, set, pc, lot" required>
         </div>
 
         <!-- Row 4: Unit Cost & Account Group -->
@@ -785,18 +763,7 @@
         </div>
         <div class="form-group">
           <label for="add-account">Account Group</label>
-          <div class="custom-select-wrapper" id="accountSelectWrapper">
-            <input type="hidden" id="add-account" required>
-            <div class="custom-select-trigger" id="accountSelectTrigger" onclick="toggleAddCustomDropdown('accountSelectWrapper', event)">
-              <span class="custom-select-text" id="accountSelectText">Select Account Group</span>
-              <i class="fas fa-chevron-down select-chevron"></i>
-            </div>
-            <div class="custom-select-options" id="accountSelectOptions">
-              <div class="dept-options-list" id="accountOptionsList">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
+          <input type="text" id="add-account" placeholder="e.g. ICT Equipment, Office Equipment" required>
         </div>
 
         <!-- Row 5: Location & Accountable Person -->
@@ -817,18 +784,7 @@
         </div>
         <div class="form-group">
           <label for="add-accountable">Accountable Person</label>
-          <div class="custom-select-wrapper" id="accountableSelectWrapper">
-            <input type="hidden" id="add-accountable" required>
-            <div class="custom-select-trigger" id="accountableSelectTrigger" onclick="toggleAddCustomDropdown('accountableSelectWrapper', event)">
-              <span class="custom-select-text" id="accountableSelectText">Select Accountable Person</span>
-              <i class="fas fa-chevron-down select-chevron"></i>
-            </div>
-            <div class="custom-select-options" id="accountableSelectOptions">
-              <div class="dept-options-list" id="accountableOptionsList">
-                <!-- Dynamically populated from Masterlist + Registered Employees -->
-              </div>
-            </div>
-          </div>
+          <input type="text" id="add-accountable" placeholder="Full name of personnel" required>
         </div>
 
         <!-- Row 6: Condition (Full Width) -->

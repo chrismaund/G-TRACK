@@ -543,11 +543,7 @@ window.setAddDropdownValue = function(field, value, label) {
     const val = (value || '').trim();
     
     const defaultLabels = {
-        article: 'Select Article',
-        unit: 'Select Unit',
-        account: 'Select Account Group',
         location: 'Select Location / Office',
-        accountable: 'Select Accountable Person',
         condition: 'Serviceable'
     };
 
@@ -587,104 +583,149 @@ document.addEventListener('click', function(e) {
     });
 });
 
+// =========================================================================
+// SMART PROPERTY NUMBER GENERATOR (101-[YY]-[CODE]-[SEQ])
+// =========================================================================
+function getAccountClassificationCode(article, account) {
+    const text = `${article || ''} ${account || ''}`.toLowerCase();
+    
+    // ICT Equipment (13)
+    if (text.includes('computer') || text.includes('laptop') || text.includes('desktop') || 
+        text.includes('printer') || text.includes('scanner') || text.includes('ups') || 
+        text.includes('server') || text.includes('monitor') || text.includes('tablet') || 
+        text.includes('ict') || text.includes('it equipment') || text.includes('mouse') || text.includes('keyboard')) {
+        return '13';
+    }
+    // Office Equipment (05)
+    if (text.includes('photocopier') || text.includes('copier') || text.includes('shredder') || 
+        text.includes('projector') || text.includes('office equipment') || text.includes('binding') ||
+        text.includes('laminat') || text.includes('calculator')) {
+        return '05';
+    }
+    // Communication Equipment (08)
+    if (text.includes('radio') || text.includes('walkie') || text.includes('repeater') || 
+        text.includes('antenna') || text.includes('base radio') || text.includes('communication') ||
+        text.includes('handheld') || text.includes('transceiver')) {
+        return '08';
+    }
+    // Machinery, Agricultural & Heavy Equipment (06)
+    if (text.includes('tractor') || text.includes('tiller') || text.includes('husk') || 
+        text.includes('silage') || text.includes('pump') || text.includes('irrigation') || 
+        text.includes('grader') || text.includes('backhoe') || text.includes('machinery') || 
+        text.includes('agricultural') || text.includes('heavy equipment') || text.includes('mower') ||
+        text.includes('decorticator') || text.includes('cutter')) {
+        return '06';
+    }
+    // Furniture and Fixtures (02)
+    if (text.includes('table') || text.includes('desk') || text.includes('chair') || 
+        text.includes('cabinet') || text.includes('vault') || text.includes('shelf') || 
+        text.includes('furniture') || text.includes('fixtures') || text.includes('bench') ||
+        text.includes('sofa') || text.includes('rack')) {
+        return '02';
+    }
+    // Transportation Equipment (04)
+    if (text.includes('motorcycle') || text.includes('vehicle') || text.includes('truck') || 
+        text.includes('car') || text.includes('patrol') || text.includes('van') || 
+        text.includes('ambulance') || text.includes('transportation') || text.includes('bus')) {
+        return '04';
+    }
+    // Disaster Response and Rescue Equipment (12)
+    if (text.includes('generator') || text.includes('chainsaw') || text.includes('rescue') || 
+        text.includes('disaster') || text.includes('boat') || text.includes('life raft') ||
+        text.includes('life vest') || text.includes('drone')) {
+        return '12';
+    }
+    // Medical, Dental and Laboratory Equipment (11)
+    if (text.includes('medical') || text.includes('dental') || text.includes('laboratory') || 
+        text.includes('spectrometer') || text.includes('hospital') || text.includes('microscope')) {
+        return '11';
+    }
+    // Default / Other PPE (99)
+    return '99';
+}
+
+function autoSuggestPropertyNumber(force = false) {
+    if (isEditMode && !force) return;
+    
+    const propInput = document.getElementById('add-property');
+    if (!propInput) return;
+    
+    // If user explicitly typed a custom property number and we're not forcing, preserve it
+    const currentVal = (propInput.value || '').trim();
+    if (!force && currentVal && propInput.dataset.userEdited === 'true') {
+        return;
+    }
+    
+    const dateVal = document.getElementById('add-date')?.value || '';
+    let yr = '';
+    if (dateVal && dateVal.includes('-')) {
+        const parts = dateVal.split('-');
+        if (parts[0] && parts[0].length >= 4) {
+            yr = parts[0].substring(2, 4);
+        }
+    }
+    if (!yr) {
+        yr = new Date().getFullYear().toString().substring(2, 4);
+    }
+    
+    const articleVal = document.getElementById('add-article')?.value || '';
+    const accountVal = document.getElementById('add-account')?.value || '';
+    
+    const code = getAccountClassificationCode(articleVal, accountVal);
+    const prefix = `101-${yr}-${code}-`;
+    
+    // Find highest sequence number from existing masterlist matching prefix
+    let maxSeq = 0;
+    if (Array.isArray(inventoryData)) {
+        const regex = new RegExp(`^101-${yr}-${code}-(\\d+)`, 'i');
+        inventoryData.forEach(item => {
+            if (item && item.propertyNo) {
+                const match = item.propertyNo.trim().match(regex);
+                if (match && match[1]) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxSeq) {
+                        maxSeq = num;
+                    }
+                }
+            }
+        });
+    }
+    
+    const nextSeq = (maxSeq + 1).toString().padStart(2, '0');
+    propInput.value = `${prefix}${nextSeq}`;
+    propInput.dataset.autoGenerated = 'true';
+}
+
+// Track when user manually edits property number
+document.addEventListener('DOMContentLoaded', () => {
+    const propInput = document.getElementById('add-property');
+    if (propInput) {
+        propInput.addEventListener('input', () => {
+            propInput.dataset.userEdited = 'true';
+        });
+    }
+    
+    const dateInput = document.getElementById('add-date');
+    if (dateInput) {
+        dateInput.addEventListener('change', () => autoSuggestPropertyNumber());
+        dateInput.addEventListener('input', () => autoSuggestPropertyNumber());
+    }
+    
+    const articleInput = document.getElementById('add-article');
+    if (articleInput) {
+        articleInput.addEventListener('input', () => autoSuggestPropertyNumber());
+        articleInput.addEventListener('blur', () => autoSuggestPropertyNumber());
+    }
+    
+    const accountInput = document.getElementById('add-account');
+    if (accountInput) {
+        accountInput.addEventListener('input', () => autoSuggestPropertyNumber());
+        accountInput.addEventListener('blur', () => autoSuggestPropertyNumber());
+    }
+});
+
 function populateAddModalSuggestions() {
-    // 1. Article Options
-    const articleList = document.getElementById('articleOptionsList');
-    if (articleList) {
-        const currentVal = document.getElementById('add-article')?.value || '';
-        const standardArticles = [
-            "Desktop Computer",
-            "Laptop / Notebook Computer",
-            "Printer / Multi-Function Printer",
-            "Photocopier / Scanner",
-            "Uninterruptible Power Supply (UPS)",
-            "Air Conditioning Unit (Split/Window)",
-            "Office Chair (Executive / Clerical)",
-            "Office Table / Executive Desk",
-            "Steel Filing Cabinet / Vault",
-            "Projector / Display Screen",
-            "Motor Vehicle / Service Truck",
-            "Motorcycle",
-            "Generator Set",
-            "Communication Radio / Walkie-Talkie",
-            "Water Dispenser",
-            "Heavy Equipment / Backhoe / Grader"
-        ];
-        const articleSet = new Set(standardArticles);
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.article && typeof item.article === 'string') {
-                    const clean = item.article.trim();
-                    if (clean && clean !== 'N/A' && clean !== '-') articleSet.add(clean);
-                }
-            });
-        }
-        const sorted = Array.from(articleSet).sort((a, b) => a.localeCompare(b));
-        articleList.innerHTML = sorted.map(art => `
-            <div class="custom-option ${art === currentVal ? 'selected' : ''}" data-value="${sanitizeText(art)}" onclick="selectAddDropdownOption('article', '${sanitizeText(art)}', '${sanitizeText(art)}')">
-                <span class="opt-label">${sanitizeText(art)}</span>
-                <i class="fas fa-check opt-check"></i>
-            </div>
-        `).join('');
-    }
-
-    // 2. Unit Options
-    const unitList = document.getElementById('unitOptionsList');
-    if (unitList) {
-        const currentVal = document.getElementById('add-unit')?.value || '';
-        const standardUnits = ["unit", "set", "pc", "pcs", "box", "lot", "pack", "roll"];
-        const unitSet = new Set(standardUnits);
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.unit && typeof item.unit === 'string') {
-                    const clean = item.unit.trim();
-                    if (clean && clean !== 'N/A' && clean !== '-') unitSet.add(clean);
-                }
-            });
-        }
-        const sorted = Array.from(unitSet).sort((a, b) => a.localeCompare(b));
-        unitList.innerHTML = sorted.map(u => `
-            <div class="custom-option ${u === currentVal ? 'selected' : ''}" data-value="${sanitizeText(u)}" onclick="selectAddDropdownOption('unit', '${sanitizeText(u)}', '${sanitizeText(u)}')">
-                <span class="opt-label">${sanitizeText(u)}</span>
-                <i class="fas fa-check opt-check"></i>
-            </div>
-        `).join('');
-    }
-
-    // 3. Account Group Options
-    const accountList = document.getElementById('accountOptionsList');
-    if (accountList) {
-        const currentVal = document.getElementById('add-account')?.value || '';
-        const standardAccounts = [
-            "ICT Equipment",
-            "Office Equipment",
-            "Furniture and Fixtures",
-            "Transportation Equipment",
-            "Communication Equipment",
-            "Machinery and Equipment",
-            "Medical, Dental and Laboratory Equipment",
-            "Disaster Response and Rescue Equipment",
-            "Other Property, Plant and Equipment"
-        ];
-        const accSet = new Set(standardAccounts);
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.account && typeof item.account === 'string') {
-                    const clean = item.account.trim();
-                    if (clean && clean !== 'N/A' && clean !== '-') accSet.add(clean);
-                }
-            });
-        }
-        const sorted = Array.from(accSet).sort((a, b) => a.localeCompare(b));
-        accountList.innerHTML = sorted.map(acc => `
-            <div class="custom-option ${acc === currentVal ? 'selected' : ''}" data-value="${sanitizeText(acc)}" onclick="selectAddDropdownOption('account', '${sanitizeText(acc)}', '${sanitizeText(acc)}')">
-                <span class="opt-label">${sanitizeText(acc)}</span>
-                <i class="fas fa-check opt-check"></i>
-            </div>
-        `).join('');
-    }
-
-    // 4. Location Options
+    // Populate Location / Office Options (27 LGU departments + masterlist entries)
     const locationList = document.getElementById('locationOptionsList');
     if (locationList) {
         const currentVal = document.getElementById('add-location')?.value || '';
@@ -734,38 +775,6 @@ function populateAddModalSuggestions() {
             </div>
         `).join('');
     }
-
-    // 5. Accountable Person Options
-    const accountableList = document.getElementById('accountableOptionsList');
-    if (accountableList) {
-        const currentVal = document.getElementById('add-accountable')?.value || '';
-        const namesSet = new Set();
-        if (Array.isArray(inventoryData)) {
-            inventoryData.forEach(item => {
-                if (item && item.accountablePerson && typeof item.accountablePerson === 'string') {
-                    const cleanName = item.accountablePerson.trim();
-                    if (cleanName && cleanName !== 'N/A' && cleanName !== '-' && cleanName !== 'None') {
-                        namesSet.add(cleanName);
-                    }
-                }
-            });
-        }
-        if (Array.isArray(cachedStaffNames)) {
-            cachedStaffNames.forEach(name => {
-                if (name && typeof name === 'string') {
-                    const cleanName = name.trim();
-                    if (cleanName) namesSet.add(cleanName);
-                }
-            });
-        }
-        const sorted = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
-        accountableList.innerHTML = sorted.map(name => `
-            <div class="custom-option ${name === currentVal ? 'selected' : ''}" data-value="${sanitizeText(name)}" onclick="selectAddDropdownOption('accountable', '${sanitizeText(name)}', '${sanitizeText(name)}')">
-                <span class="opt-label">${sanitizeText(name)}</span>
-                <i class="fas fa-check opt-check"></i>
-            </div>
-        `).join('');
-    }
 }
 
 // =========================================================================
@@ -798,20 +807,43 @@ function closeModal() {
     const tallyInfoBox = document.getElementById('item-modal-tally-info');
     if (tallyInfoBox) tallyInfoBox.style.display = 'none';
 
-    // Reset custom dropdowns
-    ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+    const propInput = document.getElementById('add-property');
+    if (propInput) {
+        delete propInput.dataset.userEdited;
+        delete propInput.dataset.autoGenerated;
+    }
+
+    // Reset location and condition dropdowns
+    window.setAddDropdownValue('location', '', '');
     window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
 }
 
 if (addBtn) {
     addBtn.addEventListener('click', () => {
         isEditMode = false;
+        currentEditingId = null;
         if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle" style="color: #38bdf8;"></i> Add New Property Item';
         const toast = document.getElementById('add-success-toast');
         if (toast) toast.style.display = 'none';
         if (addForm) addForm.reset();
-        ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+
+        const propInput = document.getElementById('add-property');
+        if (propInput) {
+            delete propInput.dataset.userEdited;
+            delete propInput.dataset.autoGenerated;
+        }
+
+        // Set default date to today
+        const dateInput = document.getElementById('add-date');
+        if (dateInput && !dateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
+
+        window.setAddDropdownValue('location', '', '');
         window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
+        
+        autoSuggestPropertyNumber(true);
         openModal();
     });
 }
@@ -879,14 +911,26 @@ if (addForm) {
 
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
-                ['article', 'unit', 'account', 'location', 'accountable'].forEach(f => window.setAddDropdownValue(f, '', ''));
+                window.setAddDropdownValue('location', '', '');
                 window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
+
                 const toast = document.getElementById('add-success-toast');
                 if (toast) {
                     toast.style.display = 'inline-flex';
                     setTimeout(() => { if (toast) toast.style.display = 'none'; }, 2500);
                 }
-                document.getElementById('add-date')?.focus();
+
+                // Set today's date & suggest next property number for next item
+                const dateInput = document.getElementById('add-date');
+                if (dateInput) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+                const propInput = document.getElementById('add-property');
+                if (propInput) {
+                    delete propInput.dataset.userEdited;
+                }
+                autoSuggestPropertyNumber(true);
+                document.getElementById('add-article')?.focus();
             }
 
             if (supabaseClient) {
@@ -909,19 +953,23 @@ window.openEditModal = function(id) {
     const toast = document.getElementById('add-success-toast');
     if (toast) toast.style.display = 'none';
 
+    if (document.getElementById('add-article')) document.getElementById('add-article').value = item.article || '';
+    if (document.getElementById('add-description')) document.getElementById('add-description').value = item.description || '';
     if (document.getElementById('add-date')) document.getElementById('add-date').value = item.date || '';
     if (document.getElementById('add-qty')) document.getElementById('add-qty').value = item.qty || 0;
+    if (document.getElementById('add-unit')) document.getElementById('add-unit').value = item.unit || '';
     if (document.getElementById('add-unit-cost')) document.getElementById('add-unit-cost').value = item.unitCost || 0;
-    if (document.getElementById('add-description')) document.getElementById('add-description').value = item.description || '';
-    if (document.getElementById('add-property')) document.getElementById('add-property').value = item.propertyNo || '';
+    if (document.getElementById('add-account')) document.getElementById('add-account').value = item.account || '';
+    if (document.getElementById('add-accountable')) document.getElementById('add-accountable').value = item.accountablePerson || '';
+    if (document.getElementById('add-property')) {
+        const pInput = document.getElementById('add-property');
+        pInput.value = item.propertyNo || '';
+        pInput.dataset.userEdited = 'true';
+    }
     if (document.getElementById('add-remarks')) document.getElementById('add-remarks').value = item.remarks || '';
 
-    window.setAddDropdownValue('article', item.article || '');
-    window.setAddDropdownValue('unit', item.unit || '');
-    window.setAddDropdownValue('account', item.account || '');
-    window.setAddDropdownValue('location', item.location || '');
-    window.setAddDropdownValue('accountable', item.accountablePerson || '');
-    window.setAddDropdownValue('condition', item.condition || 'Serviceable');
+    window.setAddDropdownValue('location', item.location || '', item.location || '');
+    window.setAddDropdownValue('condition', item.condition || 'Serviceable', item.condition || 'Serviceable');
 
     // Render Accounting Office Voucher Verification Status
     const tallyInfoBox = document.getElementById('item-modal-tally-info');
