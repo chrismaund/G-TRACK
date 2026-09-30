@@ -5396,37 +5396,37 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gov-panel-title {
     margin: 0;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14.5px;
+    font-weight: 800;
     color: #f8fafc;
     display: flex;
     align-items: center;
     gap: 8px;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }
 
 .gov-panel-badge {
-    font-size: 10.5px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: #38bdf8;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    padding: 2px 8px;
-    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 3px 10px;
+    border-radius: 8px;
 }
 
 /* Category Progress Bars */
 .gov-category-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     flex: 1;
     justify-content: space-evenly;
     overflow-y: auto;
@@ -5435,52 +5435,54 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .gov-category-item {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     cursor: pointer;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     transition: all 0.2s ease;
 }
 
 .gov-category-item:hover {
-    background: rgba(56, 189, 248, 0.08);
-    border-color: rgba(56, 189, 248, 0.25);
-    transform: translateX(2px);
+    background: rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateX(3px);
 }
 
 .gov-cat-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11.5px;
+    font-size: 13.5px;
 }
 
 .gov-cat-name {
-    color: #cbd5e1;
-    font-weight: 600;
+    color: #f1f5f9;
+    font-weight: 700;
+    font-size: 13.5px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .gov-cat-meta {
-    font-weight: 700;
-    color: #f8fafc;
+    font-weight: 800;
+    font-size: 13.5px;
+    color: #38bdf8;
 }
 
 .gov-progress-track {
     width: 100%;
-    height: 6px;
-    background: rgba(15, 23, 42, 0.6);
-    border-radius: 4px;
+    height: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 6px;
     overflow: hidden;
 }
 
 .gov-progress-fill {
     height: 100%;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: width 0.4s ease;
 }
 
@@ -5500,64 +5502,66 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-stat-mini-box {
-    background: rgba(15, 23, 42, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 14px 16px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     box-sizing: border-box;
 }
 
 .gov-stat-mini-label {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 800;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }
 
 .gov-stat-mini-val {
-    font-size: 20px;
+    font-size: 32px;
     font-weight: 800;
     color: #f8fafc;
     line-height: 1.1;
+    margin: 4px 0 2px 0;
 }
 
 .gov-stat-mini-subtext {
-    font-size: 10px;
+    font-size: 12px;
     color: #64748b;
-    font-weight: 500;
-    margin-top: 1px;
+    font-weight: 600;
 }
 
 /* Status Row Summary */
 .gov-status-items {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gov-status-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11.5px;
-    padding: 6px 10px;
-    background: rgba(15, 23, 42, 0.4);
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 12.5px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gov-status-label {
     color: #94a3b8;
+    font-size: 12px;
     font-weight: 600;
 }
 
 .gov-status-val {
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 12.5px;
 }
 
 /* Recent Property Audit Stream */
@@ -5577,48 +5581,49 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(15, 23, 42, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 11.5px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .gov-stream-item:hover {
-    background: rgba(56, 189, 248, 0.1);
-    border-color: rgba(56, 189, 248, 0.3);
-    transform: translateX(2px);
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateX(3px);
 }
 
 .gov-stream-left {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
 }
 
 .gov-stream-prop {
-    font-weight: 700;
+    font-weight: 800;
     color: #38bdf8;
     font-family: monospace;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .gov-stream-art {
-    color: #e2e8f0;
-    font-weight: 600;
+    color: #f8fafc;
+    font-weight: 700;
+    font-size: 12.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 170px;
+    max-width: 200px;
 }
 
 .gov-stream-badge {
-    font-size: 9.5px;
-    font-weight: 700;
-    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 9px;
     border-radius: 12px;
     text-transform: uppercase;
 }
