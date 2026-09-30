@@ -115,11 +115,10 @@ body {
 .content-wrapper { 
     max-width: 100%; 
     margin: 0 auto; 
-    padding: 14px 24px 8px; 
+    padding: 16px 24px; 
     display: flex; 
     flex-direction: column; 
-    gap: 12px; 
-    min-height: calc(100vh - 64px);
+    gap: 14px; 
     box-sizing: border-box;
     animation: dashboardEntranceFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -128,9 +127,8 @@ body {
 .dashboard-home-view:not(.hidden) {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
-    flex: 1;
     min-height: 0;
     animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -5530,8 +5528,8 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 
 /* Status Row Summary */
 .gov-status-items {
-    margin-top: 2px;
-    padding-top: 6px;
+    margin-top: auto;
+    padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
