@@ -3638,16 +3638,61 @@ if (pendingRequestsContainer) {
 // =========================================================================
 
 /**
- * Toggles the print popover modal display.
+ * Populates and toggles the print popover modal display.
  * @param {Event} [event] 
  */
 function togglePrintPopover(event) {
     if (event) event.stopPropagation();
     const popover = document.getElementById('printPopover');
-    if (popover) {
-        popover.classList.toggle('hidden');
+    if (!popover) return;
+
+    const isOpening = popover.classList.contains('hidden');
+    if (isOpening) {
+        // Populate multi-select equipment classification checkboxes dynamically
+        const container = document.getElementById('adminReportAccountCheckboxes');
+        if (container && typeof inventoryData !== 'undefined' && inventoryData.length > 0) {
+            const groups = new Set();
+            inventoryData.forEach(item => {
+                if (item.account && item.account.trim()) {
+                    groups.add(item.account.trim());
+                }
+            });
+
+            const currentTableAccount = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
+            const sortedGroups = Array.from(groups).sort();
+
+            let checkboxesHTML = '';
+            sortedGroups.forEach((groupName, idx) => {
+                const shouldCheck = (currentTableAccount === 'All Accounts' || currentTableAccount === '' || groupName.toLowerCase() === currentTableAccount.toLowerCase());
+                checkboxesHTML += `
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">
+                        <input type="checkbox" value="${sanitizeText(groupName)}" ${shouldCheck ? 'checked' : ''} style="cursor: pointer; accent-color: #38bdf8;">
+                        <span>${sanitizeText(groupName)}</span>
+                    </label>
+                `;
+            });
+            container.innerHTML = checkboxesHTML;
+        }
+
+        popover.classList.remove('hidden');
+    } else {
+        popover.classList.add('hidden');
     }
 }
+
+/**
+ * Toggles all classification checkboxes in the admin print report popover.
+ */
+window.toggleAllAdminReportAccounts = function(event) {
+    if (event) event.stopPropagation();
+    const container = document.getElementById('adminReportAccountCheckboxes');
+    if (!container) return;
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    if (checkboxes.length === 0) return;
+
+    const someUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+    checkboxes.forEach(cb => cb.checked = someUnchecked);
+};
 
 // =========================================================================
 // SIGN OUT CONFIRMATION POPOVER (ADMIN)
@@ -3770,7 +3815,15 @@ function executePrintReport() {
         ? assumptionDateInput.value.trim() 
         : 'April 17,2024';
 
-    const accountGroup = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
+    // Read selected equipment classifications from multi-select checkboxes
+    const checkedBoxes = Array.from(document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
+    
+    let accountGroupTitle = 'OTHER PROPERTY, PLANT AND EQUIPMENT';
+    if (checkedBoxes.length === 1) {
+        accountGroupTitle = checkedBoxes[0].toUpperCase();
+    } else if (checkedBoxes.length > 1) {
+        accountGroupTitle = 'SELECTED PROPERTY, PLANT AND EQUIPMENT';
+    }
 
     const meta = {
         asOfDate: asOfDate,
@@ -3778,7 +3831,7 @@ function executePrintReport() {
         officer: officer,
         designation: designation,
         assumptionDate: assumptionDate,
-        accountGroup: (accountGroup === 'All Accounts' || !accountGroup) ? 'OTHER PROPERTY, PLANT AND EQUIPMENT' : accountGroup.toUpperCase()
+        accountGroup: accountGroupTitle
     };
 
     const printArea = document.getElementById('printArea');
@@ -3794,11 +3847,6 @@ function executePrintReport() {
     const filterStartDate = parseReportDateFilter(asOfDate);
     let dataToPrint = rawData;
 
-    // Filter by active account classification if selected on masterlist
-    if (accountGroup && accountGroup !== 'All Accounts') {
-        dataToPrint = dataToPrint.filter(item => (item.account || '').toLowerCase() === accountGroup.toLowerCase());
-    }
-
     if (filterStartDate) {
         dataToPrint = dataToPrint.filter(item => {
             if (!item.date) return false;
@@ -3809,6 +3857,24 @@ function executePrintReport() {
             const parsedItemDate = parseReportDateFilter(item.date);
             return parsedItemDate ? parsedItemDate >= filterStartDate : false;
         });
+    }
+
+    // Filter by Selected Equipment Classifications (Multi-Select)
+    if (checkedBoxes.length > 0) {
+        const lowerChecked = checkedBoxes.map(c => c.toLowerCase());
+        dataToPrint = dataToPrint.filter(item => {
+            const itemAcc = (item.account || '').toLowerCase();
+            return lowerChecked.some(c => itemAcc.includes(c) || c.includes(itemAcc));
+        });
+    }
+
+    if (dataToPrint.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('warning', 'No Matching Items', 'No equipment records matched the selected classifications and period.');
+        } else {
+            alert('No equipment records matched the selected classifications and period.');
+        }
+        return;
     }
 
     // Sort records chronologically (Oldest to Newest from starting period to current)
