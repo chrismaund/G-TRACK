@@ -306,6 +306,10 @@ function updateAccountDropdown() {
             accountFilter.value = currentSelection;
         }
     }
+
+    if (typeof window.populateAdminPrintAccountCheckboxes === 'function') {
+        window.populateAdminPrintAccountCheckboxes();
+    }
 }
 
 function setupConditionDropdown() {
@@ -2879,6 +2883,9 @@ window.rejectAdminRole = async function(reqId, triggerBtn = null) {
 document.addEventListener('DOMContentLoaded', () => {
     initRequestsListener();
     initAdminNotifications();
+    if (typeof window.populateAdminPrintAccountCheckboxes === 'function') {
+        window.populateAdminPrintAccountCheckboxes();
+    }
 });
 
 // =========================================================================
@@ -3641,44 +3648,84 @@ if (pendingRequestsContainer) {
  * Populates and toggles the print popover modal display.
  * @param {Event} [event] 
  */
-function togglePrintPopover(event) {
+/**
+ * Populates or synchronizes the multi-select equipment classification checkboxes in the admin print popover.
+ */
+window.populateAdminPrintAccountCheckboxes = function() {
+    const container = document.getElementById('adminReportAccountCheckboxes');
+    if (!container) return;
+
+    const standardClassifications = [
+        "IT Equipment and Software",
+        "Office Equipment",
+        "Furniture and Fixtures",
+        "Transportation Equipment",
+        "Machinery and Equipment",
+        "Communication Equipment",
+        "Disaster Response and Rescue Equipment",
+        "Medical, Dental and Laboratory Equipment",
+        "Other Property, Plant and Equipment"
+    ];
+
+    const groupSet = new Set(standardClassifications);
+    if (typeof inventoryData !== 'undefined' && Array.isArray(inventoryData)) {
+        inventoryData.forEach(item => {
+            if (item && item.account && item.account.trim()) {
+                groupSet.add(item.account.trim());
+            }
+        });
+    }
+
+    const currentTableAccount = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
+
+    // Check if user already had specific checkboxes checked
+    const existingInputs = container.querySelectorAll('input[type="checkbox"]');
+    const checkedMap = new Map();
+    if (existingInputs.length > 0) {
+        existingInputs.forEach(input => {
+            checkedMap.set(input.value.toLowerCase(), input.checked);
+        });
+    }
+
+    const sortedGroups = Array.from(groupSet).sort();
+    let checkboxesHTML = '';
+    sortedGroups.forEach(groupName => {
+        const lowerName = groupName.toLowerCase();
+        let isChecked = true;
+        if (checkedMap.has(lowerName)) {
+            isChecked = checkedMap.get(lowerName);
+        } else if (currentTableAccount && currentTableAccount !== 'All Accounts') {
+            isChecked = (lowerName === currentTableAccount.toLowerCase());
+        }
+
+        checkboxesHTML += `
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">
+                <input type="checkbox" value="${sanitizeText(groupName)}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
+                <span>${sanitizeText(groupName)}</span>
+            </label>
+        `;
+    });
+
+    container.innerHTML = checkboxesHTML;
+};
+
+/**
+ * Populates and toggles the print popover modal display.
+ * @param {Event} [event] 
+ */
+window.togglePrintPopover = function(event) {
     if (event) event.stopPropagation();
     const popover = document.getElementById('printPopover');
     if (!popover) return;
 
     const isOpening = popover.classList.contains('hidden');
     if (isOpening) {
-        // Populate multi-select equipment classification checkboxes dynamically
-        const container = document.getElementById('adminReportAccountCheckboxes');
-        if (container && typeof inventoryData !== 'undefined' && inventoryData.length > 0) {
-            const groups = new Set();
-            inventoryData.forEach(item => {
-                if (item.account && item.account.trim()) {
-                    groups.add(item.account.trim());
-                }
-            });
-
-            const currentTableAccount = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
-            const sortedGroups = Array.from(groups).sort();
-
-            let checkboxesHTML = '';
-            sortedGroups.forEach((groupName, idx) => {
-                const shouldCheck = (currentTableAccount === 'All Accounts' || currentTableAccount === '' || groupName.toLowerCase() === currentTableAccount.toLowerCase());
-                checkboxesHTML += `
-                    <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">
-                        <input type="checkbox" value="${sanitizeText(groupName)}" ${shouldCheck ? 'checked' : ''} style="cursor: pointer; accent-color: #38bdf8;">
-                        <span>${sanitizeText(groupName)}</span>
-                    </label>
-                `;
-            });
-            container.innerHTML = checkboxesHTML;
-        }
-
+        window.populateAdminPrintAccountCheckboxes();
         popover.classList.remove('hidden');
     } else {
         popover.classList.add('hidden');
     }
-}
+};
 
 /**
  * Toggles all classification checkboxes in the admin print report popover.
