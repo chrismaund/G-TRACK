@@ -5653,6 +5653,8 @@ function renderServiceabilityDonutChart(counts) {
                                     const pct = totalItems > 0 ? Math.round((value / totalItems) * 100) : 0;
                                     return {
                                         text: `${label}: ${value} (${pct}%)`,
+                                        fontColor: '#e2e8f0',
+                                        color: '#e2e8f0',
                                         fillStyle: d.datasets[0].backgroundColor[i],
                                         strokeStyle: d.datasets[0].backgroundColor[i],
                                         lineWidth: 0,
