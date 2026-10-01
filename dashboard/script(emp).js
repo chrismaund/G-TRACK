@@ -3261,7 +3261,7 @@ window.closeCOAReportPopover = function(event) {
 /**
  * Executes official COA RPCPPE PDF report generation based on the accountant's selected equipment type,
  * voucher tally status, equipment condition, and period filters.
- * Outputs a strict government-compliant black-and-white COA audit format.
+ * Replicates the exact official Admin PDF report layout with pure black & white typography and signatories.
  */
 window.executeCOAPrintReport = function() {
     if (!inventoryData || inventoryData.length === 0) {
@@ -3299,193 +3299,132 @@ window.executeCOAPrintReport = function() {
         return;
     }
 
-    const grouped = {};
-    let grandTotalQty = 0;
-    let grandTotalCost = 0;
+    let grandTotalValue = 0;
+    let rowsHTML = '';
 
-    filteredItems.forEach(item => {
-        const group = item.account || 'Other Property, Plant and Equipment';
-        if (!grouped[group]) grouped[group] = [];
-        grouped[group].push(item);
-
+    filteredItems.forEach((item) => {
         const qty = parseInt(item.qty, 10) || 1;
-        const uCost = parseFloat(item.unitCost) || 0;
-        const tCost = parseFloat(item.totalCost) || (qty * uCost);
+        const unitVal = parseFloat(item.unitCost) || 0;
+        const totalVal = parseFloat(item.totalCost) || (qty * unitVal);
+        grandTotalValue += totalVal;
 
-        grandTotalQty += qty;
-        grandTotalCost += tCost;
+        const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+        const tallyLabel = isTallied ? 'Tallied' : 'Pending';
+        const conditionText = sanitizeText(item.remarks || item.condition || 'SERVICEABLE');
+        const finalRemarks = `${conditionText} (${tallyLabel})`;
+
+        rowsHTML += `
+            <tr>
+                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${sanitizeText(item.article || '')} ${item.description ? sanitizeText(item.description) : ''}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.date) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.unit) || 'UNIT'}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${totalVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${sanitizeText(item.accountablePerson) || 'General Services Office'}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${finalRemarks}</td>
+            </tr>
+        `;
     });
 
-    const reportDate = asOfDateStr;
+    const accountTitle = (selectedAccount === 'All') ? 'OTHER PROPERTY, PLANT AND EQUIPMENT' : selectedAccount.toUpperCase();
     const officerName = currentEmployeeName || 'General Services Officer';
     const officerDept = currentEmployeeDept || 'Municipal Accounting Office';
-    const accountTitle = (selectedAccount === 'All') ? 'ALL PROPERTY, PLANT AND EQUIPMENT' : selectedAccount.toUpperCase();
-
-    let tableRowsHTML = '';
-    const sortedGroups = Object.keys(grouped).sort();
-
-    sortedGroups.forEach(groupName => {
-        let groupQty = 0;
-        let groupCost = 0;
-
-        // Group Classification Header Row (Clean black & white)
-        tableRowsHTML += `
-            <tr style="background-color: #ffffff;">
-                <td colspan="13" style="border: 1px solid #000000; padding: 5px 6px; text-transform: uppercase; font-size: 8.5pt; font-weight: bold; text-align: left;">
-                    ${sanitizeText(groupName)}
-                </td>
-            </tr>
-        `;
-
-        grouped[groupName].forEach(item => {
-            const qty = parseInt(item.qty, 10) || 1;
-            const uCost = parseFloat(item.unitCost) || 0;
-            const tCost = parseFloat(item.totalCost) || (qty * uCost);
-            const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
-            const statusText = isTallied ? 'Tallied / Reconciled' : 'Pending Tally';
-            const conditionText = sanitizeText(item.condition || 'SERVICEABLE');
-
-            groupQty += qty;
-            groupCost += tCost;
-
-            tableRowsHTML += `
-                <tr style="background-color: #ffffff;">
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.article || '—')}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.description || '—')}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center; font-family: monospace;">${sanitizeText(item.propertyNo || '—')}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${sanitizeText(item.unit || 'UNIT')}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${uCost.toFixed(2)}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${tCost.toFixed(2)}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${tCost.toFixed(2)}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">—</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">0.00</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.accountablePerson || 'GSO Custodian')}</td>
-                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center; font-size: 7.5pt;">${conditionText} • ${statusText}</td>
-                </tr>
-            `;
-        });
-
-        // Subtotal Row per Account Group (Clean black & white)
-        tableRowsHTML += `
-            <tr style="background-color: #ffffff; font-weight: bold;">
-                <td colspan="5" style="border: 1px solid #000000; padding: 4px 6px; text-align: left;">SUBTOTAL - ${sanitizeText(groupName).toUpperCase()}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">${groupQty}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">${groupCost.toFixed(2)}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">${groupQty}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">${groupCost.toFixed(2)}</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">—</td>
-                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">0.00</td>
-                <td colspan="2" style="border: 1px solid #000000; padding: 4px 6px;"></td>
-            </tr>
-        `;
-    });
 
     const reportHTML = `
-        <div style="font-family: 'Times New Roman', Times, serif; font-size: 9pt; color: #000000; padding: 10px; background-color: #ffffff; line-height: 1.3;">
-            <!-- Header Section (Pure Clean Black & White COA Format) -->
-            <div style="text-align: center; margin-bottom: 16px;">
-                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">Republic of the Philippines</div>
-                <div style="font-size: 10pt;">Province of Quezon</div>
-                <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">Municipality of Pagbilao</div>
-                <div style="font-size: 9pt; margin-top: 2px;">MUNICIPAL ACCOUNTING OFFICE • GENERAL SERVICES OFFICE</div>
-                
-                <div style="margin-top: 10px;">
-                    <h2 style="font-size: 12pt; font-weight: bold; margin: 0 0 3px 0; text-transform: uppercase; color: #000000;">
-                        REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)
-                    </h2>
-                    <h3 style="font-size: 10.5pt; font-weight: bold; margin: 0 0 2px 0; text-transform: uppercase; color: #000000;">
-                        ${sanitizeText(accountTitle)}
-                    </h3>
-                    <div style="font-size: 9pt; font-style: italic; margin-top: 1px;">
-                        (Type of Property, Plant and Equipment)
+        <div style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
+                <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(accountTitle)}</h3>
+                <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
+                <p style="margin: 0; font-size: 11px;">As of ${sanitizeText(asOfDateStr)}</p>
+            </div>
+            
+            <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.4;">
+                <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin-bottom: 10px;">
+                    <span style="padding-top: 2px;">For which</span>
+
+                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(officerName)}</span>
+                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Name of Accountable Officer)</small>
+                    </div>,
+
+                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(officerDept)}</span>
+                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Official Designation)</small>
+                    </div>,
+
+                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">Pagbilao, Quezon</span>
+                        <small style="font-size: 8px; color: #000; margin-top: 1px;">LGU</small>
                     </div>
-                    <div style="font-size: 9.5pt; margin-top: 4px;">
-                        As of ${sanitizeText(reportDate)}
+
+                    <span style="padding-top: 2px;">is accountable, having assumed such accountability on</span>
+
+                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(asOfDateStr)}</span>
+                        <small style="font-size: 8px; color: #000; margin-top: 1px;">Date of Assumption</small>
                     </div>
                 </div>
+
+                <p style="margin: 0; font-weight: bold;">GENERAL FUND</p>
             </div>
 
-            <!-- Meta / Accountability Section -->
-            <div style="margin-bottom: 12px; font-size: 9pt; line-height: 1.4;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                    <div><strong>Fund Cluster:</strong> 101 - General Fund</div>
-                    <div><strong>LGU:</strong> Pagbilao, Quezon</div>
-                </div>
-                <div>
-                    <span>For which </span>
-                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(officerName)}</strong>,
-                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(officerDept)}</strong>,
-                    <span>is accountable, having assumed such accountability on </span>
-                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(reportDate)}</strong>.
-                </div>
-            </div>
-
-            <!-- Official COA RPCPPE Table (Strictly Black Borders & White Header Backgrounds) -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 8pt; border: 1px solid #000000; background-color: #ffffff;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px;">
                 <thead>
-                    <tr style="background-color: #ffffff; text-align: center; font-weight: bold; color: #000000;">
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 12%; background-color: #ffffff; color: #000000;">ARTICLES</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 16%; background-color: #ffffff; color: #000000;">DESCRIPTION</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 10%; background-color: #ffffff; color: #000000;">PROPERTY NO.</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 5%; background-color: #ffffff; color: #000000;">UNIT OF MEASURE</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 8%; background-color: #ffffff; color: #000000;">UNIT VALUE</th>
-                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">Balance Per Property Card</th>
-                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">On Hand Per Count</th>
-                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">Shortage / Overage</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 10%; background-color: #ffffff; color: #000000;">ACCOUNTABLE PERSON</th>
-                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 9%; background-color: #ffffff; color: #000000;">REMARKS</th>
+                    <tr style="background-color: #ffffff; text-align: center;">
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 8%;">Date Acquired</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 11%;">Property Number</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 6%;">Unit of Measure</th>
+                        <th colspan="2" style="border: 1px solid #000; padding: 4px;">Balance per Card</th>
+                        <th colspan="2" style="border: 1px solid #000; padding: 4px;">On Hand Per Count</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 9%;">Total Value</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 13%;">Accountable Person</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 11%;">Remarks</th>
                     </tr>
-                    <tr style="background-color: #ffffff; text-align: center; font-weight: bold; color: #000000;">
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 4%; background-color: #ffffff; color: #000000;">Quantity</th>
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 8%; background-color: #ffffff; color: #000000;">Total Value</th>
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 4%; background-color: #ffffff; color: #000000;">Quantity</th>
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 8%; background-color: #ffffff; color: #000000;">Total Value</th>
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 3%; background-color: #ffffff; color: #000000;">Quantity</th>
-                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 6%; background-color: #ffffff; color: #000000;">Value</th>
+                    <tr style="background-color: #ffffff; text-align: center;">
+                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
+                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
+                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
+                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${tableRowsHTML}
+                    ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(asOfDateStr)} - Present.</td></tr>`}
                     
-                    <!-- Grand Total Row (Clean black & white) -->
-                    <tr style="background-color: #ffffff; font-weight: bold; font-size: 8.5pt;">
-                        <td colspan="5" style="border: 1px solid #000000; padding: 6px 8px; text-align: left; text-transform: uppercase;">
-                            <strong>GRAND TOTAL</strong>
-                        </td>
-                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
-                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>${grandTotalCost.toFixed(2)}</strong></td>
-                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
-                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>${grandTotalCost.toFixed(2)}</strong></td>
-                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>—</strong></td>
-                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>0.00</strong></td>
-                        <td colspan="2" style="border: 1px solid #000000; padding: 6px 6px;"></td>
+                    <tr>
+                        <td colspan="8" style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: left;">Grand total</td>
+                        <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"></td>
+                        <td style="border: 1px solid #000; padding: 6px;"></td>
                     </tr>
                 </tbody>
             </table>
 
-            <!-- Signatures Section (Standard 4-Tier COA Audit Signatories) -->
-            <div style="display: flex; justify-content: space-between; margin-top: 24px; font-size: 8.5pt; page-break-inside: avoid;">
-                <div style="width: 23%; text-align: center;">
-                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">PREPARED &amp; RECONCILED BY:</p>
-                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px; text-transform: uppercase;">${sanitizeText(officerName)}</div>
-                    <div style="font-size: 8pt; margin-top: 2px;">${sanitizeText(officerDept)}</div>
+            <div style="display: flex; justify-content: space-between; text-align: center; font-size: 10px;">
+                <div style="width: 23%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">${sanitizeText(officerName)}</div>
+                    <div style="margin-top: 2px;">${sanitizeText(officerDept)}</div>
                 </div>
-                <div style="width: 23%; text-align: center;">
-                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">CERTIFIED CORRECT (PHYSICAL CUSTODY):</p>
-                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">ERROLD JAMES J. DIGUIDIG</div>
-                    <div style="font-size: 8pt; margin-top: 2px;">RCCI / GSO Custodian</div>
+                <div style="width: 23%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">CERTIFIED CORRECT:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
+                    <div style="margin-top: 2px;">RCCI / GSO Custodian</div>
                 </div>
-                <div style="width: 23%; text-align: center;">
-                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">APPROVED BY:</p>
-                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">HON. ANGELICA P. TATLONGHARI</div>
-                    <div style="font-size: 8pt; margin-top: 2px;">Municipal Mayor</div>
+                <div style="width: 23%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">RECOMMENDING APPROVAL:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">RIZALDO A. RICAFORT</div>
+                    <div style="margin-top: 2px;">MGDH I - GSO</div>
                 </div>
-                <div style="width: 23%; text-align: center;">
-                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">NOTED / AUDITED BY:</p>
-                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">COMMISSION ON AUDIT (COA)</div>
-                    <div style="font-size: 8pt; margin-top: 2px;">Audit Team Leader / Representative</div>
+                <div style="width: 23%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">NOTED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ANGELICA P. TATLONGHARI</div>
+                    <div style="margin-top: 2px;">Municipal Mayor</div>
                 </div>
             </div>
         </div>
