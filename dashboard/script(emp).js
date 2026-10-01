@@ -3209,7 +3209,8 @@ window.toggleAccountingTally = async function(itemId) {
 };
 
 /**
- * Exports official COA RPCPPE CSV report formatted for Philippine Local Government Accounting standards.
+ * Exports official COA RPCPPE (Report on the Physical Count of Property, Plant and Equipment)
+ * in official Philippine Local Government Accounting & GSO PDF/Print format.
  */
 window.exportCOARPCPPEReport = function() {
     if (!inventoryData || inventoryData.length === 0) {
@@ -3222,11 +3223,11 @@ window.exportCOARPCPPEReport = function() {
     let grandTotalCost = 0;
 
     inventoryData.forEach(item => {
-        const group = item.account || 'Unclassified PPE';
+        const group = item.account || 'Other Property, Plant and Equipment';
         if (!grouped[group]) grouped[group] = [];
         grouped[group].push(item);
 
-        const qty = parseInt(item.qty, 10) || 0;
+        const qty = parseInt(item.qty, 10) || 1;
         const uCost = parseFloat(item.unitCost) || 0;
         const tCost = parseFloat(item.totalCost) || (qty * uCost);
 
@@ -3235,76 +3236,194 @@ window.exportCOARPCPPEReport = function() {
     });
 
     const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
-    const lines = [];
-    lines.push('REPUBLIC OF THE PHILIPPINES');
-    lines.push('MUNICIPAL GOVERNMENT OF GENERAL SERVICES & ASSET MANAGEMENT');
-    lines.push('MUNICIPAL ACCOUNTING OFFICE - PROPERTY, PLANT AND EQUIPMENT LEDGER');
-    lines.push('REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)');
-    lines.push(`"As of Date: ${reportDate}"`);
-    lines.push('Fund Cluster: 101 - General Fund');
-    lines.push('Accountable Officer: General Services Office (Custodian) / Reconciled by: Municipal Accounting Office');
-    lines.push('');
-    lines.push('Account Classification,Article,Description,Property No.,Unit of Measure,Unit Cost (PHP),Qty (Property Card),Qty (Physical Count),Total Cost (PHP),Condition,Voucher Tally Status,Accountable Officer,Location,Remarks');
+    const officerName = currentEmployeeName || 'General Services Officer';
+    const officerDept = currentEmployeeDept || 'Municipal Accounting Office';
 
-    Object.keys(grouped).sort().forEach(groupName => {
-        lines.push(`"${groupName.toUpperCase()}",,,,,,,,,,,,,`);
-        let groupTotalQty = 0;
-        let groupTotalCost = 0;
+    let tableRowsHTML = '';
+    const sortedGroups = Object.keys(grouped).sort();
+
+    sortedGroups.forEach(groupName => {
+        let groupQty = 0;
+        let groupCost = 0;
+
+        // Group Header Row
+        tableRowsHTML += `
+            <tr style="background-color: #e2e8f0; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <td colspan="13" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-size: 9pt;">
+                    <strong>${sanitizeText(groupName)}</strong>
+                </td>
+            </tr>
+        `;
 
         grouped[groupName].forEach(item => {
-            const qty = parseInt(item.qty, 10) || 0;
+            const qty = parseInt(item.qty, 10) || 1;
             const uCost = parseFloat(item.unitCost) || 0;
             const tCost = parseFloat(item.totalCost) || (qty * uCost);
             const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
-            const tallyLabel = isTallied ? `Tallied (${item.talliedBy || 'Audited Record'})` : 'Pending Tally';
+            const statusText = isTallied ? 'Tallied / Reconciled' : 'Pending Tally';
+            const conditionText = sanitizeText(item.condition || 'SERVICEABLE');
 
-            groupTotalQty += qty;
-            groupTotalCost += tCost;
+            groupQty += qty;
+            groupCost += tCost;
 
-            const row = [
-                `"${(groupName || '').replace(/"/g, '""')}"`,
-                `"${(item.article || '').replace(/"/g, '""')}"`,
-                `"${(item.description || '').replace(/"/g, '""')}"`,
-                `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
-                `"${(item.unit || 'Unit').replace(/"/g, '""')}"`,
-                uCost.toFixed(2),
-                qty,
-                qty,
-                tCost.toFixed(2),
-                `"${(item.condition || 'SERVICEABLE').replace(/"/g, '""')}"`,
-                `"${tallyLabel}"`,
-                `"${(item.accountablePerson || '').replace(/"/g, '""')}"`,
-                `"${(item.location || '').replace(/"/g, '""')}"`,
-                `"${(item.remarks || '').replace(/"/g, '""')}"`
-            ];
-            lines.push(row.join(','));
+            tableRowsHTML += `
+                <tr>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 600;">${sanitizeText(item.article || '—')}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left;">${sanitizeText(item.description || '—')}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-family: monospace;">${sanitizeText(item.propertyNo || '—')}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${sanitizeText(item.unit || 'UNIT')}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${uCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${qty}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${tCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${qty}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${tCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">—</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱0.00</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left;">${sanitizeText(item.accountablePerson || 'GSO Custodian')}</td>
+                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8pt;">${conditionText} • ${statusText}</td>
+                </tr>
+            `;
         });
 
-        lines.push(`"SUBTOTAL - ${groupName.toUpperCase()}",,,,,,"${groupTotalQty}","${groupTotalQty}","${groupTotalCost.toFixed(2)}",,,,,`);
-        lines.push('');
+        // Subtotal Row per Account Group
+        tableRowsHTML += `
+            <tr style="background-color: #f8fafc; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: left;">SUBTOTAL - ${sanitizeText(groupName).toUpperCase()}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">${groupQty}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱${groupCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">${groupQty}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱${groupCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">—</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱0.00</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;"></td>
+            </tr>
+        `;
     });
 
-    lines.push(`"GRAND TOTAL - ALL PPE ACCOUNTS",,,,,,"${grandTotalQty}","${grandTotalQty}","${grandTotalCost.toFixed(2)}",,,,,`);
-    lines.push('');
-    lines.push('CERTIFICATION & SIGNATURES:');
-    lines.push(`"Prepared & Reconciled By:","${currentEmployeeName || 'Accounting Officer'}","Municipal Accounting Office","Date: ${reportDate}"`);
-    lines.push(`"Certified Correct (Physical Custody):","General Services Officer (GSO)","General Services Office","Date: ${reportDate}"`);
-    lines.push(`"Approved By:","Municipal Accountant / Local Chief Executive","Municipal Government","Date: ${reportDate}"`);
-    lines.push(`"Witnessed By:","Commission on Audit (COA) Representative","Audit Team","Date: ${reportDate}"`);
+    const reportHTML = `
+        <div style="font-family: 'Times New Roman', Times, serif; font-size: 9pt; color: #000000; padding: 10px; background-color: #ffffff; line-height: 1.3;">
+            <!-- Header Section -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">Republic of the Philippines</div>
+                <div style="font-size: 10pt;">Province of Quezon</div>
+                <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">Municipality of Pagbilao</div>
+                <div style="font-size: 9pt; margin-top: 2px;">MUNICIPAL ACCOUNTING OFFICE • GENERAL SERVICES OFFICE</div>
+                <div style="margin-top: 8px;">
+                    <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                        REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)
+                    </h2>
+                    <div style="font-size: 9.5pt; font-style: italic; margin-top: 2px;">
+                        (Property, Plant and Equipment Ledger &amp; Physical Inventory Verification)
+                    </div>
+                    <div style="font-size: 10pt; font-weight: bold; margin-top: 2px;">
+                        As of ${reportDate}
+                    </div>
+                </div>
+            </div>
 
-    const csvContent = lines.join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const filename = `COA_RPCPPE_Report_${new Date().toISOString().split('T')[0]}.csv`;
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+            <!-- Meta / Accountability Section -->
+            <div style="margin-bottom: 12px; font-size: 9pt; line-height: 1.4;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <div><strong>Fund Cluster:</strong> 101 - General Fund</div>
+                    <div><strong>LGU Name:</strong> Municipality of Pagbilao, Quezon</div>
+                </div>
+                <div>
+                    <span>For which </span>
+                    <strong style="border-bottom: 1px solid #000; padding: 0 8px;">${sanitizeText(officerName)}</strong>,
+                    <strong style="border-bottom: 1px solid #000; padding: 0 8px;">${sanitizeText(officerDept)}</strong>,
+                    <span>is accountable, having assumed such accountability for Property, Plant and Equipment.</span>
+                </div>
+            </div>
 
-    window.showGTrackToast('success', 'COA Report Generated', `Downloaded official COA RPCPPE compliance report (${filename}).`);
+            <!-- Official COA RPCPPE Table -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 8pt; border: 1px solid #000;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 12%;">ARTICLE</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 16%;">DESCRIPTION</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 10%;">PROPERTY NO.</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 5%;">UNIT</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 8%;">UNIT VALUE (₱)</th>
+                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">BALANCE PER CARD</th>
+                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">ON HAND PER COUNT</th>
+                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">SHORTAGE / OVERAGE</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 10%;">ACCOUNTABLE OFFICER</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 9%;">REMARKS / TALLY</th>
+                    </tr>
+                    <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 4%;">QTY</th>
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 8%;">TOTAL (₱)</th>
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 4%;">QTY</th>
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 8%;">TOTAL (₱)</th>
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 3%;">QTY</th>
+                        <th style="border: 1px solid #000; padding: 3px 4px; width: 6%;">VALUE (₱)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHTML}
+                    
+                    <!-- Grand Total Row -->
+                    <tr style="background-color: #e2e8f0; font-weight: bold; font-size: 8.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td colspan="5" style="border: 1px solid #000; padding: 6px 8px; text-align: left; text-transform: uppercase;">
+                            <strong>GRAND TOTAL — ALL PPE ACCOUNTS</strong>
+                        </td>
+                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
+                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱${grandTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
+                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱${grandTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>—</strong></td>
+                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱0.00</strong></td>
+                        <td colspan="2" style="border: 1px solid #000; padding: 6px 6px;"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Signatures Section (Standard 4-Tier Local Government & COA Format) -->
+            <div style="display: flex; justify-content: space-between; margin-top: 24px; font-size: 8.5pt; page-break-inside: avoid;">
+                <div style="width: 23%; text-align: center;">
+                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">PREPARED &amp; RECONCILED BY:</p>
+                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px; text-transform: uppercase;">${sanitizeText(officerName)}</div>
+                    <div style="font-size: 8pt; margin-top: 2px;">${sanitizeText(officerDept)}</div>
+                </div>
+                <div style="width: 23%; text-align: center;">
+                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">CERTIFIED CORRECT (PHYSICAL CUSTODY):</p>
+                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">ERROLD JAMES J. DIGUIDIG</div>
+                    <div style="font-size: 8pt; margin-top: 2px;">RCCI / GSO Custodian</div>
+                </div>
+                <div style="width: 23%; text-align: center;">
+                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">APPROVED BY:</p>
+                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">HON. ANGELICA P. TATLONGHARI</div>
+                    <div style="font-size: 8pt; margin-top: 2px;">Municipal Mayor</div>
+                </div>
+                <div style="width: 23%; text-align: center;">
+                    <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">NOTED / AUDITED BY:</p>
+                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">COMMISSION ON AUDIT (COA)</div>
+                    <div style="font-size: 8pt; margin-top: 2px;">Audit Team Leader / Representative</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    let printArea = document.getElementById('printArea');
+    if (!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'printArea';
+        printArea.className = 'print-area';
+        printArea.style.display = 'none';
+        document.body.appendChild(printArea);
+    }
+
+    printArea.innerHTML = reportHTML;
+    printArea.style.display = 'block';
+
+    window.showGTrackToast('info', 'Opening PDF Preview', 'Generating official COA RPCPPE report. Select "Save as PDF" to save.');
+
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+            printArea.style.display = 'none';
+        }, 500);
+    }, 200);
 };
 
 // Hook up Accounting View Event Listeners
