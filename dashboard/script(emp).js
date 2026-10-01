@@ -3209,12 +3209,93 @@ window.toggleAccountingTally = async function(itemId) {
 };
 
 /**
- * Exports official COA RPCPPE (Report on the Physical Count of Property, Plant and Equipment)
- * in official Philippine Local Government Accounting & GSO PDF/Print format.
+ * Toggles the COA Report Generator options popover modal.
  */
-window.exportCOARPCPPEReport = function() {
+window.toggleCOAReportPopover = function(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('coaReportPopover');
+    if (!popover) return;
+
+    const isHidden = popover.classList.contains('hidden');
+    if (isHidden) {
+        // Populate account / equipment types dynamically from inventoryData
+        const accountSelect = document.getElementById('coaReportAccountFilter');
+        if (accountSelect && inventoryData && inventoryData.length > 0) {
+            const groups = new Set();
+            inventoryData.forEach(item => {
+                if (item.account && item.account.trim()) {
+                    groups.add(item.account.trim());
+                }
+            });
+
+            const currentTableGroup = document.getElementById('accounting-group-filter')?.value || 'All';
+            let optionsHTML = '<option value="All">All Equipment &amp; PPE Accounts</option>';
+            Array.from(groups).sort().forEach(g => {
+                const selected = (g === currentTableGroup) ? 'selected' : '';
+                optionsHTML += `<option value="${sanitizeText(g)}" ${selected}>${sanitizeText(g)}</option>`;
+            });
+            accountSelect.innerHTML = optionsHTML;
+        }
+
+        // Set default as of date
+        const dateInput = document.getElementById('coaReportAsOfDate');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
+        popover.classList.remove('hidden');
+    } else {
+        popover.classList.add('hidden');
+    }
+};
+
+/**
+ * Closes the COA report configuration popover modal.
+ */
+window.closeCOAReportPopover = function(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('coaReportPopover');
+    if (popover) popover.classList.add('hidden');
+};
+
+/**
+ * Executes official COA RPCPPE PDF report generation based on the accountant's selected equipment type,
+ * voucher tally status, equipment condition, and period filters.
+ * Outputs a strict government-compliant black-and-white COA audit format.
+ */
+window.executeCOAPrintReport = function() {
     if (!inventoryData || inventoryData.length === 0) {
         window.showGTrackToast('error', 'No Records', 'No inventory records found to generate the COA report.');
+        return;
+    }
+
+    const selectedAccount = document.getElementById('coaReportAccountFilter')?.value || 'All';
+    const selectedTally = document.getElementById('coaReportTallyFilter')?.value || 'All';
+    const selectedCondition = document.getElementById('coaReportConditionFilter')?.value || 'All';
+    const asOfDateStr = document.getElementById('coaReportAsOfDate')?.value || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // Filter dataset according to accountant's specifications
+    let filteredItems = inventoryData.filter(item => {
+        if (selectedAccount !== 'All' && (item.account || '').toLowerCase() !== selectedAccount.toLowerCase()) {
+            return false;
+        }
+        if (selectedTally === 'Tallied') {
+            const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
+            if (!isTallied) return false;
+        } else if (selectedTally === 'Pending') {
+            const isPending = (item.tallyStatus === 'Pending' || item.tallied === false);
+            if (!isPending) return false;
+        }
+        if (selectedCondition !== 'All') {
+            const cond = (item.condition || '').toUpperCase();
+            if (selectedCondition.toUpperCase() === 'SERVICEABLE' && !cond.includes('SERVICEABLE')) return false;
+            if (selectedCondition.toUpperCase() === 'UNSERVICEABLE' && !cond.includes('UNSERVICEABLE')) return false;
+        }
+        return true;
+    });
+
+    if (filteredItems.length === 0) {
+        window.showGTrackToast('warning', 'No Matching Items', 'No equipment items matched the selected report filters.');
         return;
     }
 
@@ -3222,7 +3303,7 @@ window.exportCOARPCPPEReport = function() {
     let grandTotalQty = 0;
     let grandTotalCost = 0;
 
-    inventoryData.forEach(item => {
+    filteredItems.forEach(item => {
         const group = item.account || 'Other Property, Plant and Equipment';
         if (!grouped[group]) grouped[group] = [];
         grouped[group].push(item);
@@ -3235,9 +3316,10 @@ window.exportCOARPCPPEReport = function() {
         grandTotalCost += tCost;
     });
 
-    const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const reportDate = asOfDateStr;
     const officerName = currentEmployeeName || 'General Services Officer';
     const officerDept = currentEmployeeDept || 'Municipal Accounting Office';
+    const accountTitle = (selectedAccount === 'All') ? 'ALL PROPERTY, PLANT AND EQUIPMENT' : selectedAccount.toUpperCase();
 
     let tableRowsHTML = '';
     const sortedGroups = Object.keys(grouped).sort();
@@ -3246,11 +3328,11 @@ window.exportCOARPCPPEReport = function() {
         let groupQty = 0;
         let groupCost = 0;
 
-        // Group Header Row
+        // Group Classification Header Row (Clean black & white)
         tableRowsHTML += `
-            <tr style="background-color: #e2e8f0; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                <td colspan="13" style="border: 1px solid #000; padding: 4px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-size: 9pt;">
-                    <strong>${sanitizeText(groupName)}</strong>
+            <tr style="background-color: #ffffff;">
+                <td colspan="13" style="border: 1px solid #000000; padding: 5px 6px; text-transform: uppercase; font-size: 8.5pt; font-weight: bold; text-align: left;">
+                    ${sanitizeText(groupName)}
                 </td>
             </tr>
         `;
@@ -3267,56 +3349,60 @@ window.exportCOARPCPPEReport = function() {
             groupCost += tCost;
 
             tableRowsHTML += `
-                <tr>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left; font-weight: 600;">${sanitizeText(item.article || '—')}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left;">${sanitizeText(item.description || '—')}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-family: monospace;">${sanitizeText(item.propertyNo || '—')}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${sanitizeText(item.unit || 'UNIT')}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${uCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${tCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱${tCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center;">—</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: right;">₱0.00</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: left;">${sanitizeText(item.accountablePerson || 'GSO Custodian')}</td>
-                    <td style="border: 1px solid #000; padding: 3px 5px; text-align: center; font-size: 8pt;">${conditionText} • ${statusText}</td>
+                <tr style="background-color: #ffffff;">
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.article || '—')}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.description || '—')}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center; font-family: monospace;">${sanitizeText(item.propertyNo || '—')}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${sanitizeText(item.unit || 'UNIT')}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${uCost.toFixed(2)}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${qty}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${tCost.toFixed(2)}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">${qty}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">${tCost.toFixed(2)}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center;">—</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: right;">0.00</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: left;">${sanitizeText(item.accountablePerson || 'GSO Custodian')}</td>
+                    <td style="border: 1px solid #000000; padding: 3px 5px; text-align: center; font-size: 7.5pt;">${conditionText} • ${statusText}</td>
                 </tr>
             `;
         });
 
-        // Subtotal Row per Account Group
+        // Subtotal Row per Account Group (Clean black & white)
         tableRowsHTML += `
-            <tr style="background-color: #f8fafc; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                <td colspan="5" style="border: 1px solid #000; padding: 4px 6px; text-align: left;">SUBTOTAL - ${sanitizeText(groupName).toUpperCase()}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">${groupQty}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱${groupCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">${groupQty}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱${groupCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center;">—</td>
-                <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">₱0.00</td>
-                <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;"></td>
+            <tr style="background-color: #ffffff; font-weight: bold;">
+                <td colspan="5" style="border: 1px solid #000000; padding: 4px 6px; text-align: left;">SUBTOTAL - ${sanitizeText(groupName).toUpperCase()}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">${groupQty}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">${groupCost.toFixed(2)}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">${groupQty}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">${groupCost.toFixed(2)}</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: center;">—</td>
+                <td style="border: 1px solid #000000; padding: 4px 6px; text-align: right;">0.00</td>
+                <td colspan="2" style="border: 1px solid #000000; padding: 4px 6px;"></td>
             </tr>
         `;
     });
 
     const reportHTML = `
         <div style="font-family: 'Times New Roman', Times, serif; font-size: 9pt; color: #000000; padding: 10px; background-color: #ffffff; line-height: 1.3;">
-            <!-- Header Section -->
+            <!-- Header Section (Pure Clean Black & White COA Format) -->
             <div style="text-align: center; margin-bottom: 16px;">
                 <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">Republic of the Philippines</div>
                 <div style="font-size: 10pt;">Province of Quezon</div>
                 <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">Municipality of Pagbilao</div>
                 <div style="font-size: 9pt; margin-top: 2px;">MUNICIPAL ACCOUNTING OFFICE • GENERAL SERVICES OFFICE</div>
-                <div style="margin-top: 8px;">
-                    <h2 style="font-size: 13pt; font-weight: bold; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                
+                <div style="margin-top: 10px;">
+                    <h2 style="font-size: 12pt; font-weight: bold; margin: 0 0 3px 0; text-transform: uppercase; color: #000000;">
                         REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (RPCPPE)
                     </h2>
-                    <div style="font-size: 9.5pt; font-style: italic; margin-top: 2px;">
-                        (Property, Plant and Equipment Ledger &amp; Physical Inventory Verification)
+                    <h3 style="font-size: 10.5pt; font-weight: bold; margin: 0 0 2px 0; text-transform: uppercase; color: #000000;">
+                        ${sanitizeText(accountTitle)}
+                    </h3>
+                    <div style="font-size: 9pt; font-style: italic; margin-top: 1px;">
+                        (Type of Property, Plant and Equipment)
                     </div>
-                    <div style="font-size: 10pt; font-weight: bold; margin-top: 2px;">
-                        As of ${reportDate}
+                    <div style="font-size: 9.5pt; margin-top: 4px;">
+                        As of ${sanitizeText(reportDate)}
                     </div>
                 </div>
             </div>
@@ -3325,84 +3411,88 @@ window.exportCOARPCPPEReport = function() {
             <div style="margin-bottom: 12px; font-size: 9pt; line-height: 1.4;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                     <div><strong>Fund Cluster:</strong> 101 - General Fund</div>
-                    <div><strong>LGU Name:</strong> Municipality of Pagbilao, Quezon</div>
+                    <div><strong>LGU:</strong> Pagbilao, Quezon</div>
                 </div>
                 <div>
                     <span>For which </span>
-                    <strong style="border-bottom: 1px solid #000; padding: 0 8px;">${sanitizeText(officerName)}</strong>,
-                    <strong style="border-bottom: 1px solid #000; padding: 0 8px;">${sanitizeText(officerDept)}</strong>,
-                    <span>is accountable, having assumed such accountability for Property, Plant and Equipment.</span>
+                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(officerName)}</strong>,
+                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(officerDept)}</strong>,
+                    <span>is accountable, having assumed such accountability on </span>
+                    <strong style="border-bottom: 1px solid #000000; padding: 0 8px;">${sanitizeText(reportDate)}</strong>.
                 </div>
             </div>
 
-            <!-- Official COA RPCPPE Table -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 8pt; border: 1px solid #000;">
+            <!-- Official COA RPCPPE Table (Strictly Black Borders & White Header Backgrounds) -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 8pt; border: 1px solid #000000; background-color: #ffffff;">
                 <thead>
-                    <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 12%;">ARTICLE</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 16%;">DESCRIPTION</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 10%;">PROPERTY NO.</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 5%;">UNIT</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 8%;">UNIT VALUE (₱)</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">BALANCE PER CARD</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">ON HAND PER COUNT</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 3px 4px;">SHORTAGE / OVERAGE</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 10%;">ACCOUNTABLE OFFICER</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 4px 5px; width: 9%;">REMARKS / TALLY</th>
+                    <tr style="background-color: #ffffff; text-align: center; font-weight: bold; color: #000000;">
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 12%; background-color: #ffffff; color: #000000;">ARTICLES</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 16%; background-color: #ffffff; color: #000000;">DESCRIPTION</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 10%; background-color: #ffffff; color: #000000;">PROPERTY NO.</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 5%; background-color: #ffffff; color: #000000;">UNIT OF MEASURE</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 8%; background-color: #ffffff; color: #000000;">UNIT VALUE</th>
+                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">Balance Per Property Card</th>
+                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">On Hand Per Count</th>
+                        <th colspan="2" style="border: 1px solid #000000; padding: 3px 4px; background-color: #ffffff; color: #000000;">Shortage / Overage</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 10%; background-color: #ffffff; color: #000000;">ACCOUNTABLE PERSON</th>
+                        <th rowspan="2" style="border: 1px solid #000000; padding: 4px 5px; width: 9%; background-color: #ffffff; color: #000000;">REMARKS</th>
                     </tr>
-                    <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 4%;">QTY</th>
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 8%;">TOTAL (₱)</th>
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 4%;">QTY</th>
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 8%;">TOTAL (₱)</th>
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 3%;">QTY</th>
-                        <th style="border: 1px solid #000; padding: 3px 4px; width: 6%;">VALUE (₱)</th>
+                    <tr style="background-color: #ffffff; text-align: center; font-weight: bold; color: #000000;">
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 4%; background-color: #ffffff; color: #000000;">Quantity</th>
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 8%; background-color: #ffffff; color: #000000;">Total Value</th>
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 4%; background-color: #ffffff; color: #000000;">Quantity</th>
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 8%; background-color: #ffffff; color: #000000;">Total Value</th>
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 3%; background-color: #ffffff; color: #000000;">Quantity</th>
+                        <th style="border: 1px solid #000000; padding: 3px 4px; width: 6%; background-color: #ffffff; color: #000000;">Value</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${tableRowsHTML}
                     
-                    <!-- Grand Total Row -->
-                    <tr style="background-color: #e2e8f0; font-weight: bold; font-size: 8.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <td colspan="5" style="border: 1px solid #000; padding: 6px 8px; text-align: left; text-transform: uppercase;">
-                            <strong>GRAND TOTAL — ALL PPE ACCOUNTS</strong>
+                    <!-- Grand Total Row (Clean black & white) -->
+                    <tr style="background-color: #ffffff; font-weight: bold; font-size: 8.5pt;">
+                        <td colspan="5" style="border: 1px solid #000000; padding: 6px 8px; text-align: left; text-transform: uppercase;">
+                            <strong>GRAND TOTAL</strong>
                         </td>
-                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
-                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱${grandTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
-                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱${grandTotalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-                        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"><strong>—</strong></td>
-                        <td style="border: 1px solid #000; padding: 6px 6px; text-align: right;"><strong>₱0.00</strong></td>
-                        <td colspan="2" style="border: 1px solid #000; padding: 6px 6px;"></td>
+                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
+                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>${grandTotalCost.toFixed(2)}</strong></td>
+                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>${grandTotalQty}</strong></td>
+                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>${grandTotalCost.toFixed(2)}</strong></td>
+                        <td style="border: 1px solid #000000; padding: 6px 4px; text-align: center;"><strong>—</strong></td>
+                        <td style="border: 1px solid #000000; padding: 6px 6px; text-align: right;"><strong>0.00</strong></td>
+                        <td colspan="2" style="border: 1px solid #000000; padding: 6px 6px;"></td>
                     </tr>
                 </tbody>
             </table>
 
-            <!-- Signatures Section (Standard 4-Tier Local Government & COA Format) -->
+            <!-- Signatures Section (Standard 4-Tier COA Audit Signatories) -->
             <div style="display: flex; justify-content: space-between; margin-top: 24px; font-size: 8.5pt; page-break-inside: avoid;">
                 <div style="width: 23%; text-align: center;">
                     <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">PREPARED &amp; RECONCILED BY:</p>
-                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px; text-transform: uppercase;">${sanitizeText(officerName)}</div>
+                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px; text-transform: uppercase;">${sanitizeText(officerName)}</div>
                     <div style="font-size: 8pt; margin-top: 2px;">${sanitizeText(officerDept)}</div>
                 </div>
                 <div style="width: 23%; text-align: center;">
                     <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">CERTIFIED CORRECT (PHYSICAL CUSTODY):</p>
-                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">ERROLD JAMES J. DIGUIDIG</div>
+                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">ERROLD JAMES J. DIGUIDIG</div>
                     <div style="font-size: 8pt; margin-top: 2px;">RCCI / GSO Custodian</div>
                 </div>
                 <div style="width: 23%; text-align: center;">
                     <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">APPROVED BY:</p>
-                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">HON. ANGELICA P. TATLONGHARI</div>
+                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">HON. ANGELICA P. TATLONGHARI</div>
                     <div style="font-size: 8pt; margin-top: 2px;">Municipal Mayor</div>
                 </div>
                 <div style="width: 23%; text-align: center;">
                     <p style="margin: 0 0 28px 0; text-align: left; font-weight: bold; font-size: 8pt;">NOTED / AUDITED BY:</p>
-                    <div style="border-bottom: 1px solid #000; font-weight: bold; padding-bottom: 2px;">COMMISSION ON AUDIT (COA)</div>
+                    <div style="border-bottom: 1px solid #000000; font-weight: bold; padding-bottom: 2px;">COMMISSION ON AUDIT (COA)</div>
                     <div style="font-size: 8pt; margin-top: 2px;">Audit Team Leader / Representative</div>
                 </div>
             </div>
         </div>
     `;
+
+    // Close the popover
+    window.closeCOAReportPopover();
 
     let printArea = document.getElementById('printArea');
     if (!printArea) {
@@ -3425,6 +3515,22 @@ window.exportCOARPCPPEReport = function() {
         }, 500);
     }, 200);
 };
+
+// Also alias exportCOARPCPPEReport to toggleCOAReportPopover
+window.exportCOARPCPPEReport = function(event) {
+    window.toggleCOAReportPopover(event);
+};
+
+// Dismiss COA report popover on outside click
+document.addEventListener('click', function(e) {
+    const popover = document.getElementById('coaReportPopover');
+    const btn = document.getElementById('emp-coa-report-btn');
+    if (popover && !popover.classList.contains('hidden')) {
+        if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+            popover.classList.add('hidden');
+        }
+    }
+});
 
 // Hook up Accounting View Event Listeners
 (function setupAccountingListeners() {

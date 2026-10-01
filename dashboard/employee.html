@@ -530,10 +530,74 @@
                         <button class="page-btn" id="accounting-last-page-btn" title="Last Page"><i class="fas fa-angles-right"></i></button>
                     </div>
                 </div>
-                <div class="report-actions-group">
-                    <button type="button" class="add-eq-btn btn-blue" onclick="exportCOARPCPPEReport()" title="Download Official COA Report (RPCPPE)">
+                <div class="report-actions-group" style="position: relative;">
+                    <button type="button" id="emp-coa-report-btn" class="add-eq-btn btn-blue" onclick="toggleCOAReportPopover(event)" title="Download Official COA Report (RPCPPE)">
                         <i class="fas fa-file-export"></i> <span>Download Report</span>
                     </button>
+
+                    <!-- COA Report Configuration Popover Modal -->
+                    <div id="coaReportPopover" class="hidden" style="
+                        position: absolute;
+                        top: calc(100% + 8px);
+                        right: 0;
+                        width: 310px;
+                        z-index: 1000;
+                        background-color: #0f172a;
+                        border: 1px solid rgba(56, 189, 248, 0.3);
+                        border-radius: 12px;
+                        padding: 16px;
+                        box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+                        box-sizing: border-box;
+                        text-align: left;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                            <span style="font-size: 11.5px; font-weight: 700; color: #38bdf8; letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-sliders-h"></i> Generate COA Report
+                            </span>
+                            <button type="button" onclick="closeCOAReportPopover(event)" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">&times;</button>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Equipment Type / Account Group:</label>
+                                <select id="coaReportAccountFilter" style="background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 7px 10px; border-radius: 6px; font-size: 11px; outline: none; width: 100%;">
+                                    <option value="All">All Equipment &amp; PPE Accounts</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Voucher Tally Status:</label>
+                                <select id="coaReportTallyFilter" style="background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 7px 10px; border-radius: 6px; font-size: 11px; outline: none; width: 100%;">
+                                    <option value="All">All Statuses (Tallied &amp; Pending)</option>
+                                    <option value="Tallied">Tallied with Voucher Only</option>
+                                    <option value="Pending">Pending Voucher Tally Only</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Equipment Condition:</label>
+                                <select id="coaReportConditionFilter" style="background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 7px 10px; border-radius: 6px; font-size: 11px; outline: none; width: 100%;">
+                                    <option value="All">All Conditions</option>
+                                    <option value="SERVICEABLE">Serviceable Only</option>
+                                    <option value="UNSERVICEABLE">Unserviceable Only</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">As of Date / Period:</label>
+                                <input type="text" id="coaReportAsOfDate" placeholder="e.g. October 2026" style="background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 7px 10px; border-radius: 6px; font-size: 11px; outline: none; width: 100%; box-sizing: border-box;">
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+                                <button type="button" onclick="closeCOAReportPopover(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                    Cancel
+                                </button>
+                                <button type="button" onclick="executeCOAPrintReport()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+                                    <i class="fas fa-print"></i> Generate PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
