@@ -3643,11 +3643,54 @@ if (pendingRequestsContainer) {
 // =========================================================================
 // PRINT REPORT POPOVER & REPORT TEMPLATE GENERATION
 // =========================================================================
+// PRINT REPORT POPOVER & REPORT TEMPLATE GENERATION
+// =========================================================================
 
 /**
- * Populates and toggles the print popover modal display.
- * @param {Event} [event] 
+ * Toggles the collapsible equipment classification dropdown menu inside the print modal.
  */
+window.toggleAdminReportAccountDropdown = function(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('adminReportAccountDropdownMenu');
+    const chevron = document.getElementById('adminReportAccountDropdownChevron');
+    if (!menu) return;
+
+    const isOpening = menu.classList.contains('hidden');
+    if (isOpening) {
+        menu.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+    } else {
+        menu.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+};
+
+/**
+ * Updates the trigger label for the classification dropdown based on selected checkboxes.
+ */
+window.updateAdminReportAccountDropdownLabel = function() {
+    const labelEl = document.getElementById('adminReportAccountDropdownLabel');
+    if (!labelEl) return;
+
+    const checkboxes = document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]');
+    const checked = Array.from(checkboxes).filter(cb => cb.checked);
+
+    if (checkboxes.length === 0) {
+        labelEl.textContent = 'All Classifications';
+        return;
+    }
+
+    if (checked.length === 0) {
+        labelEl.textContent = 'None Selected (0)';
+    } else if (checked.length === checkboxes.length) {
+        labelEl.textContent = `All Classifications (${checked.length} Selected)`;
+    } else if (checked.length === 1) {
+        labelEl.textContent = checked[0].value;
+    } else {
+        labelEl.textContent = `${checked.length} Classifications Selected`;
+    }
+};
+
 /**
  * Populates or synchronizes the multi-select equipment classification checkboxes in the admin print popover.
  */
@@ -3699,14 +3742,15 @@ window.populateAdminPrintAccountCheckboxes = function() {
         }
 
         checkboxesHTML += `
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">
-                <input type="checkbox" value="${sanitizeText(groupName)}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px;">
+                <input type="checkbox" value="${sanitizeText(groupName)}" ${isChecked ? 'checked' : ''} onchange="updateAdminReportAccountDropdownLabel()" style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
                 <span>${sanitizeText(groupName)}</span>
             </label>
         `;
     });
 
     container.innerHTML = checkboxesHTML;
+    window.updateAdminReportAccountDropdownLabel();
 };
 
 /**
@@ -3724,6 +3768,11 @@ window.togglePrintPopover = function(event) {
         popover.classList.remove('hidden');
     } else {
         popover.classList.add('hidden');
+        // Also close the classification dropdown menu if open
+        const menu = document.getElementById('adminReportAccountDropdownMenu');
+        const chevron = document.getElementById('adminReportAccountDropdownChevron');
+        if (menu) menu.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
     }
 };
 
@@ -3739,6 +3788,7 @@ window.toggleAllAdminReportAccounts = function(event) {
 
     const someUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
     checkboxes.forEach(cb => cb.checked = someUnchecked);
+    window.updateAdminReportAccountDropdownLabel();
 };
 
 // =========================================================================
@@ -3778,12 +3828,23 @@ window.executeSignOut = async function() {
     window.location.href = '../login/index.html';
 };
 
-// Dismiss print popover and signout popover on outside click
+// Dismiss print popover, classification dropdown, and signout popover on outside click
 document.addEventListener('click', function(event) {
+    // Classification dropdown outside click
+    const dropdownWrapper = document.getElementById('adminReportAccountDropdownWrapper');
+    const dropdownMenu = document.getElementById('adminReportAccountDropdownMenu');
+    const dropdownChevron = document.getElementById('adminReportAccountDropdownChevron');
+    if (dropdownWrapper && dropdownMenu && !dropdownWrapper.contains(event.target)) {
+        dropdownMenu.classList.add('hidden');
+        if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
+    }
+
     const popover = document.getElementById('printPopover');
     const btn = document.getElementById('btnPrint');
     if (popover && btn && !popover.contains(event.target) && !btn.contains(event.target)) {
         popover.classList.add('hidden');
+        if (dropdownMenu) dropdownMenu.classList.add('hidden');
+        if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
     }
 
     const signoutPopover = document.getElementById('signout-popover');
