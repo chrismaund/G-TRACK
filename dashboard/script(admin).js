@@ -2565,6 +2565,21 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
             }
         }
 
+        // 3. Notify Employee in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Masterlist Copy Approved',
+                message: 'Your request for an authorized inventory masterlist copy has been approved. You can download it now in My Requests.',
+                type: 'copy_request',
+                targetRole: 'employee',
+                createdAt: Date.now()
+            });
+        } catch(nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('success', 'Request Approved', 'Masterlist copy generated and ready for staff download.');
         renderAdminRequestsPanel();
 
@@ -2602,6 +2617,21 @@ window.rejectMasterlistRequest = async function(reqId, triggerBtn = null) {
             }
         }
 
+        // Notify Employee in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Masterlist Copy Declined',
+                message: 'Your request for an authorized inventory masterlist copy was declined by the administrator.',
+                type: 'copy_request',
+                targetRole: 'employee',
+                createdAt: Date.now()
+            });
+        } catch(nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('info', 'Request Declined', 'Masterlist copy request was declined.');
         renderAdminRequestsPanel();
 
@@ -2633,6 +2663,22 @@ window.approveDeptTransfer = async function(reqId, userId, targetDepartment, tri
                 department: targetDepartment
             });
         }
+
+        // Notify Employee in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Department Transfer Approved',
+                message: `Your department transfer to ${targetDepartment} has been approved.`,
+                type: 'user_update',
+                targetRole: 'employee',
+                createdAt: Date.now()
+            });
+        } catch(nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('success', 'Transfer Approved', `Employee department successfully transferred to ${targetDepartment}.`);
     } catch (err) {
         console.error("Error approving dept transfer:", err);
@@ -2708,6 +2754,21 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
             approvedAt: new Date().toISOString()
         });
 
+        // 5. Notify Employee in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Equipment Transfer Approved',
+                message: `Equipment transfer to ${newDept} (Custodian: ${newCustodian}) was approved.`,
+                type: 'request',
+                targetRole: 'employee',
+                createdAt: Date.now()
+            });
+        } catch(nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('success', 'Transfer Approved', `Equipment location updated to ${newDept}.`);
         renderTable();
         renderAdminRequestsPanel();
@@ -2734,6 +2795,22 @@ window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
             status: 'Rejected',
             rejectedAt: new Date().toISOString()
         });
+
+        // Notify Employee in Real-Time
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Equipment Transfer Declined',
+                message: 'Your equipment transfer request was declined by the administrator.',
+                type: 'request',
+                targetRole: 'employee',
+                createdAt: Date.now()
+            });
+        } catch(nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
         window.showGTrackToast('info', 'Request Declined', 'Equipment transfer request was declined.');
         renderAdminRequestsPanel();
     } catch (err) {

@@ -1290,15 +1290,26 @@ window.sendMasterlistRequest = async function() {
             }
         }
 
-        // Notify GSO Administrator in Real-Time
+        // Notify GSO Administrator and Employee in Real-Time
         try {
-            const notifRef = database.ref('notifications').push();
-            await notifRef.set({
-                id: notifRef.key,
+            const notifAdminRef = database.ref('notifications').push();
+            await notifAdminRef.set({
+                id: notifAdminRef.key,
                 title: 'New Copy Request',
                 message: `${userName} (${currentEmployeeDept || 'Staff'}) submitted a request for an authorized masterlist copy.`,
                 type: 'copy_request',
                 targetRole: 'admin',
+                createdAt: Date.now()
+            });
+
+            const notifEmpRef = database.ref('notifications').push();
+            await notifEmpRef.set({
+                id: notifEmpRef.key,
+                title: 'Copy Request Submitted',
+                message: `Your request for an authorized inventory masterlist copy has been submitted for GSO Admin approval.`,
+                type: 'copy_request',
+                targetRole: 'employee',
+                targetEmail: userEmail,
                 createdAt: Date.now()
             });
         } catch (nErr) {
@@ -1306,6 +1317,9 @@ window.sendMasterlistRequest = async function() {
         }
 
         window.showGTrackToast('success', 'Request Submitted', 'Masterlist copy request has been submitted for GSO Admin authorization.');
+        if (typeof window.showSidebarNotifToast === 'function') {
+            window.showSidebarNotifToast('Copy Request Submitted', 'Your masterlist copy request has been submitted for GSO Admin approval.');
+        }
         window.openEmpRequestsModal();
     } catch (err) {
         console.error("Error submitting masterlist request:", err);
@@ -2620,6 +2634,36 @@ window.submitEquipmentTransfer = async function(event) {
             } catch(e) {
                 console.warn("Supabase equipment_transfers mirror skipped:", e);
             }
+        }
+
+        // Notify Admin & Employee of Equipment Transfer Request
+        try {
+            const notifAdminRef = database.ref('notifications').push();
+            await notifAdminRef.set({
+                id: notifAdminRef.key,
+                title: 'New Equipment Transfer Request',
+                message: `${currentEmployeeName || 'Employee'} (${currentEmployeeDept || 'Staff'}) requested transfer of ${item.article || 'Item'} (${item.propertyNo || '-'}) to ${targetDept}.`,
+                type: 'request',
+                targetRole: 'admin',
+                createdAt: Date.now()
+            });
+
+            const notifEmpRef = database.ref('notifications').push();
+            await notifEmpRef.set({
+                id: notifEmpRef.key,
+                title: 'Transfer Request Submitted',
+                message: `Transfer request for ${item.article || 'Item'} to ${targetDept} has been submitted for approval.`,
+                type: 'request',
+                targetRole: 'employee',
+                targetEmail: currentEmployeeEmail || '',
+                createdAt: Date.now()
+            });
+        } catch (nErr) {
+            console.warn("Notification dispatch notice:", nErr);
+        }
+
+        if (typeof window.showSidebarNotifToast === 'function') {
+            window.showSidebarNotifToast('Transfer Request Submitted', `Transfer request for ${item.article || 'Item'} submitted for approval.`);
         }
 
         if (alertBox) {
