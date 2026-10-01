@@ -2822,6 +2822,8 @@ function formatNotifTime(ts) {
 
 let currentSidebarNotifTab = 'all';
 let currentSidebarNotifSearch = '';
+let adminLastUnreadNotifCount = null;
+let sidebarToastTimer = null;
 
 function getNotifIconConfig(type) {
     switch (type) {
@@ -2842,6 +2844,34 @@ function getNotifIconConfig(type) {
             return { icon: 'fa-bell', badge: 'fa-circle-info', badgeClass: 'fb-badge-blue' };
     }
 }
+
+window.showSidebarNotifToast = function(title, msg) {
+    const toast = document.getElementById('sidebar-notif-toast');
+    const toastTitle = document.getElementById('sidebar-notif-toast-title');
+    const toastMsg = document.getElementById('sidebar-notif-toast-msg');
+    if (!toast) return;
+
+    if (toastTitle) toastTitle.textContent = title || 'New Notification';
+    if (toastMsg) toastMsg.textContent = msg || 'You have a new update';
+
+    toast.style.display = 'flex';
+
+    if (sidebarToastTimer) clearTimeout(sidebarToastTimer);
+    sidebarToastTimer = setTimeout(() => {
+        hideSidebarNotifToast();
+    }, 7000);
+};
+
+window.hideSidebarNotifToast = function() {
+    const toast = document.getElementById('sidebar-notif-toast');
+    if (toast) {
+        toast.style.display = 'none';
+    }
+    if (sidebarToastTimer) {
+        clearTimeout(sidebarToastTimer);
+        sidebarToastTimer = null;
+    }
+};
 
 function initAdminNotifications() {
     const userKey = 'admin_user';
@@ -2875,6 +2905,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
     const notifList = document.getElementById('notif-list');
     const drawerList = document.getElementById('sidebar-notif-drawer-list');
     const fbUnreadCount = document.getElementById('fb-unread-count');
+    const drawer = document.getElementById('sidebar-notif-drawer');
 
     let unreadCount = 0;
     adminNotifications.forEach(n => {
@@ -2882,7 +2913,19 @@ function renderAdminNotifications(userKey = 'admin_user') {
         if (!isRead) unreadCount++;
     });
 
-    // Update Topbar Bell Badge
+    // Check if new unread notification arrived in real-time
+    if (adminLastUnreadNotifCount !== null && unreadCount > adminLastUnreadNotifCount) {
+        const isDrawerOpen = drawer && drawer.classList.contains('open');
+        if (!isDrawerOpen) {
+            const latestUnread = adminNotifications.find(n => !(n.readBy && n.readBy[userKey])) || adminNotifications[0];
+            if (latestUnread) {
+                showSidebarNotifToast(latestUnread.title, latestUnread.message);
+            }
+        }
+    }
+    adminLastUnreadNotifCount = unreadCount;
+
+    // Update Topbar Bell Badge (if exists)
     if (notifBadge) {
         if (unreadCount > 0) {
             notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -2907,7 +2950,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
         }
     }
 
-    // Render Topbar Dropdown List
+    // Render Topbar Dropdown List (if exists)
     if (notifList) {
         if (adminNotifications.length === 0) {
             notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
@@ -2985,6 +3028,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
 
 // Sidebar Drawer Control Functions
 window.openSidebarNotifDrawer = function() {
+    hideSidebarNotifToast();
     const drawer = document.getElementById('sidebar-notif-drawer');
     const overlay = document.getElementById('sidebar-notif-drawer-overlay');
     if (drawer) drawer.classList.add('open');

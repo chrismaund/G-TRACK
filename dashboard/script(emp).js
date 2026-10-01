@@ -3388,6 +3388,8 @@ window.exportCOARPCPPEReport = function() {
 let empNotifications = [];
 let currentEmpSidebarNotifTab = 'all';
 let currentEmpSidebarNotifSearch = '';
+let empLastUnreadNotifCount = null;
+let empSidebarToastTimer = null;
 
 function getEmpNotifIconConfig(type) {
     switch (type) {
@@ -3418,6 +3420,34 @@ function formatEmpNotifTime(ts) {
     if (diff < 172800) return 'Yesterday';
     return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
+
+window.showSidebarNotifToast = function(title, msg) {
+    const toast = document.getElementById('sidebar-notif-toast');
+    const toastTitle = document.getElementById('sidebar-notif-toast-title');
+    const toastMsg = document.getElementById('sidebar-notif-toast-msg');
+    if (!toast) return;
+
+    if (toastTitle) toastTitle.textContent = title || 'New Notification';
+    if (toastMsg) toastMsg.textContent = msg || 'You have a new update';
+
+    toast.style.display = 'flex';
+
+    if (empSidebarToastTimer) clearTimeout(empSidebarToastTimer);
+    empSidebarToastTimer = setTimeout(() => {
+        hideSidebarNotifToast();
+    }, 7000);
+};
+
+window.hideSidebarNotifToast = function() {
+    const toast = document.getElementById('sidebar-notif-toast');
+    if (toast) {
+        toast.style.display = 'none';
+    }
+    if (empSidebarToastTimer) {
+        clearTimeout(empSidebarToastTimer);
+        empSidebarToastTimer = null;
+    }
+};
 
 function initEmpNotifications() {
     const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
@@ -3451,6 +3481,7 @@ function renderEmpNotifications(userKey) {
     const notifList = document.getElementById('notif-list');
     const drawerList = document.getElementById('sidebar-notif-drawer-list');
     const fbUnreadCount = document.getElementById('fb-unread-count');
+    const drawer = document.getElementById('sidebar-notif-drawer');
 
     const activeUserKey = userKey || currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
 
@@ -3460,7 +3491,19 @@ function renderEmpNotifications(userKey) {
         if (!isRead) unreadCount++;
     });
 
-    // Update Topbar Bell Badge
+    // Check if new unread notification arrived in real-time
+    if (empLastUnreadNotifCount !== null && unreadCount > empLastUnreadNotifCount) {
+        const isDrawerOpen = drawer && drawer.classList.contains('open');
+        if (!isDrawerOpen) {
+            const latestUnread = empNotifications.find(n => !(n.readBy && n.readBy[activeUserKey])) || empNotifications[0];
+            if (latestUnread) {
+                showSidebarNotifToast(latestUnread.title, latestUnread.message);
+            }
+        }
+    }
+    empLastUnreadNotifCount = unreadCount;
+
+    // Update Topbar Bell Badge (if exists)
     if (notifBadge) {
         if (unreadCount > 0) {
             notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -3485,7 +3528,7 @@ function renderEmpNotifications(userKey) {
         }
     }
 
-    // Render Topbar Dropdown List
+    // Render Topbar Dropdown List (if exists)
     if (notifList) {
         if (empNotifications.length === 0) {
             notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
@@ -3563,6 +3606,7 @@ function renderEmpNotifications(userKey) {
 
 // Sidebar Drawer Control Functions
 window.openSidebarNotifDrawer = function() {
+    hideSidebarNotifToast();
     const drawer = document.getElementById('sidebar-notif-drawer');
     const overlay = document.getElementById('sidebar-notif-drawer-overlay');
     if (drawer) drawer.classList.add('open');
