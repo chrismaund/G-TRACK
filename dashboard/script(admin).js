@@ -3794,6 +3794,11 @@ function executePrintReport() {
     const filterStartDate = parseReportDateFilter(asOfDate);
     let dataToPrint = rawData;
 
+    // Filter by active account classification if selected on masterlist
+    if (accountGroup && accountGroup !== 'All Accounts') {
+        dataToPrint = dataToPrint.filter(item => (item.account || '').toLowerCase() === accountGroup.toLowerCase());
+    }
+
     if (filterStartDate) {
         dataToPrint = dataToPrint.filter(item => {
             if (!item.date) return false;
