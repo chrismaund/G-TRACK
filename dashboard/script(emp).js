@@ -3386,6 +3386,28 @@ window.exportCOARPCPPEReport = function() {
 // REAL-TIME NOTIFICATION SYSTEM (EMPLOYEE PORTAL)
 // =========================================================================
 let empNotifications = [];
+let currentEmpSidebarNotifTab = 'all';
+let currentEmpSidebarNotifSearch = '';
+
+function getEmpNotifIconConfig(type) {
+    switch (type) {
+        case 'copy_request':
+        case 'request':
+            return { icon: 'fa-file-signature', badge: 'fa-inbox', badgeClass: 'fb-badge-green' };
+        case 'new_item':
+        case 'inventory':
+            return { icon: 'fa-boxes-stacked', badge: 'fa-plus', badgeClass: 'fb-badge-blue' };
+        case 'user_role':
+        case 'user_update':
+        case 'user':
+            return { icon: 'fa-user-shield', badge: 'fa-check', badgeClass: 'fb-badge-purple' };
+        case 'tally':
+        case 'accounting':
+            return { icon: 'fa-file-invoice-dollar', badge: 'fa-calculator', badgeClass: 'fb-badge-amber' };
+        default:
+            return { icon: 'fa-bell', badge: 'fa-circle-info', badgeClass: 'fb-badge-blue' };
+    }
+}
 
 function formatEmpNotifTime(ts) {
     if (!ts) return 'Just now';
@@ -3400,7 +3422,7 @@ function formatEmpNotifTime(ts) {
 function initEmpNotifications() {
     const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
 
-    database.ref('notifications').orderByChild('createdAt').limitToLast(40).on('value', snapshot => {
+    database.ref('notifications').orderByChild('createdAt').limitToLast(60).on('value', snapshot => {
         const data = snapshot.val();
         empNotifications = [];
         if (data) {
@@ -3425,10 +3447,12 @@ function initEmpNotifications() {
 
 function renderEmpNotifications(userKey) {
     const notifBadge = document.getElementById('notif-badge');
+    const sidebarNotifBadge = document.getElementById('sidebar-notif-badge');
     const notifList = document.getElementById('notif-list');
-    if (!notifList) return;
+    const drawerList = document.getElementById('sidebar-notif-drawer-list');
+    const fbUnreadCount = document.getElementById('fb-unread-count');
 
-    const activeUserKey = userKey || currentEmployeeUid || 'emp_user';
+    const activeUserKey = userKey || currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
 
     let unreadCount = 0;
     empNotifications.forEach(n => {
@@ -3436,6 +3460,7 @@ function renderEmpNotifications(userKey) {
         if (!isRead) unreadCount++;
     });
 
+    // Update Topbar Bell Badge
     if (notifBadge) {
         if (unreadCount > 0) {
             notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -3445,27 +3470,147 @@ function renderEmpNotifications(userKey) {
         }
     }
 
-    if (empNotifications.length === 0) {
-        notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-        return;
+    // Update Sidebar Navigation Button Unread Dot
+    if (sidebarNotifBadge) {
+        sidebarNotifBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
     }
 
-    notifList.innerHTML = empNotifications.map(n => {
-        const isRead = n.readBy && n.readBy[activeUserKey];
-        return `
-            <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleEmpNotifClick('${n.id}', '${n.type || ''}')">
-                <div class="notif-item-top">
-                    <div class="notif-item-title-box">
-                        <span class="notif-item-dot"></span>
-                        <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+    // Update FB Pill Tab Unread Badge
+    if (fbUnreadCount) {
+        if (unreadCount > 0) {
+            fbUnreadCount.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            fbUnreadCount.style.display = 'inline-block';
+        } else {
+            fbUnreadCount.style.display = 'none';
+        }
+    }
+
+    // Render Topbar Dropdown List
+    if (notifList) {
+        if (empNotifications.length === 0) {
+            notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+        } else {
+            notifList.innerHTML = empNotifications.map(n => {
+                const isRead = n.readBy && n.readBy[activeUserKey];
+                return `
+                    <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleEmpNotifClick('${n.id}', '${n.type || ''}')">
+                        <div class="notif-item-top">
+                            <div class="notif-item-title-box">
+                                <span class="notif-item-dot"></span>
+                                <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+                            </div>
+                        </div>
+                        <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
+                        <span class="notif-item-time">${formatEmpNotifTime(n.createdAt)}</span>
                     </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // Render Facebook-Style Left Sliding Drawer List
+    if (drawerList) {
+        let filtered = empNotifications;
+
+        // Tab Filter (All vs Unread)
+        if (currentEmpSidebarNotifTab === 'unread') {
+            filtered = filtered.filter(n => !(n.readBy && n.readBy[activeUserKey]));
+        }
+
+        // Search Filter
+        if (currentEmpSidebarNotifSearch.trim()) {
+            const query = currentEmpSidebarNotifSearch.toLowerCase().trim();
+            filtered = filtered.filter(n => {
+                const title = (n.title || '').toLowerCase();
+                const msg = (n.message || '').toLowerCase();
+                return title.includes(query) || msg.includes(query);
+            });
+        }
+
+        if (filtered.length === 0) {
+            drawerList.innerHTML = `
+                <div class="fb-empty-state">
+                    <div class="fb-empty-icon"><i class="fas fa-bell-slash"></i></div>
+                    <p class="fb-empty-title">${currentEmpSidebarNotifTab === 'unread' ? 'No unread notifications' : 'No notifications found'}</p>
+                    <p class="fb-empty-sub">${currentEmpSidebarNotifTab === 'unread' ? "You're all caught up with your updates." : 'We will notify you when new activity occurs.'}</p>
                 </div>
-                <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
-                <span class="notif-item-time">${formatEmpNotifTime(n.createdAt)}</span>
-            </div>
-        `;
-    }).join('');
+            `;
+        } else {
+            drawerList.innerHTML = filtered.map(n => {
+                const isRead = n.readBy && n.readBy[activeUserKey];
+                const iconConf = getEmpNotifIconConfig(n.type);
+                return `
+                    <div class="fb-notif-card ${isRead ? 'read' : 'unread'}" onclick="handleEmpNotifClick('${n.id}', '${n.type || ''}')">
+                        <div class="fb-avatar-box">
+                            <i class="fas ${iconConf.icon}"></i>
+                            <span class="fb-avatar-badge ${iconConf.badgeClass}">
+                                <i class="fas ${iconConf.badge}"></i>
+                            </span>
+                        </div>
+                        <div class="fb-notif-info">
+                            <p class="fb-notif-msg">
+                                <strong>${sanitizeText(n.title || 'Notification')}</strong> — ${sanitizeText(n.message || '')}
+                            </p>
+                            <span class="fb-notif-timestamp">${formatEmpNotifTime(n.createdAt)}</span>
+                        </div>
+                        <span class="fb-unread-dot"></span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
 }
+
+// Sidebar Drawer Control Functions
+window.openSidebarNotifDrawer = function() {
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    const overlay = document.getElementById('sidebar-notif-drawer-overlay');
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+};
+
+window.closeSidebarNotifDrawer = function() {
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    const overlay = document.getElementById('sidebar-notif-drawer-overlay');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+};
+
+window.toggleSidebarNotifDrawer = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    if (drawer && drawer.classList.contains('open')) {
+        closeSidebarNotifDrawer();
+    } else {
+        openSidebarNotifDrawer();
+    }
+};
+
+window.filterSidebarNotifTab = function(tab) {
+    currentEmpSidebarNotifTab = tab;
+    const tabAll = document.getElementById('fb-tab-all');
+    const tabUnread = document.getElementById('fb-tab-unread');
+    if (tabAll && tabUnread) {
+        if (tab === 'unread') {
+            tabAll.classList.remove('active');
+            tabUnread.classList.add('active');
+        } else {
+            tabUnread.classList.remove('active');
+            tabAll.classList.add('active');
+        }
+    }
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    renderEmpNotifications(userKey);
+};
+
+window.searchSidebarNotifs = function(query) {
+    currentEmpSidebarNotifSearch = query || '';
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    renderEmpNotifications(userKey);
+};
 
 window.toggleNotifDropdown = function(event) {
     if (event) {
@@ -3512,9 +3657,10 @@ window.handleEmpNotifClick = async function(notifId, type) {
         }
     }
 
-    // Close dropdown
+    // Close dropdown and drawer
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.remove('open');
+    closeSidebarNotifDrawer();
 
     // Route to directory tab if new item
     if (type === 'new_item' && typeof switchEmpView === 'function') {
@@ -3549,5 +3695,12 @@ document.addEventListener('click', function(e) {
     if (chipWrapper && chipDropdown && !chipWrapper.contains(e.target)) {
         chipWrapper.classList.remove('open');
         chipDropdown.classList.remove('open');
+    }
+});
+
+// Dismiss drawer on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSidebarNotifDrawer();
     }
 });

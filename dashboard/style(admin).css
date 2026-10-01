@@ -6166,4 +6166,447 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     font-size: 12px;
 }
 
+/* ==========================================================================
+   FACEBOOK-STYLE SIDEBAR NOTIFICATION DRAWER (LEFT SLIDE-IN)
+   ========================================================================== */
+
+.sidebar-notif-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(11, 15, 25, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1180;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sidebar-notif-drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.sidebar-notif-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 390px;
+    max-width: calc(100vw - 20px);
+    height: 100vh;
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f19 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 10px 0 35px rgba(0, 0, 0, 0.65);
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.sidebar-notif-drawer.open {
+    transform: translateX(0);
+}
+
+/* Drawer Header */
+.fb-drawer-header {
+    padding: 18px 20px 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+
+.fb-drawer-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fb-drawer-title-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.fb-drawer-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.3px;
+}
+
+.fb-drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fb-drawer-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.fb-drawer-action-btn:hover {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
+.fb-drawer-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.fb-drawer-close-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Filter Tabs & Search Container */
+.fb-drawer-controls {
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(11, 15, 25, 0.4);
+    flex-shrink: 0;
+}
+
+/* Facebook-Style Filter Pills */
+.fb-filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fb-filter-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fb-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+.fb-filter-pill.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+.fb-pill-badge {
+    background: #38bdf8;
+    color: #0b0f19;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.fb-drawer-mark-all {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #38bdf8;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fb-drawer-mark-all:hover {
+    color: #7dd3fc;
+    text-decoration: underline;
+}
+
+/* Search Box */
+.fb-drawer-search-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.fb-drawer-search-wrap i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #64748b;
+}
+
+.fb-drawer-search-input {
+    width: 100%;
+    padding: 7px 12px 7px 32px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: #f8fafc;
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fb-drawer-search-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.fb-drawer-search-input::placeholder {
+    color: #64748b;
+}
+
+/* Drawer Scrollable Content */
+.fb-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fb-drawer-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.fb-drawer-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+
+/* Facebook Notification Card */
+.fb-notif-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    text-decoration: none;
+    position: relative;
+}
+
+.fb-notif-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.fb-notif-card.unread {
+    background: rgba(56, 189, 248, 0.07);
+    border-color: rgba(56, 189, 248, 0.18);
+}
+
+.fb-notif-card.unread:hover {
+    background: rgba(56, 189, 248, 0.11);
+}
+
+/* FB Avatar Icon with badge */
+.fb-avatar-box {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #94a3b8;
+}
+
+.fb-avatar-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    border: 2px solid #0f172a;
+}
+
+.fb-badge-blue {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.fb-badge-green {
+    background: #059669;
+    color: #ffffff;
+}
+
+.fb-badge-amber {
+    background: #d97706;
+    color: #ffffff;
+}
+
+.fb-badge-purple {
+    background: #7c3aed;
+    color: #ffffff;
+}
+
+.fb-badge-rose {
+    background: #e11d48;
+    color: #ffffff;
+}
+
+/* Card Content Details */
+.fb-notif-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.fb-notif-msg {
+    font-size: 12.5px;
+    color: #cbd5e1;
+    line-height: 1.35;
+    margin: 0;
+    word-break: break-word;
+}
+
+.fb-notif-card.unread .fb-notif-msg {
+    color: #f8fafc;
+    font-weight: 500;
+}
+
+.fb-notif-msg strong {
+    color: #f1f5f9;
+    font-weight: 700;
+}
+
+.fb-notif-card.unread .fb-notif-msg strong {
+    color: #38bdf8;
+}
+
+.fb-notif-timestamp {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.fb-notif-card.unread .fb-notif-timestamp {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+/* Unread Indicator Dot on Card */
+.fb-unread-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+    flex-shrink: 0;
+    margin-top: 16px;
+}
+
+.fb-notif-card.read .fb-unread-dot {
+    display: none;
+}
+
+/* Empty State */
+.fb-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px 24px;
+    gap: 12px;
+    color: #64748b;
+}
+
+.fb-empty-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #64748b;
+}
+
+.fb-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.fb-empty-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+
 

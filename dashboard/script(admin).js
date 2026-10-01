@@ -2820,10 +2820,33 @@ function formatNotifTime(ts) {
     return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+let currentSidebarNotifTab = 'all';
+let currentSidebarNotifSearch = '';
+
+function getNotifIconConfig(type) {
+    switch (type) {
+        case 'copy_request':
+        case 'request':
+            return { icon: 'fa-file-signature', badge: 'fa-inbox', badgeClass: 'fb-badge-green' };
+        case 'new_item':
+        case 'inventory':
+            return { icon: 'fa-boxes-stacked', badge: 'fa-plus', badgeClass: 'fb-badge-blue' };
+        case 'user_role':
+        case 'user_update':
+        case 'user':
+            return { icon: 'fa-user-shield', badge: 'fa-check', badgeClass: 'fb-badge-purple' };
+        case 'tally':
+        case 'accounting':
+            return { icon: 'fa-file-invoice-dollar', badge: 'fa-calculator', badgeClass: 'fb-badge-amber' };
+        default:
+            return { icon: 'fa-bell', badge: 'fa-circle-info', badgeClass: 'fb-badge-blue' };
+    }
+}
+
 function initAdminNotifications() {
     const userKey = 'admin_user';
 
-    notifsRef.orderByChild('createdAt').limitToLast(40).on('value', snapshot => {
+    notifsRef.orderByChild('createdAt').limitToLast(60).on('value', snapshot => {
         const data = snapshot.val();
         adminNotifications = [];
         if (data) {
@@ -2848,8 +2871,10 @@ function initAdminNotifications() {
 
 function renderAdminNotifications(userKey = 'admin_user') {
     const notifBadge = document.getElementById('notif-badge');
+    const sidebarNotifBadge = document.getElementById('sidebar-notif-badge');
     const notifList = document.getElementById('notif-list');
-    if (!notifList) return;
+    const drawerList = document.getElementById('sidebar-notif-drawer-list');
+    const fbUnreadCount = document.getElementById('fb-unread-count');
 
     let unreadCount = 0;
     adminNotifications.forEach(n => {
@@ -2857,6 +2882,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
         if (!isRead) unreadCount++;
     });
 
+    // Update Topbar Bell Badge
     if (notifBadge) {
         if (unreadCount > 0) {
             notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -2866,27 +2892,145 @@ function renderAdminNotifications(userKey = 'admin_user') {
         }
     }
 
-    if (adminNotifications.length === 0) {
-        notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-        return;
+    // Update Sidebar Navigation Button Unread Dot
+    if (sidebarNotifBadge) {
+        sidebarNotifBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
     }
 
-    notifList.innerHTML = adminNotifications.map(n => {
-        const isRead = n.readBy && n.readBy[userKey];
-        return `
-            <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleAdminNotifClick('${n.id}', '${n.type || ''}')">
-                <div class="notif-item-top">
-                    <div class="notif-item-title-box">
-                        <span class="notif-item-dot"></span>
-                        <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+    // Update FB Pill Tab Unread Badge
+    if (fbUnreadCount) {
+        if (unreadCount > 0) {
+            fbUnreadCount.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            fbUnreadCount.style.display = 'inline-block';
+        } else {
+            fbUnreadCount.style.display = 'none';
+        }
+    }
+
+    // Render Topbar Dropdown List
+    if (notifList) {
+        if (adminNotifications.length === 0) {
+            notifList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+        } else {
+            notifList.innerHTML = adminNotifications.map(n => {
+                const isRead = n.readBy && n.readBy[userKey];
+                return `
+                    <div class="notif-item ${isRead ? 'read' : 'unread'}" onclick="handleAdminNotifClick('${n.id}', '${n.type || ''}')">
+                        <div class="notif-item-top">
+                            <div class="notif-item-title-box">
+                                <span class="notif-item-dot"></span>
+                                <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
+                            </div>
+                        </div>
+                        <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
+                        <span class="notif-item-time">${formatNotifTime(n.createdAt)}</span>
                     </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // Render Facebook-Style Left Sliding Drawer List
+    if (drawerList) {
+        let filtered = adminNotifications;
+
+        // Tab Filter (All vs Unread)
+        if (currentSidebarNotifTab === 'unread') {
+            filtered = filtered.filter(n => !(n.readBy && n.readBy[userKey]));
+        }
+
+        // Search Filter
+        if (currentSidebarNotifSearch.trim()) {
+            const query = currentSidebarNotifSearch.toLowerCase().trim();
+            filtered = filtered.filter(n => {
+                const title = (n.title || '').toLowerCase();
+                const msg = (n.message || '').toLowerCase();
+                return title.includes(query) || msg.includes(query);
+            });
+        }
+
+        if (filtered.length === 0) {
+            drawerList.innerHTML = `
+                <div class="fb-empty-state">
+                    <div class="fb-empty-icon"><i class="fas fa-bell-slash"></i></div>
+                    <p class="fb-empty-title">${currentSidebarNotifTab === 'unread' ? 'No unread notifications' : 'No notifications found'}</p>
+                    <p class="fb-empty-sub">${currentSidebarNotifTab === 'unread' ? "You're all caught up with your updates." : 'We will notify you when new activity occurs.'}</p>
                 </div>
-                <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
-                <span class="notif-item-time">${formatNotifTime(n.createdAt)}</span>
-            </div>
-        `;
-    }).join('');
+            `;
+        } else {
+            drawerList.innerHTML = filtered.map(n => {
+                const isRead = n.readBy && n.readBy[userKey];
+                const iconConf = getNotifIconConfig(n.type);
+                return `
+                    <div class="fb-notif-card ${isRead ? 'read' : 'unread'}" onclick="handleAdminNotifClick('${n.id}', '${n.type || ''}')">
+                        <div class="fb-avatar-box">
+                            <i class="fas ${iconConf.icon}"></i>
+                            <span class="fb-avatar-badge ${iconConf.badgeClass}">
+                                <i class="fas ${iconConf.badge}"></i>
+                            </span>
+                        </div>
+                        <div class="fb-notif-info">
+                            <p class="fb-notif-msg">
+                                <strong>${sanitizeText(n.title || 'Notification')}</strong> — ${sanitizeText(n.message || '')}
+                            </p>
+                            <span class="fb-notif-timestamp">${formatNotifTime(n.createdAt)}</span>
+                        </div>
+                        <span class="fb-unread-dot"></span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
 }
+
+// Sidebar Drawer Control Functions
+window.openSidebarNotifDrawer = function() {
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    const overlay = document.getElementById('sidebar-notif-drawer-overlay');
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+};
+
+window.closeSidebarNotifDrawer = function() {
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    const overlay = document.getElementById('sidebar-notif-drawer-overlay');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+};
+
+window.toggleSidebarNotifDrawer = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const drawer = document.getElementById('sidebar-notif-drawer');
+    if (drawer && drawer.classList.contains('open')) {
+        closeSidebarNotifDrawer();
+    } else {
+        openSidebarNotifDrawer();
+    }
+};
+
+window.filterSidebarNotifTab = function(tab) {
+    currentSidebarNotifTab = tab;
+    const tabAll = document.getElementById('fb-tab-all');
+    const tabUnread = document.getElementById('fb-tab-unread');
+    if (tabAll && tabUnread) {
+        if (tab === 'unread') {
+            tabAll.classList.remove('active');
+            tabUnread.classList.add('active');
+        } else {
+            tabUnread.classList.remove('active');
+            tabAll.classList.add('active');
+        }
+    }
+    renderAdminNotifications('admin_user');
+};
+
+window.searchSidebarNotifs = function(query) {
+    currentSidebarNotifSearch = query || '';
+    renderAdminNotifications('admin_user');
+};
 
 window.toggleNotifDropdown = function(event) {
     if (event) {
@@ -2933,9 +3077,10 @@ window.handleAdminNotifClick = async function(notifId, type) {
         }
     }
 
-    // Close dropdown
+    // Close topbar dropdown & sliding drawer
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.remove('open');
+    closeSidebarNotifDrawer();
 
     // Action routing
     if (type === 'copy_request') {
@@ -2975,6 +3120,13 @@ document.addEventListener('click', function(e) {
     if (chipWrapper && chipDropdown && !chipWrapper.contains(e.target)) {
         chipWrapper.classList.remove('open');
         chipDropdown.classList.remove('open');
+    }
+});
+
+// Dismiss drawer on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSidebarNotifDrawer();
     }
 });
 // =========================================================================
