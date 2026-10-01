@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=20261001_09">
+    <link rel="stylesheet" href="style(admin).css?v=20261001_10">
 </head>
 <body>
 
@@ -40,23 +40,11 @@
             <button id="sidebar-accounting-btn" class="sidebar-link-btn" title="COA & Tallying" style="display: none;" onclick="switchEmpView('accounting'); closeSidebarNavMenu();">
                 <i class="fas fa-file-invoice-dollar"></i> <span class="sidebar-text">COA & Tallying</span>
             </button>
-            <!-- Notifications Button with Popup Notification Bubble -->
-            <div class="sidebar-notif-btn-wrapper">
-                <button id="sidebar-notifications-btn" class="sidebar-link-btn" title="Notifications" onclick="openSidebarNotifDrawer(); hideSidebarNotifToast(); closeSidebarNavMenu();">
-                    <i class="fas fa-bell"></i> <span class="sidebar-text">Notifications</span>
-                    <span id="sidebar-notif-badge" class="sidebar-notif-dot" style="display: none;"></span>
-                </button>
-                
-                <!-- Minimalist Popup Bubble beside Notifications Button -->
-                <div id="sidebar-notif-toast" class="sidebar-notif-toast" onclick="openSidebarNotifDrawer(); hideSidebarNotifToast();" style="display: none;">
-                    <span class="sidebar-notif-toast-dot"></span>
-                    <div class="sidebar-notif-toast-text">
-                        <span class="sidebar-notif-toast-title" id="sidebar-notif-toast-title">New Notification</span>
-                        <span class="sidebar-notif-toast-msg" id="sidebar-notif-toast-msg">You have a new update</span>
-                    </div>
-                    <button type="button" class="sidebar-notif-toast-dismiss" onclick="event.stopPropagation(); hideSidebarNotifToast();" title="Dismiss">&times;</button>
-                </div>
-            </div>
+            <!-- Notifications Button -->
+            <button id="sidebar-notifications-btn" class="sidebar-link-btn" title="Notifications" onclick="openSidebarNotifDrawer(); hideSidebarNotifToast(); closeSidebarNavMenu();">
+                <i class="fas fa-bell"></i> <span class="sidebar-text">Notifications</span>
+                <span id="sidebar-notif-badge" class="sidebar-notif-dot" style="display: none;"></span>
+            </button>
             <hr class="sidebar-divider">
 
             <!-- Theme Toggle Option (Visible only in Masterlist) -->
@@ -122,8 +110,15 @@
             </div>
         </div>
     </div>
-    <!-- Sidebar Dimmer Overlay Screen Background Layer -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <!-- Sidebar Floating Real-Time Notification Toast Popup -->
+    <div id="sidebar-notif-toast" class="sidebar-notif-toast" onclick="openSidebarNotifDrawer(); hideSidebarNotifToast();" style="display: none;">
+        <span class="sidebar-notif-toast-dot"></span>
+        <div class="sidebar-notif-toast-text">
+            <span class="sidebar-notif-toast-title" id="sidebar-notif-toast-title">New Notification</span>
+            <span class="sidebar-notif-toast-msg" id="sidebar-notif-toast-msg">You have a new update</span>
+        </div>
+        <button type="button" class="sidebar-notif-toast-dismiss" onclick="event.stopPropagation(); hideSidebarNotifToast();" title="Dismiss">&times;</button>
+    </div>
 
     <!-- Facebook-Style Left Sliding Notification Drawer -->
     <div id="sidebar-notif-drawer-overlay" class="sidebar-notif-drawer-overlay" onclick="closeSidebarNotifDrawer()"></div>

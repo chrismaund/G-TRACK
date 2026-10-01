@@ -2926,10 +2926,18 @@ window.showSidebarNotifToast = function(title, msg) {
     const toast = document.getElementById('sidebar-notif-toast');
     const toastTitle = document.getElementById('sidebar-notif-toast-title');
     const toastMsg = document.getElementById('sidebar-notif-toast-msg');
+    const notifBtn = document.getElementById('sidebar-notifications-btn');
     if (!toast) return;
 
     if (toastTitle) toastTitle.textContent = title || 'New Notification';
     if (toastMsg) toastMsg.textContent = msg || 'You have a new update';
+
+    if (notifBtn) {
+        const rect = notifBtn.getBoundingClientRect();
+        toast.style.top = `${rect.top + (rect.height / 2)}px`;
+        toast.style.left = `${rect.right + 12}px`;
+        toast.style.transform = 'translateY(-50%)';
+    }
 
     toast.style.display = 'flex';
 
