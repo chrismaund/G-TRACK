@@ -3925,10 +3925,23 @@ function executePrintReport() {
 
     // Read selected equipment classifications from multi-select checkboxes
     const checkedBoxes = Array.from(document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
-    
+    const allCheckboxes = Array.from(document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]'));
+    const isAllChecked = (allCheckboxes.length > 0 && checkedBoxes.length === allCheckboxes.length);
+
+    if (checkedBoxes.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('warning', 'No Classification Selected', 'Please select at least one equipment classification to print.');
+        } else {
+            alert('Please select at least one equipment classification to print.');
+        }
+        return;
+    }
+
     let accountGroupTitle = 'OTHER PROPERTY, PLANT AND EQUIPMENT';
     if (checkedBoxes.length === 1) {
         accountGroupTitle = checkedBoxes[0].toUpperCase();
+    } else if (isAllChecked) {
+        accountGroupTitle = 'OTHER PROPERTY, PLANT AND EQUIPMENT';
     } else if (checkedBoxes.length > 1) {
         accountGroupTitle = 'SELECTED PROPERTY, PLANT AND EQUIPMENT';
     }
@@ -3950,37 +3963,36 @@ function executePrintReport() {
 
     // Source masterlist records
     const rawData = (typeof inventoryData !== 'undefined' && inventoryData.length > 0) ? inventoryData : [];
-    
-    // Filter by Date (e.g. from July 2026 to current)
-    const filterStartDate = parseReportDateFilter(asOfDate);
-    let dataToPrint = rawData;
+    let dataToPrint = [...rawData];
 
-    if (filterStartDate) {
+    // Filter by Selected Equipment Classifications (Multi-Select)
+    if (!isAllChecked && checkedBoxes.length > 0) {
+        const lowerChecked = checkedBoxes.map(c => c.toLowerCase().trim());
         dataToPrint = dataToPrint.filter(item => {
-            if (!item.date) return false;
-            const itemDate = new Date(item.date);
-            if (!isNaN(itemDate.getTime())) {
-                return itemDate >= filterStartDate;
-            }
-            const parsedItemDate = parseReportDateFilter(item.date);
-            return parsedItemDate ? parsedItemDate >= filterStartDate : false;
+            const itemAcc = (item.account || '').toLowerCase().trim();
+            return lowerChecked.some(c => itemAcc === c || itemAcc.includes(c) || c.includes(itemAcc));
         });
     }
 
-    // Filter by Selected Equipment Classifications (Multi-Select)
-    if (checkedBoxes.length > 0) {
-        const lowerChecked = checkedBoxes.map(c => c.toLowerCase());
+    // Filter by Cutoff Date ("As of Date" includes all items recorded on or before this period)
+    const filterCutoffDate = parseReportDateFilter(asOfDate);
+    if (filterCutoffDate && asOfDate.toLowerCase() !== 'all' && asOfDate.toLowerCase() !== 'all dates') {
+        const endOfPeriodDate = new Date(filterCutoffDate.getFullYear(), filterCutoffDate.getMonth() + 1, 0, 23, 59, 59, 999);
         dataToPrint = dataToPrint.filter(item => {
-            const itemAcc = (item.account || '').toLowerCase();
-            return lowerChecked.some(c => itemAcc.includes(c) || c.includes(itemAcc));
+            if (!item.date) return true;
+            const itemDate = new Date(item.date);
+            if (!isNaN(itemDate.getTime())) {
+                return itemDate <= endOfPeriodDate;
+            }
+            return true;
         });
     }
 
     if (dataToPrint.length === 0) {
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Matching Items', 'No equipment records matched the selected classifications and period.');
+            window.showGTrackToast('warning', 'No Matching Items', 'No equipment records matched the selected classification(s) and period.');
         } else {
-            alert('No equipment records matched the selected classifications and period.');
+            alert('No equipment records matched the selected classification(s) and period.');
         }
         return;
     }
