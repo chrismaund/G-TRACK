@@ -1,0 +1,21 @@
+{
+  "name": "G-TRACK GSO Property Management",
+  "short_name": "G-TRACK",
+  "description": "General Services Office Property, Plant and Equipment Tracking System",
+  "start_url": "/login/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/dashboard/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/dashboard/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

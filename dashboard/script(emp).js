@@ -3600,6 +3600,77 @@ function formatEmpNotifTime(ts) {
     return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+// =========================================================================
+// NATIVE DESKTOP & WINDOWS ACTION CENTER NOTIFICATIONS (EMPLOYEE)
+// =========================================================================
+let empSwRegistration = null;
+
+async function registerEmpDesktopNotifications() {
+    if ('serviceWorker' in navigator) {
+        try {
+            empSwRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        } catch (err) {
+            console.warn("Service worker registration:", err);
+        }
+    }
+}
+
+window.requestDesktopNotificationPermission = async function() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission !== 'denied') {
+        const perm = await Notification.requestPermission();
+        return perm === 'granted';
+    }
+    return false;
+};
+
+function dispatchNativeDesktopNotification(title, message, notifId = null) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const notifTitle = title || 'G-TRACK Notification';
+    const notifBody = message || 'You have a new update in G-TRACK.';
+    const options = {
+        body: notifBody,
+        icon: '/dashboard/logo.png',
+        badge: '/dashboard/logo.png',
+        tag: notifId || `gtrack-${Date.now()}`,
+        renotify: true,
+        data: {
+            url: window.location.href
+        }
+    };
+
+    try {
+        if (empSwRegistration && empSwRegistration.showNotification) {
+            empSwRegistration.showNotification(notifTitle, options);
+        } else if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(notifTitle, options);
+            }).catch(() => {
+                const notif = new Notification(notifTitle, options);
+                notif.onclick = function() {
+                    window.focus();
+                    notif.close();
+                };
+            });
+        } else {
+            const notif = new Notification(notifTitle, options);
+            notif.onclick = function() {
+                window.focus();
+                notif.close();
+            };
+        }
+    } catch (e) {
+        try {
+            new Notification(notifTitle, { body: notifBody, icon: '/dashboard/logo.png' });
+        } catch (err) {
+            console.warn("Desktop notification trigger notice:", err);
+        }
+    }
+}
+
 window.showSidebarNotifToast = function(title, msg) {
     const toast = document.getElementById('sidebar-notif-toast');
     const toastTitle = document.getElementById('sidebar-notif-toast-title');
@@ -3638,6 +3709,8 @@ window.hideSidebarNotifToast = function() {
 
 function initEmpNotifications() {
     const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+
+    registerEmpDesktopNotifications();
 
     database.ref('notifications').orderByChild('createdAt').limitToLast(60).on('value', snapshot => {
         const data = snapshot.val();
@@ -3680,12 +3753,14 @@ function renderEmpNotifications(userKey) {
 
     // Check if new unread notification arrived in real-time
     if (empLastUnreadNotifCount !== null && unreadCount > empLastUnreadNotifCount) {
-        const isDrawerOpen = drawer && drawer.classList.contains('open');
-        if (!isDrawerOpen) {
-            const latestUnread = empNotifications.find(n => !(n.readBy && n.readBy[activeUserKey])) || empNotifications[0];
-            if (latestUnread) {
+        const latestUnread = empNotifications.find(n => !(n.readBy && n.readBy[activeUserKey])) || empNotifications[0];
+        if (latestUnread) {
+            const isDrawerOpen = drawer && drawer.classList.contains('open');
+            if (!isDrawerOpen) {
                 showSidebarNotifToast(latestUnread.title, latestUnread.message);
             }
+            // Dispatch to native Windows / OS Action Center
+            dispatchNativeDesktopNotification(latestUnread.title, latestUnread.message, latestUnread.id);
         }
     }
     empLastUnreadNotifCount = unreadCount;
@@ -3798,6 +3873,9 @@ function renderEmpNotifications(userKey) {
 // Sidebar Drawer Control Functions
 window.openSidebarNotifDrawer = function() {
     hideSidebarNotifToast();
+    if (typeof window.requestDesktopNotificationPermission === 'function' && 'Notification' in window && Notification.permission === 'default') {
+        window.requestDesktopNotificationPermission();
+    }
     const drawer = document.getElementById('sidebar-notif-drawer');
     const overlay = document.getElementById('sidebar-notif-drawer-overlay');
     if (drawer) drawer.classList.add('open');
