@@ -136,7 +136,7 @@ body {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    justify-content: space-between;
+    justify-content: flex-start;
     animation: dashboardEntranceFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -3637,7 +3637,7 @@ body.dark-theme-mode .btn-cancel:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -3645,8 +3645,8 @@ body.dark-theme-mode .btn-cancel:hover {
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     min-width: 0;
     box-sizing: border-box;
-    height: 100%;
-    min-height: 60px;
+    height: auto;
+    min-height: 52px;
 }
 
 .home-stat-item .stat-info {
@@ -3700,13 +3700,13 @@ body.dark-theme-mode .btn-cancel:hover {
 .action-card {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 12px 14px;
+    border-radius: 10px;
+    padding: 9px 12px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 6px;
-    min-height: 80px;
+    gap: 4px;
+    min-height: 60px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
@@ -3714,7 +3714,7 @@ body.dark-theme-mode .btn-cancel:hover {
     position: relative;
     min-width: 0;
     box-sizing: border-box;
-    height: 100%;
+    height: auto;
 }
 
 .action-card:hover {
@@ -5387,12 +5387,12 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     background: rgba(18, 26, 43, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 6px;
     box-sizing: border-box;
     height: 100%;
     min-height: 0;
@@ -5402,13 +5402,13 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 6px;
+    padding-bottom: 5px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gov-panel-title {
     margin: 0;
-    font-size: 13.5px;
+    font-size: 12.5px;
     font-weight: 800;
     color: #f8fafc;
     display: flex;
@@ -5419,12 +5419,12 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-panel-badge {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
     color: #38bdf8;
     background: rgba(56, 189, 248, 0.12);
     border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 6px;
 }
 
@@ -5432,19 +5432,19 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .gov-category-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
     flex: 1;
-    justify-content: space-evenly;
-    overflow: hidden;
+    justify-content: flex-start;
+    overflow-y: auto;
 }
 
 .gov-category-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 6px 10px;
+    border-radius: 7px;
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.07);
     transition: all 0.2s ease;
@@ -5460,27 +5460,27 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
+    font-size: 11.5px;
 }
 
 .gov-cat-name {
     color: #f1f5f9;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11.5px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
 }
 
 .gov-cat-meta {
     font-weight: 800;
-    font-size: 12px;
+    font-size: 11.5px;
     color: #38bdf8;
 }
 
 .gov-progress-track {
     width: 100%;
-    height: 6px;
+    height: 5px;
     background: rgba(15, 23, 42, 0.7);
     border-radius: 4px;
     overflow: hidden;
@@ -5502,17 +5502,15 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 .gov-stat-box-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    flex: 1;
-    min-height: 0;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .gov-stat-mini-box {
     background: rgba(15, 23, 42, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -5521,7 +5519,7 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-stat-mini-label {
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 800;
     color: #94a3b8;
     text-transform: uppercase;
@@ -5529,7 +5527,7 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-stat-mini-val {
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 800;
     color: #f8fafc;
     line-height: 1.1;
@@ -5537,7 +5535,7 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 }
 
 .gov-stat-mini-subtext {
-    font-size: 10.5px;
+    font-size: 10px;
     color: #64748b;
     font-weight: 600;
 }
