@@ -6354,8 +6354,14 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     border-radius: 10px;
 }
 
-.fb-drawer-mark-all {
+.fb-drawer-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-left: auto;
+}
+
+.fb-drawer-mark-all {
     background: none;
     border: none;
     color: #38bdf8;
@@ -6369,6 +6375,23 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
 
 .fb-drawer-mark-all:hover {
     color: #7dd3fc;
+    text-decoration: underline;
+}
+
+.fb-drawer-clear-all {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fb-drawer-clear-all:hover {
+    color: #f87171;
     text-decoration: underline;
 }
 
@@ -6563,6 +6586,64 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
     flex-shrink: 0;
     margin-top: 16px;
+}
+
+/* Card Actions & Delete Button */
+.fb-notif-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.fb-notif-delete-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.fb-notif-card:hover .fb-notif-delete-btn {
+    opacity: 1;
+}
+
+.fb-notif-delete-btn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.notif-item-delete-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    margin-left: auto;
+    opacity: 0.6;
+}
+
+.notif-item:hover .notif-item-delete-btn {
+    opacity: 1;
+}
+
+.notif-item-delete-btn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
 }
 
 .fb-notif-card.read .fb-unread-dot {

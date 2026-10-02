@@ -3056,6 +3056,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
                                 <span class="notif-item-dot"></span>
                                 <span class="notif-item-title">${sanitizeText(n.title || 'Notification')}</span>
                             </div>
+                            <button type="button" class="notif-item-delete-btn" title="Delete notification" onclick="deleteSingleNotification(event, '${n.id}')">&times;</button>
                         </div>
                         <p class="notif-item-desc">${sanitizeText(n.message || '')}</p>
                         <span class="notif-item-time">${formatNotifTime(n.createdAt)}</span>
@@ -3110,7 +3111,10 @@ function renderAdminNotifications(userKey = 'admin_user') {
                             </p>
                             <span class="fb-notif-timestamp">${formatNotifTime(n.createdAt)}</span>
                         </div>
-                        <span class="fb-unread-dot"></span>
+                        <div class="fb-notif-card-actions">
+                            <span class="fb-unread-dot"></span>
+                            <button type="button" class="fb-notif-delete-btn" title="Delete notification" onclick="deleteSingleNotification(event, '${n.id}')">&times;</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -3201,6 +3205,64 @@ window.markAllNotificationsAsRead = async function(event) {
     }
 
     renderAdminNotifications(userKey);
+};
+
+window.deleteSingleNotification = async function(event, notifId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    if (!notifId) return;
+
+    try {
+        await database.ref(`notifications/${notifId}`).remove();
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Notification Deleted', 'Notification removed successfully.');
+        }
+    } catch (err) {
+        console.error("Error deleting notification:", err);
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Delete Failed', 'Could not delete notification.');
+        }
+    }
+};
+
+window.clearAllNotifications = async function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    if (!adminNotifications || adminNotifications.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'No Notifications', 'There are no notifications to clear.');
+        }
+        return;
+    }
+
+    const triggerBtn = event ? (event.currentTarget || event.target) : null;
+    const confirmed = await window.showGTrackConfirm(
+        "Clear All Notifications?",
+        "Are you sure you want to delete all notifications? This action cannot be undone.",
+        "Clear All",
+        "Cancel",
+        true,
+        triggerBtn
+    );
+    if (!confirmed) return;
+
+    try {
+        await database.ref('notifications').remove();
+        adminNotifications = [];
+        renderAdminNotifications('admin_user');
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Notifications Cleared', 'All notifications have been removed.');
+        }
+    } catch (err) {
+        console.error("Error clearing all notifications:", err);
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Clear Failed', 'Could not clear notifications.');
+        }
+    }
 };
 
 window.handleAdminNotifClick = async function(notifId, type) {

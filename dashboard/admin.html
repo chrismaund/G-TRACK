@@ -268,9 +268,14 @@
                 </div>
                 <h3 class="fb-drawer-title">Notifications</h3>
             </div>
-            <button type="button" class="fb-drawer-mark-all" onclick="markAllNotificationsAsRead(event)">
-                Mark all as read
-            </button>
+            <div class="fb-drawer-header-actions">
+                <button type="button" class="fb-drawer-mark-all" onclick="markAllNotificationsAsRead(event)">
+                    Mark all as read
+                </button>
+                <button type="button" class="fb-drawer-clear-all" onclick="clearAllNotifications(event)">
+                    Clear all
+                </button>
+            </div>
         </div>
 
         <div class="fb-drawer-controls">
