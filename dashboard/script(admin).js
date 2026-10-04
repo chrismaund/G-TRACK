@@ -1490,6 +1490,7 @@ window.saveAdminProfileChanges = async function(event) {
     if (event) event.preventDefault();
     clearAdminProfileAlerts();
 
+    const emailInput = document.getElementById('admin-profile-email-input');
     const nameInput = document.getElementById('admin-profile-name-input');
     const deptSelect = document.getElementById('admin-profile-dept-select');
     const oldPassInput = document.getElementById('admin-profile-old-password');
@@ -1497,22 +1498,44 @@ window.saveAdminProfileChanges = async function(event) {
     const confPassInput = document.getElementById('admin-profile-confirm-password');
     const saveBtn = document.getElementById('admin-save-profile-btn');
 
+    const newEmail = emailInput ? emailInput.value.trim().toLowerCase() : '';
     const newName = nameInput ? nameInput.value.trim() : '';
     const newDept = deptSelect ? deptSelect.value.trim() : '';
     const currentPassword = oldPassInput ? oldPassInput.value : '';
     const newPassword = newPassInput ? newPassInput.value : '';
     const confirmPassword = confPassInput ? confPassInput.value : '';
 
-    // Validation 1: Legal Name is mandatory
+    // Validation 1: Email is mandatory and valid format
+    if (!newEmail) {
+        showAdminProfileAlert('error', "Official email address cannot be left empty.");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+        showAdminProfileAlert('error', "Please enter a valid email address format (e.g. name@domain.com).");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    // Validation 2: Legal Name is mandatory
     if (!newName) {
         showAdminProfileAlert('error', "Full legal name cannot be left empty.");
         if (nameInput) nameInput.focus();
         return;
     }
 
+    const isEmailChangeAttempt = Boolean(newEmail && currentAdminEmail && newEmail !== currentAdminEmail.toLowerCase());
     const isPasswordChangeAttempt = Boolean(currentPassword || newPassword || confirmPassword);
 
-    // Validation 2: Password validation rules
+    // Validation 3: If email is being changed, require current password for security verification
+    if (isEmailChangeAttempt && !currentPassword) {
+        showAdminProfileAlert('error', "Please enter your current password below to authorize updating your official email address.");
+        if (oldPassInput) oldPassInput.focus();
+        return;
+    }
+
+    // Validation 4: Password validation rules
     if (isPasswordChangeAttempt) {
         if (!currentPassword) {
             showAdminProfileAlert('error', "Please enter your current password to authorize changing your credentials.");
@@ -1555,12 +1578,13 @@ window.saveAdminProfileChanges = async function(event) {
         const user = auth.currentUser;
         if (!user) throw new Error("No authenticated session found. Please sign in again.");
 
+        let emailUpdated = false;
         let passwordUpdated = false;
         let nameUpdated = false;
         let deptUpdated = false;
 
-        // 1. If password change is requested, Re-authenticate with Firebase Auth
-        if (isPasswordChangeAttempt) {
+        // 1. Re-authenticate if either Email or Password is being modified
+        if (isEmailChangeAttempt || isPasswordChangeAttempt) {
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying password...';
             try {
                 const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
@@ -1574,14 +1598,27 @@ window.saveAdminProfileChanges = async function(event) {
                     throw new Error(reauthErr.message || "Failed to verify current password.");
                 }
             }
+        }
 
+        // 2. Update Email in Firebase Auth if requested
+        if (isEmailChangeAttempt) {
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating email...';
+            await user.updateEmail(newEmail);
+            emailUpdated = true;
+        }
+
+        // 3. Update Password in Firebase Auth if requested
+        if (isPasswordChangeAttempt) {
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
             await user.updatePassword(newPassword);
             passwordUpdated = true;
         }
 
-        // 2. Direct Admin Account Update to Firestore
+        // 4. Direct Admin Account Update to Firestore
         const updatePayload = {};
+        if (emailUpdated) {
+            updatePayload.email = newEmail;
+        }
         if (newName && newName !== currentAdminName) {
             updatePayload.fullName = newName;
             nameUpdated = true;
@@ -1592,8 +1629,15 @@ window.saveAdminProfileChanges = async function(event) {
         }
 
         if (Object.keys(updatePayload).length > 0) {
-            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating database...';
             await db.collection("users").doc(user.uid).update(updatePayload);
+            
+            if (emailUpdated) {
+                currentAdminEmail = newEmail;
+                const emailSidebarEl = document.getElementById('admin-profile-email');
+                if (emailSidebarEl) emailSidebarEl.textContent = newEmail;
+            }
+
             if (nameUpdated) {
                 currentAdminName = newName;
                 try {
@@ -1602,6 +1646,7 @@ window.saveAdminProfileChanges = async function(event) {
                     console.warn("Auth displayName notice:", pErr);
                 }
             }
+
             if (deptUpdated) {
                 currentAdminDept = newDept;
             }
@@ -1617,22 +1662,16 @@ window.saveAdminProfileChanges = async function(event) {
         if (newPassInput) newPassInput.value = '';
         if (confPassInput) confPassInput.value = '';
 
-        let successMessage = "Profile updated successfully!";
-        if (passwordUpdated && nameUpdated && deptUpdated) {
-            successMessage = `Admin name, department (${newDept}), and password updated successfully!`;
-        } else if (nameUpdated && deptUpdated) {
-            successMessage = `Admin name and department (${newDept}) updated successfully!`;
-        } else if (passwordUpdated && nameUpdated) {
-            successMessage = "Your profile name and password have been securely updated!";
-        } else if (passwordUpdated && deptUpdated) {
-            successMessage = `Password and department (${newDept}) updated successfully!`;
-        } else if (deptUpdated) {
-            successMessage = `Department updated to ${newDept} successfully!`;
-        } else if (passwordUpdated) {
-            successMessage = "Your password has been changed successfully!";
-        } else if (nameUpdated) {
-            successMessage = "Your full legal name has been updated successfully!";
-        }
+        // Formulate feedback message
+        const updatedList = [];
+        if (emailUpdated) updatedList.push(`Email (${newEmail})`);
+        if (nameUpdated) updatedList.push("Name");
+        if (deptUpdated) updatedList.push(`Office (${newDept})`);
+        if (passwordUpdated) updatedList.push("Password");
+
+        const successMessage = updatedList.length > 0 
+            ? `Admin ${updatedList.join(', ')} updated successfully!`
+            : "Admin profile updated successfully!";
 
         showAdminProfileAlert('success', successMessage);
         window.showGTrackToast('success', 'Profile Updated', successMessage);
@@ -1644,10 +1683,16 @@ window.saveAdminProfileChanges = async function(event) {
     } catch (error) {
         console.error("Admin profile update error:", error);
         let displayError = error.message || "An unexpected error occurred.";
-        if (error.code === 'auth/weak-password') {
+        if (error.code === 'auth/email-already-in-use') {
+            displayError = "This email address is already in use by another registered account.";
+            if (emailInput) emailInput.focus();
+        } else if (error.code === 'auth/invalid-email') {
+            displayError = "The email address provided is invalid.";
+            if (emailInput) emailInput.focus();
+        } else if (error.code === 'auth/weak-password') {
             displayError = "The new password is too weak. Please use at least 6 characters with a combination of letters and numbers.";
         } else if (error.code === 'auth/requires-recent-login') {
-            displayError = "Security timeout: Please sign out and sign in again before changing your password.";
+            displayError = "Security timeout: Please enter your current password to authorize this credential update.";
         }
         showAdminProfileAlert('error', displayError);
     } finally {
