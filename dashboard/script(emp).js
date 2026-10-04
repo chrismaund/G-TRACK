@@ -1390,7 +1390,7 @@ window.empClearRequestsLogs = async function(event) {
     if (!ok) return;
 
     const icon = btn ? btn.querySelector('i') : null;
-    if (icon) icon.className = 'fas fa-spinner fa-spin';
+    if (icon) icon.classList.add('fa-spin');
     if (btn) btn.style.pointerEvents = 'none';
 
     try {
@@ -1485,7 +1485,7 @@ window.empClearRequestsLogs = async function(event) {
         window.showGTrackToast('error', 'Clear Error', err.message || 'Could not clear request history.');
     } finally {
         setTimeout(() => {
-            if (icon) icon.className = 'fas fa-trash-alt';
+            if (icon) icon.classList.remove('fa-spin');
             if (btn) btn.style.pointerEvents = 'auto';
         }, 400);
     }
