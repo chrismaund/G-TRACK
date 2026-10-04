@@ -514,7 +514,7 @@ function renderTable() {
 // =========================================================================
 let cachedStaffNames = [];
 
-window.toggleAddCustomDropdown = function(wrapperId, e) {
+window.toggleAddCustomDropdown = function(wrapperId, e, searchInputId) {
     if (e) e.stopPropagation();
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -533,7 +533,7 @@ window.toggleAddCustomDropdown = function(wrapperId, e) {
         const rect = trigger.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const estimatedMenuHeight = 220;
+        const estimatedMenuHeight = 260;
 
         if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
             wrapper.classList.add('drop-up');
@@ -542,9 +542,71 @@ window.toggleAddCustomDropdown = function(wrapperId, e) {
         }
 
         wrapper.classList.add('open');
+
+        // Focus and reset search input if provided
+        if (searchInputId) {
+            const searchInput = document.getElementById(searchInputId);
+            if (searchInput) {
+                searchInput.value = '';
+                const field = searchInputId.replace('SearchInput', '');
+                window.filterAddDropdownOptions(field, '');
+                setTimeout(() => searchInput.focus(), 60);
+            }
+        }
     } else {
         wrapper.classList.remove('open');
         wrapper.classList.remove('drop-up');
+    }
+};
+
+window.filterAddDropdownOptions = function(field, query) {
+    const list = document.getElementById(`${field}OptionsList`);
+    if (!list) return;
+
+    const q = (query || '').trim();
+    const qLower = q.toLowerCase();
+    const options = list.querySelectorAll('.custom-option:not(.custom-create-option)');
+    let exactMatch = false;
+
+    options.forEach(opt => {
+        const val = opt.getAttribute('data-value') || '';
+        const text = opt.textContent.toLowerCase();
+        const matches = !q || text.includes(qLower);
+        opt.style.display = matches ? 'flex' : 'none';
+        if (val.toLowerCase() === qLower) exactMatch = true;
+    });
+
+    // Remove any previously rendered custom add option
+    const existingCustom = list.querySelector('.custom-create-option');
+    if (existingCustom) existingCustom.remove();
+
+    // If query typed does not match an existing option, dynamically prepend "Use custom" option
+    if (q && !exactMatch) {
+        const customOpt = document.createElement('div');
+        customOpt.className = 'custom-option custom-create-option';
+        customOpt.setAttribute('data-value', q);
+        customOpt.innerHTML = `
+            <span class="opt-label" style="color: #38bdf8; font-weight: 600;">
+                <i class="fas fa-plus-circle" style="margin-right: 6px;"></i>Use custom: "${sanitizeText(q)}"
+            </span>
+            <i class="fas fa-check opt-check"></i>
+        `;
+        customOpt.onclick = function() {
+            window.selectAddDropdownOption(field, q, q);
+        };
+        list.prepend(customOpt);
+    }
+};
+
+window.handleAddDropdownSearchKey = function(field, event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const list = document.getElementById(`${field}OptionsList`);
+        if (!list) return;
+        const firstVisible = list.querySelector('.custom-option:not([style*="display: none"])');
+        if (firstVisible) {
+            firstVisible.click();
+        }
     }
 };
 
@@ -749,9 +811,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function populateAddModalSuggestions() {
-    // 1. Populate Location / Office Datalist Options (27 LGU departments + unique masterlist locations)
-    const locationDatalist = document.getElementById('locationOptionsDatalist');
-    if (locationDatalist) {
+    // 1. Populate Location / Office Options (27 LGU departments + unique masterlist locations)
+    const locationList = document.getElementById('locationOptionsList');
+    if (locationList) {
+        const currentVal = document.getElementById('add-location')?.value || '';
         const standardLocations = [
             "Accounting Office (ACCOUNTING)",
             "Agriculture Office (AGRI)",
@@ -791,12 +854,18 @@ function populateAddModalSuggestions() {
             });
         }
         const sorted = Array.from(locSet).sort((a, b) => a.localeCompare(b));
-        locationDatalist.innerHTML = sorted.map(loc => `<option value="${sanitizeText(loc)}"></option>`).join('');
+        locationList.innerHTML = sorted.map(loc => `
+            <div class="custom-option ${loc === currentVal ? 'selected' : ''}" data-value="${sanitizeText(loc)}" onclick="selectAddDropdownOption('location', '${sanitizeText(loc)}', '${sanitizeText(loc)}')">
+                <span class="opt-label">${sanitizeText(loc)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
     }
 
-    // 2. Populate Account Classification Datalist Options (COA Standard Asset Accounts + unique masterlist accounts)
-    const accountDatalist = document.getElementById('accountOptionsDatalist');
-    if (accountDatalist) {
+    // 2. Populate Account Classification Options (COA Standard Asset Accounts + unique masterlist accounts)
+    const accountList = document.getElementById('accountOptionsList');
+    if (accountList) {
+        const currentAccVal = document.getElementById('add-account')?.value || '';
         const standardAccounts = [
             "IT Equipment and Software",
             "Office Equipment",
@@ -819,7 +888,12 @@ function populateAddModalSuggestions() {
             });
         }
         const sortedAcc = Array.from(accSet).sort((a, b) => a.localeCompare(b));
-        accountDatalist.innerHTML = sortedAcc.map(acc => `<option value="${sanitizeText(acc)}"></option>`).join('');
+        accountList.innerHTML = sortedAcc.map(acc => `
+            <div class="custom-option ${acc === currentAccVal ? 'selected' : ''}" data-value="${sanitizeText(acc)}" onclick="selectAddDropdownOption('account', '${sanitizeText(acc)}', '${sanitizeText(acc)}')">
+                <span class="opt-label">${sanitizeText(acc)}</span>
+                <i class="fas fa-check opt-check"></i>
+            </div>
+        `).join('');
     }
 }
 
@@ -859,8 +933,8 @@ function closeModal() {
         delete propInput.dataset.autoGenerated;
     }
 
-    if (document.getElementById('add-location')) document.getElementById('add-location').value = '';
-    if (document.getElementById('add-account')) document.getElementById('add-account').value = '';
+    window.setAddDropdownValue('location', '', '');
+    window.setAddDropdownValue('account', '', '');
     window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
 }
 
@@ -886,8 +960,8 @@ if (addBtn) {
             dateInput.value = today;
         }
 
-        if (document.getElementById('add-location')) document.getElementById('add-location').value = '';
-        if (document.getElementById('add-account')) document.getElementById('add-account').value = '';
+        window.setAddDropdownValue('location', '', '');
+        window.setAddDropdownValue('account', '', '');
         window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
         
         autoSuggestPropertyNumber(true);
@@ -974,8 +1048,8 @@ if (addForm) {
 
                 // Stay open for simultaneous / continuous additions
                 if (addForm) addForm.reset();
-                if (document.getElementById('add-location')) document.getElementById('add-location').value = '';
-                if (document.getElementById('add-account')) document.getElementById('add-account').value = '';
+                window.setAddDropdownValue('location', '', '');
+                window.setAddDropdownValue('account', '', '');
                 window.setAddDropdownValue('condition', 'Serviceable', 'Serviceable');
 
                 const toast = document.getElementById('add-success-toast');
@@ -1023,8 +1097,6 @@ window.openEditModal = function(id) {
     if (document.getElementById('add-qty')) document.getElementById('add-qty').value = item.qty || 0;
     if (document.getElementById('add-unit')) document.getElementById('add-unit').value = item.unit || '';
     if (document.getElementById('add-unit-cost')) document.getElementById('add-unit-cost').value = item.unitCost || 0;
-    if (document.getElementById('add-account')) document.getElementById('add-account').value = item.account || '';
-    if (document.getElementById('add-location')) document.getElementById('add-location').value = item.location || '';
     if (document.getElementById('add-accountable')) document.getElementById('add-accountable').value = item.accountablePerson || '';
     if (document.getElementById('add-property')) {
         const pInput = document.getElementById('add-property');
@@ -1033,6 +1105,8 @@ window.openEditModal = function(id) {
     }
     if (document.getElementById('add-remarks')) document.getElementById('add-remarks').value = item.remarks || '';
 
+    window.setAddDropdownValue('account', item.account || '', item.account || '');
+    window.setAddDropdownValue('location', item.location || '', item.location || '');
     window.setAddDropdownValue('condition', item.condition || 'Serviceable', item.condition || 'Serviceable');
 
     // Render Accounting Office Voucher Verification Status

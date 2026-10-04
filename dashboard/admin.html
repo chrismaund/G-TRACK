@@ -877,19 +877,43 @@
         </div>
         <div class="form-group">
           <label for="add-account">Account Group</label>
-          <input type="text" id="add-account" list="accountOptionsDatalist" placeholder="Select or type account classification" autocomplete="off" required>
-          <datalist id="accountOptionsDatalist">
-            <!-- Dynamically populated with COA standard accounts + masterlist accounts -->
-          </datalist>
+          <div class="custom-select-wrapper" id="accountSelectWrapper">
+            <input type="hidden" id="add-account" required>
+            <div class="custom-select-trigger" id="accountSelectTrigger" onclick="toggleAddCustomDropdown('accountSelectWrapper', event, 'accountSearchInput')">
+              <span class="custom-select-text" id="accountSelectText">Select Account Classification</span>
+              <i class="fas fa-chevron-down select-chevron"></i>
+            </div>
+            <div class="custom-select-options" id="accountSelectOptions">
+              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
+                <i class="fas fa-search dept-search-icon"></i>
+                <input type="text" id="accountSearchInput" placeholder="Type to filter or add custom..." oninput="filterAddDropdownOptions('account', this.value)" onkeydown="handleAddDropdownSearchKey('account', event)" autocomplete="off">
+              </div>
+              <div class="dept-options-list" id="accountOptionsList">
+                <!-- Dynamically populated with official COA account classifications -->
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Row 5: Location & Accountable Person -->
         <div class="form-group">
           <label for="add-location">Location</label>
-          <input type="text" id="add-location" list="locationOptionsDatalist" placeholder="Select or type location / office" autocomplete="off" required>
-          <datalist id="locationOptionsDatalist">
-            <!-- Dynamically populated with 27 LGU departments + masterlist locations -->
-          </datalist>
+          <div class="custom-select-wrapper" id="locationSelectWrapper">
+            <input type="hidden" id="add-location" required>
+            <div class="custom-select-trigger" id="locationSelectTrigger" onclick="toggleAddCustomDropdown('locationSelectWrapper', event, 'locationSearchInput')">
+              <span class="custom-select-text" id="locationSelectText">Select Location / Office</span>
+              <i class="fas fa-chevron-down select-chevron"></i>
+            </div>
+            <div class="custom-select-options" id="locationSelectOptions">
+              <div class="dept-search-wrapper" onclick="event.stopPropagation()">
+                <i class="fas fa-search dept-search-icon"></i>
+                <input type="text" id="locationSearchInput" placeholder="Type to filter or add custom..." oninput="filterAddDropdownOptions('location', this.value)" onkeydown="handleAddDropdownSearchKey('location', event)" autocomplete="off">
+              </div>
+              <div class="dept-options-list" id="locationOptionsList">
+                <!-- Dynamically populated with 27 LGU departments + masterlist locations -->
+              </div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="add-accountable">Accountable Person</label>
