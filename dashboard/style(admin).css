@@ -834,8 +834,9 @@ body,
     right: 0; 
 }
 
-/* Employee Profile Left-Side Sliding Drawer */
-#emp-profile-modal.modal-overlay { 
+/* Admin & Employee Profile Left-Side Sliding Drawer */
+#emp-profile-modal.modal-overlay,
+#admin-profile-modal.modal-overlay { 
     justify-content: flex-start; 
     align-items: stretch; 
     z-index: 1100; 
@@ -844,12 +845,14 @@ body,
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#emp-profile-modal.modal-overlay.open {
+#emp-profile-modal.modal-overlay.open,
+#admin-profile-modal.modal-overlay.open { 
     opacity: 1;
     pointer-events: auto;
 }
 
-#emp-profile-modal .modal-card { 
+#emp-profile-modal .modal-card,
+#admin-profile-modal .modal-card { 
     position: fixed; 
     top: 0; 
     left: -520px; 
@@ -875,11 +878,13 @@ body,
     color: #f8fafc;
 }
 
-#emp-profile-modal.open .modal-card { 
+#emp-profile-modal.open .modal-card,
+#admin-profile-modal.open .modal-card { 
     left: 0; 
 }
 
-#emp-profile-modal .modal-header {
+#emp-profile-modal .modal-header,
+#admin-profile-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -888,7 +893,8 @@ body,
     margin-bottom: 18px;
 }
 
-#emp-profile-modal .modal-header h3 {
+#emp-profile-modal .modal-header h3,
+#admin-profile-modal .modal-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 700;
@@ -896,7 +902,8 @@ body,
     letter-spacing: -0.2px;
 }
 
-#emp-profile-modal .modal-body {
+#emp-profile-modal .modal-body,
+#admin-profile-modal .modal-body {
     flex: 1;
     display: flex;
     flex-direction: column;

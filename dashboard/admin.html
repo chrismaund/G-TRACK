@@ -20,13 +20,13 @@
 
    <div id="sidebar-drawer" class="sidebar-drawer">
     <div class="sidebar-header">
-        <div class="sidebar-user-profile">
+        <div class="sidebar-user-profile" onclick="openAdminProfileModal(); closeSidebarNavMenu();" style="cursor: pointer;" title="Manage My Profile">
             <div class="user-avatar" title="Administrator">
                 <i class="fas fa-user-shield"></i>
             </div>
             <div class="user-info">
-                <span class="user-name">Administrator</span>
-                <span class="user-role-tag">Admin Access</span>
+                <span class="user-name" id="admin-profile-name">Administrator</span>
+                <span class="user-role-tag" id="admin-profile-email">Admin Access</span>
             </div>
         </div>
     </div>
@@ -53,6 +53,11 @@
             <i class="fas fa-moon"></i> <span class="sidebar-text">Dark Mode</span>
         </button>
         <hr id="dark-mode-divider" class="sidebar-divider theme-toggle-hidden">
+
+        <!-- ADMIN PERSONAL PROFILE BUTTON -->
+        <button id="sidebar-my-profile-btn" class="sidebar-link-btn" title="My Profile" onclick="openAdminProfileModal(); closeSidebarNavMenu();">
+            <i class="fas fa-user-cog"></i> <span class="sidebar-text">My Profile</span>
+        </button>
 
         <!-- USER PROFILES / AUTHORIZATION BUTTON -->
         <button id="sidebar-profiles-btn" class="sidebar-link-btn" title="User Profiles" onclick="openProfilesModal()">
@@ -971,7 +976,232 @@
 </div>
 
 
-<div id="printArea" class="print-area" style="display: none;"></div> 
+<!-- ========================================================================= -->
+<!-- ADMIN PROFILE & CREDENTIALS MODAL (LEFT-SIDE SLIDING DRAWER) -->
+<!-- ========================================================================= -->
+<div id="admin-profile-modal" class="modal-overlay hidden" style="z-index: 1100;">
+    <div class="modal-card" style="position: relative;">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">My Profile & Credentials</h3>
+                    <span style="font-size: 11.5px; color: #94a3b8;">Manage your administrative name, municipal office, and password</span>
+                </div>
+            </div>
+        </div>
+
+        <form id="admin-profile-form" class="modal-body" onsubmit="saveAdminProfileChanges(event)">
+            <!-- Profile Alert Notifications -->
+            <div id="admin-profile-success-alert" style="display: none; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle"></i> <span id="admin-profile-success-text">Profile updated successfully!</span>
+            </div>
+            <div id="admin-profile-error-alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; align-items: center; gap: 8px;">
+                <i class="fas fa-exclamation-triangle"></i> <span id="admin-profile-error-text">An error occurred.</span>
+            </div>
+
+            <!-- Institutional Email (Immutable / Locked) -->
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Institutional Email Address</span>
+                    <span style="font-size: 10.5px; color: #fbbf24; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-lock" style="font-size: 10px;"></i> Immutable GSO Identifier
+                    </span>
+                </label>
+                <input type="email" id="admin-profile-email-input" disabled style="cursor: not-allowed;">
+            </div>
+
+            <!-- Full Legal Name -->
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="admin-profile-name-input">Full Legal Name</label>
+                <input type="text" id="admin-profile-name-input" required placeholder="Enter full name">
+            </div>
+
+            <!-- Municipal Department / Office (Direct Admin Update - No Approval Needed) -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span>Municipal Department / Office</span>
+                    <span style="font-size: 10.5px; color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-shield-alt" style="font-size: 10px;"></i> Direct Admin Authorization
+                    </span>
+                </label>
+                <div class="custom-select-wrapper" id="adminProfileDeptSelectWrapper">
+                    <input type="hidden" id="admin-profile-dept-select" required>
+                    <div class="custom-select-trigger" id="adminProfileDeptTrigger" onclick="toggleAdminProfileDeptDropdown(event)">
+                        <i class="fas fa-building input-icon"></i>
+                        <span class="custom-select-text" id="adminProfileDeptText">Select Municipal Department</span>
+                        <i class="fas fa-chevron-down select-chevron"></i>
+                    </div>
+                    <div class="custom-select-options">
+                        <div class="dept-search-wrapper" onclick="event.stopPropagation()">
+                            <i class="fas fa-search dept-search-icon"></i>
+                            <input type="text" id="adminProfileDeptSearchInput" placeholder="Type to search department..." oninput="filterAdminProfileDeptOptions(this.value)" autocomplete="off">
+                        </div>
+                        <div class="dept-options-list" id="adminProfileDeptOptionsList">
+                            <div class="custom-option" data-value="ACCOUNTING" onclick="selectAdminProfileDept('ACCOUNTING', 'Municipal Accounting Office (ACCOUNTING)')">
+                                <span class="opt-label">Municipal Accounting Office (ACCOUNTING)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="AGRI" onclick="selectAdminProfileDept('AGRI', 'Municipal Agriculture Office (AGRI)')">
+                                <span class="opt-label">Municipal Agriculture Office (AGRI)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="ASSESSOR" onclick="selectAdminProfileDept('ASSESSOR', 'Municipal Assessor\'s Office (ASSESSOR)')">
+                                <span class="opt-label">Municipal Assessor's Office (ASSESSOR)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="BFP" onclick="selectAdminProfileDept('BFP', 'Bureau of Fire Protection (BFP)')">
+                                <span class="opt-label">Bureau of Fire Protection (BFP)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="CCTV/IT" onclick="selectAdminProfileDept('CCTV/IT', 'CCTV / IT Unit (CCTV/IT)')">
+                                <span class="opt-label">CCTV / IT Unit (CCTV/IT)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="COMELEC" onclick="selectAdminProfileDept('COMELEC', 'Commission on Elections (COMELEC)')">
+                                <span class="opt-label">Commission on Elections (COMELEC)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="DILG" onclick="selectAdminProfileDept('DILG', 'Dept. of the Interior & Local Govt. (DILG)')">
+                                <span class="opt-label">Dept. of the Interior &amp; Local Govt. (DILG)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="GSO" onclick="selectAdminProfileDept('GSO', 'General Services Office (GSO)')">
+                                <span class="opt-label">General Services Office (GSO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="HRMO" onclick="selectAdminProfileDept('HRMO', 'Human Resource & Management Office (HRMO)')">
+                                <span class="opt-label">Human Resource &amp; Management Office (HRMO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="LIGA" onclick="selectAdminProfileDept('LIGA', 'Liga ng mga Barangay (LIGA)')">
+                                <span class="opt-label">Liga ng mga Barangay (LIGA)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MBO" onclick="selectAdminProfileDept('MBO', 'Municipal Budget Office (MBO)')">
+                                <span class="opt-label">Municipal Budget Office (MBO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MCR" onclick="selectAdminProfileDept('MCR', 'Municipal Civil Registry (MCR)')">
+                                <span class="opt-label">Municipal Civil Registry (MCR)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MDRRMO" onclick="selectAdminProfileDept('MDRRMO', 'Disaster Risk Reduction & Management (MDRRMO)')">
+                                <span class="opt-label">Disaster Risk Reduction &amp; Management (MDRRMO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MENRO" onclick="selectAdminProfileDept('MENRO', 'Environment & Natural Resources (MENRO)')">
+                                <span class="opt-label">Environment &amp; Natural Resources (MENRO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MEO" onclick="selectAdminProfileDept('MEO', 'Municipal Engineering Office (MEO)')">
+                                <span class="opt-label">Municipal Engineering Office (MEO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MHO" onclick="selectAdminProfileDept('MHO', 'Municipal Health Office (MHO)')">
+                                <span class="opt-label">Municipal Health Office (MHO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MPDO" onclick="selectAdminProfileDept('MPDO', 'Planning & Development Office (MPDO)')">
+                                <span class="opt-label">Planning &amp; Development Office (MPDO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MSWDO" onclick="selectAdminProfileDept('MSWDO', 'Social Welfare & Development Office (MSWDO)')">
+                                <span class="opt-label">Social Welfare &amp; Development Office (MSWDO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MTC" onclick="selectAdminProfileDept('MTC', 'Municipal Trial Court (MTC)')">
+                                <span class="opt-label">Municipal Trial Court (MTC)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="MTO" onclick="selectAdminProfileDept('MTO', 'Municipal Treasurer\'s Office (MTO)')">
+                                <span class="opt-label">Municipal Treasurer's Office (MTO)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="OMM" onclick="selectAdminProfileDept('OMM', 'Office of the Municipal Mayor (OMM)')">
+                                <span class="opt-label">Office of the Municipal Mayor (OMM)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="OMVM" onclick="selectAdminProfileDept('OMVM', 'Office of the Municipal Vice-Mayor (OMVM)')">
+                                <span class="opt-label">Office of the Municipal Vice-Mayor (OMVM)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="PNP" onclick="selectAdminProfileDept('PNP', 'Philippine National Police (PNP)')">
+                                <span class="opt-label">Philippine National Police (PNP)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="SB" onclick="selectAdminProfileDept('SB', 'Sangguniang Bayan Office (SB)')">
+                                <span class="opt-label">Sangguniang Bayan Office (SB)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="SSB" onclick="selectAdminProfileDept('SSB', 'Secretary to the Sangguniang Bayan (SSB)')">
+                                <span class="opt-label">Secretary to the Sangguniang Bayan (SSB)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="TOURISM/CULTURAL" onclick="selectAdminProfileDept('TOURISM/CULTURAL', 'Tourism & Cultural Affairs (TOURISM)')">
+                                <span class="opt-label">Tourism &amp; Cultural Affairs (TOURISM)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                            <div class="custom-option" data-value="TRAFFIC" onclick="selectAdminProfileDept('TRAFFIC', 'Municipal Traffic Management Office (TRAFFIC)')">
+                                <span class="opt-label">Municipal Traffic Management Office (TRAFFIC)</span>
+                                <i class="fas fa-check opt-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Section (Optional) -->
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; margin-bottom: 16px;">
+                <span style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
+                    <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password (Optional)
+                </span>
+                <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 14px;">Enter your current password to authorize setting a new administrative password.</span>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="admin-profile-old-password">Current Password</label>
+                    <input type="password" id="admin-profile-old-password" placeholder="Enter current password">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="admin-profile-new-password">New Password</label>
+                    <input type="password" id="admin-profile-new-password" placeholder="At least 6 characters" minlength="6">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label for="admin-profile-confirm-password">Confirm New Password</label>
+                    <input type="password" id="admin-profile-confirm-password" placeholder="Re-type new password" minlength="6">
+                </div>
+            </div>
+
+            <!-- Role & Privileges Section -->
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+                            <i class="fas fa-shield-halved" style="margin-right: 4px;"></i> Role &amp; Privileges
+                        </span>
+                        <span style="font-size: 11px; color: #94a3b8;">Account Type: <strong style="color: #38bdf8;">GSO Administrator</strong></span>
+                    </div>
+                    <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-weight: 700;">
+                        <i class="fas fa-check-circle" style="margin-right: 4px;"></i> Master Control
+                    </span>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="add-eq-btn secondary-btn" onclick="closeAdminProfileModal()">
+                    Cancel
+                </button>
+                <button type="submit" id="admin-save-profile-btn" class="add-eq-btn btn-blue">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- USER PROFILES & AUTHORIZATION SLIDING DRAWER (LEFT SIDE) -->
 <div id="profiles-modal" class="modal-overlay hidden" style="z-index: 1100;">

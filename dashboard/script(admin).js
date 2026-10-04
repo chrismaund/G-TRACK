@@ -29,6 +29,9 @@ const requestsRef = database.ref('masterlistRequests');
 // AUTHENTICATION GUARD & LIVE SESSION/ROLE PROTECTION (ADMIN)
 // =========================================================================
 let adminDocUnsubscribe = null;
+let currentAdminEmail = "";
+let currentAdminName = "Administrator";
+let currentAdminDept = "GSO";
 
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -64,7 +67,11 @@ auth.onAuthStateChanged(async (user) => {
                 return;
             }
 
-            const adminName = userData.fullName || userData.name || user.displayName || user.email || 'Administrator';
+            currentAdminEmail = user.email || userData.email || "";
+            currentAdminName = userData.fullName || userData.name || user.displayName || user.email || 'Administrator';
+            currentAdminDept = userData.department || 'GSO';
+
+            const adminName = currentAdminName;
             const adminNameEl = document.getElementById('admin-profile-name') || document.querySelector('.sidebar-user-profile .user-name');
             const adminRoleEl = document.getElementById('admin-profile-role') || document.querySelector('.sidebar-user-profile .user-role-tag');
 
@@ -1299,6 +1306,8 @@ window.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
     const profilesModal = document.getElementById('profiles-modal');
     if (profilesModal && e.target === profilesModal) closeProfilesModal();
+    const adminProfileModal = document.getElementById('admin-profile-modal');
+    if (adminProfileModal && e.target === adminProfileModal) closeAdminProfileModal();
     const requestsModal = document.getElementById('requests-modal');
     if (requestsModal && e.target === requestsModal) closeRequestsModal();
     const reassignModal = document.getElementById('admin-reassign-modal');
@@ -1320,12 +1329,334 @@ window.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeModal();
+        if (typeof window.closeAdminProfileModal === 'function') window.closeAdminProfileModal();
         if (typeof window.closeProfilesModal === 'function') window.closeProfilesModal();
         if (typeof window.closeRequestsModal === 'function') window.closeRequestsModal();
         if (typeof window.closeAdminReassignModal === 'function') window.closeAdminReassignModal();
         if (typeof window.closeMetricModal === 'function') window.closeMetricModal();
     }
 });
+
+// =========================================================================
+// ADMIN PROFILE & CREDENTIALS CONTROLS (LEFT-SIDE SLIDING DRAWER)
+// =========================================================================
+function showAdminProfileAlert(type, message) {
+    const successAlert = document.getElementById('admin-profile-success-alert');
+    const errorAlert = document.getElementById('admin-profile-error-alert');
+    const successText = document.getElementById('admin-profile-success-text');
+    const errorText = document.getElementById('admin-profile-error-text');
+
+    if (type === 'success') {
+        if (errorAlert) errorAlert.style.display = 'none';
+        if (successAlert) {
+            if (successText) successText.textContent = message;
+            successAlert.style.display = 'flex';
+        }
+    } else {
+        if (successAlert) successAlert.style.display = 'none';
+        if (errorAlert) {
+            if (errorText) errorText.textContent = message;
+            errorAlert.style.display = 'flex';
+        }
+    }
+}
+
+function clearAdminProfileAlerts() {
+    const successAlert = document.getElementById('admin-profile-success-alert');
+    const errorAlert = document.getElementById('admin-profile-error-alert');
+    if (successAlert) successAlert.style.display = 'none';
+    if (errorAlert) errorAlert.style.display = 'none';
+}
+
+window.openAdminProfileModal = function() {
+    if (typeof closeSidebarNavMenu === 'function') {
+        closeSidebarNavMenu();
+    }
+    const modal = document.getElementById('admin-profile-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        void modal.offsetWidth;
+        modal.classList.add('open');
+    }
+
+    clearAdminProfileAlerts();
+
+    // Populate current admin values
+    const nameInput = document.getElementById('admin-profile-name-input');
+    const emailInput = document.getElementById('admin-profile-email-input');
+    const oldPass = document.getElementById('admin-profile-old-password');
+    const newPass = document.getElementById('admin-profile-new-password');
+    const confPass = document.getElementById('admin-profile-confirm-password');
+
+    if (nameInput) nameInput.value = currentAdminName;
+    if (emailInput) emailInput.value = currentAdminEmail;
+    
+    window.selectAdminProfileDept(currentAdminDept || 'GSO', currentAdminDept ? `${currentAdminDept}` : 'General Services Office (GSO)');
+
+    if (oldPass) oldPass.value = '';
+    if (newPass) newPass.value = '';
+    if (confPass) confPass.value = '';
+};
+
+window.closeAdminProfileModal = function() {
+    const modal = document.getElementById('admin-profile-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            if (!modal.classList.contains('open')) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }, 300);
+    }
+    clearAdminProfileAlerts();
+    const oldPass = document.getElementById('admin-profile-old-password');
+    const newPass = document.getElementById('admin-profile-new-password');
+    const confPass = document.getElementById('admin-profile-confirm-password');
+    if (oldPass) oldPass.value = '';
+    if (newPass) newPass.value = '';
+    if (confPass) confPass.value = '';
+};
+
+window.toggleAdminProfileDeptDropdown = function(event) {
+    if (event) event.stopPropagation();
+    const wrapper = document.getElementById('adminProfileDeptSelectWrapper');
+    if (!wrapper) return;
+
+    const wasOpen = wrapper.classList.contains('open');
+    document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+        if (el !== wrapper) {
+            el.classList.remove('open');
+            el.classList.remove('drop-up');
+        }
+    });
+
+    if (wasOpen) {
+        wrapper.classList.remove('open');
+    } else {
+        wrapper.classList.add('open');
+        const searchInput = document.getElementById('adminProfileDeptSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            window.filterAdminProfileDeptOptions('');
+            setTimeout(() => searchInput.focus(), 60);
+        }
+    }
+};
+
+window.filterAdminProfileDeptOptions = function(query) {
+    const list = document.getElementById('adminProfileDeptOptionsList');
+    if (!list) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const options = list.querySelectorAll('.custom-option');
+    options.forEach(opt => {
+        const text = opt.textContent.toLowerCase();
+        opt.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+    });
+};
+
+window.selectAdminProfileDept = function(value, label) {
+    const hiddenInput = document.getElementById('admin-profile-dept-select');
+    const textSpan = document.getElementById('adminProfileDeptText');
+    const trigger = document.getElementById('adminProfileDeptTrigger');
+    const wrapper = document.getElementById('adminProfileDeptSelectWrapper');
+
+    const val = (value || '').trim();
+    const lbl = label || val || 'Select Municipal Department';
+
+    if (hiddenInput) hiddenInput.value = val;
+    if (textSpan) textSpan.textContent = lbl;
+    if (trigger) {
+        if (val) trigger.classList.add('selected');
+        else trigger.classList.remove('selected');
+    }
+
+    if (wrapper) {
+        const options = wrapper.querySelectorAll('.custom-option');
+        options.forEach(opt => {
+            if (opt.getAttribute('data-value') === val) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        wrapper.classList.remove('open');
+    }
+};
+
+window.saveAdminProfileChanges = async function(event) {
+    if (event) event.preventDefault();
+    clearAdminProfileAlerts();
+
+    const nameInput = document.getElementById('admin-profile-name-input');
+    const deptSelect = document.getElementById('admin-profile-dept-select');
+    const oldPassInput = document.getElementById('admin-profile-old-password');
+    const newPassInput = document.getElementById('admin-profile-new-password');
+    const confPassInput = document.getElementById('admin-profile-confirm-password');
+    const saveBtn = document.getElementById('admin-save-profile-btn');
+
+    const newName = nameInput ? nameInput.value.trim() : '';
+    const newDept = deptSelect ? deptSelect.value.trim() : '';
+    const currentPassword = oldPassInput ? oldPassInput.value : '';
+    const newPassword = newPassInput ? newPassInput.value : '';
+    const confirmPassword = confPassInput ? confPassInput.value : '';
+
+    // Validation 1: Legal Name is mandatory
+    if (!newName) {
+        showAdminProfileAlert('error', "Full legal name cannot be left empty.");
+        if (nameInput) nameInput.focus();
+        return;
+    }
+
+    const isPasswordChangeAttempt = Boolean(currentPassword || newPassword || confirmPassword);
+
+    // Validation 2: Password validation rules
+    if (isPasswordChangeAttempt) {
+        if (!currentPassword) {
+            showAdminProfileAlert('error', "Please enter your current password to authorize changing your credentials.");
+            if (oldPassInput) oldPassInput.focus();
+            return;
+        }
+
+        if (!newPassword) {
+            showAdminProfileAlert('error', "Please enter your new password.");
+            if (newPassInput) newPassInput.focus();
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showAdminProfileAlert('error', "Password must be at least 6 characters long.");
+            if (newPassInput) newPassInput.focus();
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            showAdminProfileAlert('error', "Choose a password you haven't used before. New password cannot be the same as current password.");
+            if (newPassInput) newPassInput.focus();
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showAdminProfileAlert('error', "New passwords do not match. Please verify and confirm your new password.");
+            if (confPassInput) confPassInput.focus();
+            return;
+        }
+    }
+
+    const originalBtnHTML = saveBtn ? saveBtn.innerHTML : '<i class="fas fa-save"></i> Save Changes';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No authenticated session found. Please sign in again.");
+
+        let passwordUpdated = false;
+        let nameUpdated = false;
+        let deptUpdated = false;
+
+        // 1. If password change is requested, Re-authenticate with Firebase Auth
+        if (isPasswordChangeAttempt) {
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying password...';
+            try {
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                await user.reauthenticateWithCredential(credential);
+            } catch (reauthErr) {
+                if (reauthErr.code === 'auth/wrong-password' || reauthErr.code === 'auth/invalid-credential' || reauthErr.code === 'auth/user-mismatch') {
+                    throw new Error("Incorrect current password. Please check your credentials and try again.");
+                } else if (reauthErr.code === 'auth/too-many-requests') {
+                    throw new Error("Access temporarily locked due to many failed attempts. Please try again later.");
+                } else {
+                    throw new Error(reauthErr.message || "Failed to verify current password.");
+                }
+            }
+
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
+            await user.updatePassword(newPassword);
+            passwordUpdated = true;
+        }
+
+        // 2. Direct Admin Account Update to Firestore
+        const updatePayload = {};
+        if (newName && newName !== currentAdminName) {
+            updatePayload.fullName = newName;
+            nameUpdated = true;
+        }
+        if (newDept && newDept !== currentAdminDept) {
+            updatePayload.department = newDept;
+            deptUpdated = true;
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
+            await db.collection("users").doc(user.uid).update(updatePayload);
+            if (nameUpdated) {
+                currentAdminName = newName;
+                try {
+                    await user.updateProfile({ displayName: newName });
+                } catch (pErr) {
+                    console.warn("Auth displayName notice:", pErr);
+                }
+            }
+            if (deptUpdated) {
+                currentAdminDept = newDept;
+            }
+
+            // Live-update displays
+            const nameEl = document.getElementById('admin-profile-name');
+            const dropFullname = document.getElementById('user-dropdown-fullname');
+            if (nameEl) nameEl.textContent = currentAdminName;
+            if (dropFullname) dropFullname.textContent = currentAdminName;
+        }
+
+        if (oldPassInput) oldPassInput.value = '';
+        if (newPassInput) newPassInput.value = '';
+        if (confPassInput) confPassInput.value = '';
+
+        let successMessage = "Profile updated successfully!";
+        if (passwordUpdated && nameUpdated && deptUpdated) {
+            successMessage = `Admin name, department (${newDept}), and password updated successfully!`;
+        } else if (nameUpdated && deptUpdated) {
+            successMessage = `Admin name and department (${newDept}) updated successfully!`;
+        } else if (passwordUpdated && nameUpdated) {
+            successMessage = "Your profile name and password have been securely updated!";
+        } else if (passwordUpdated && deptUpdated) {
+            successMessage = `Password and department (${newDept}) updated successfully!`;
+        } else if (deptUpdated) {
+            successMessage = `Department updated to ${newDept} successfully!`;
+        } else if (passwordUpdated) {
+            successMessage = "Your password has been changed successfully!";
+        } else if (nameUpdated) {
+            successMessage = "Your full legal name has been updated successfully!";
+        }
+
+        showAdminProfileAlert('success', successMessage);
+        window.showGTrackToast('success', 'Profile Updated', successMessage);
+
+        setTimeout(() => {
+            window.closeAdminProfileModal();
+        }, 1500);
+
+    } catch (error) {
+        console.error("Admin profile update error:", error);
+        let displayError = error.message || "An unexpected error occurred.";
+        if (error.code === 'auth/weak-password') {
+            displayError = "The new password is too weak. Please use at least 6 characters with a combination of letters and numbers.";
+        } else if (error.code === 'auth/requires-recent-login') {
+            displayError = "Security timeout: Please sign out and sign in again before changing your password.";
+        }
+        showAdminProfileAlert('error', displayError);
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnHTML;
+        }
+    }
+};
 
 // Kebab Menu Controls with Smart Auto-Flipping
 window.toggleKebabMenu = function(event, userId) {
