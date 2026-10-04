@@ -1377,16 +1377,117 @@ window.empClearRequestsLogs = async function(event) {
         event.preventDefault();
         event.stopPropagation();
     }
-    const icon = document.querySelector('#emp-clear-requests-btn i');
-    if (icon) icon.classList.add('fa-spin');
+    const btn = document.getElementById('emp-clear-requests-btn') || (event && event.currentTarget ? event.currentTarget : null);
+
+    const ok = await window.showGTrackConfirm(
+        "Clear Request History?",
+        "Are you sure you want to clear your request history? This will remove your submitted requests to prevent stacking.",
+        "Yes, Clear History",
+        "Cancel",
+        true,
+        btn
+    );
+    if (!ok) return;
+
+    const icon = btn ? btn.querySelector('i') : null;
+    if (icon) icon.className = 'fas fa-spinner fa-spin';
+    if (btn) btn.style.pointerEvents = 'none';
 
     try {
+        const currentEmailClean = (currentEmployeeEmail || '').toLowerCase().trim();
+        const currentNameClean = cleanPersonName(currentEmployeeName);
+        const currentUid = auth.currentUser ? auth.currentUser.uid : '';
+
+        const [transfersSnap, masterlistSnap, deptTransfersSnap, roleSnap] = await Promise.all([
+            database.ref('equipmentTransfers').once('value'),
+            database.ref('masterlistRequests').once('value'),
+            database.ref('deptTransferRequests').once('value'),
+            database.ref('roleElevationRequests').once('value')
+        ]);
+
+        const deletePromises = [];
+        const supabaseTransferIds = [];
+        const supabaseMasterlistIds = [];
+
+        // 1. Remove Equipment Transfers belonging to this employee
+        if (transfersSnap.exists()) {
+            transfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.requestedByEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.requestedByName);
+                if ((reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean))) {
+                    deletePromises.push(database.ref(`equipmentTransfers/${child.key}`).remove());
+                    supabaseTransferIds.push(child.key);
+                }
+            });
+        }
+
+        // 2. Remove Masterlist Requests belonging to this employee
+        if (masterlistSnap.exists()) {
+            masterlistSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.user || req.user_email || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName || req.user_name);
+                if ((reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean))) {
+                    deletePromises.push(database.ref(`masterlistRequests/${child.key}`).remove());
+                    supabaseMasterlistIds.push(child.key);
+                }
+            });
+        }
+
+        // 3. Remove Department Transfers belonging to this employee
+        if (deptTransfersSnap.exists()) {
+            deptTransfersSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.userEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName);
+                const reqUserId = req.userId || '';
+                if ((reqUserId && reqUserId === currentUid) || (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean))) {
+                    deletePromises.push(database.ref(`deptTransferRequests/${child.key}`).remove());
+                }
+            });
+        }
+
+        // 4. Remove Role Elevation Requests belonging to this employee
+        if (roleSnap.exists()) {
+            roleSnap.forEach((child) => {
+                const req = child.val();
+                const reqEmail = (req.userEmail || '').toLowerCase().trim();
+                const reqName = cleanPersonName(req.userName);
+                const reqUserId = req.userId || '';
+                if ((reqUserId && reqUserId === currentUid) || (reqEmail && reqEmail === currentEmailClean) || (reqName && currentNameClean && reqName.includes(currentNameClean))) {
+                    deletePromises.push(database.ref(`roleElevationRequests/${child.key}`).remove());
+                }
+            });
+        }
+
+        await Promise.all(deletePromises);
+
+        // Delete from Supabase if connected
+        if (supabaseClient) {
+            try {
+                if (supabaseTransferIds.length > 0) {
+                    await supabaseClient.from('equipment_transfers').delete().in('id', supabaseTransferIds);
+                }
+                if (supabaseMasterlistIds.length > 0) {
+                    await supabaseClient.from('masterlist_requests').delete().in('id', supabaseMasterlistIds);
+                }
+            } catch (sErr) {
+                console.warn("Supabase employee request clear notice:", sErr);
+            }
+        }
+
+        window.showGTrackToast('success', 'History Cleared', 'Your request history has been successfully cleared.');
         await renderEmpRequestsPanel();
-        window.showGTrackToast('info', 'Requests Refreshed', 'Latest status of all your requests has been updated.');
+
+    } catch (err) {
+        console.error("Error clearing request history:", err);
+        window.showGTrackToast('error', 'Clear Error', err.message || 'Could not clear request history.');
     } finally {
         setTimeout(() => {
-            if (icon) icon.classList.remove('fa-spin');
-        }, 500);
+            if (icon) icon.className = 'fas fa-trash-alt';
+            if (btn) btn.style.pointerEvents = 'auto';
+        }, 400);
     }
 };
 
