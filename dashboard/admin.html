@@ -877,7 +877,18 @@
         </div>
         <div class="form-group">
           <label for="add-account">Account Group</label>
-          <input type="text" id="add-account" placeholder="e.g. ICT Equipment, Office Equipment" required>
+          <div class="custom-select-wrapper" id="accountSelectWrapper">
+            <input type="hidden" id="add-account" required>
+            <div class="custom-select-trigger" id="accountSelectTrigger" onclick="toggleAddCustomDropdown('accountSelectWrapper', event)">
+              <span class="custom-select-text" id="accountSelectText">Select Account Classification</span>
+              <i class="fas fa-chevron-down select-chevron"></i>
+            </div>
+            <div class="custom-select-options" id="accountSelectOptions">
+              <div class="dept-options-list" id="accountOptionsList">
+                <!-- Dynamically populated with official COA account classifications -->
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Row 5: Location & Accountable Person -->
