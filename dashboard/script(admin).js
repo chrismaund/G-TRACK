@@ -1397,6 +1397,7 @@ window.openAdminProfileModal = function() {
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
+    window.evaluateAdminPasswordRequirements('');
 };
 
 window.closeAdminProfileModal = function() {
@@ -1417,6 +1418,7 @@ window.closeAdminProfileModal = function() {
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
+    window.evaluateAdminPasswordRequirements('');
 };
 
 window.toggleAdminProfileDeptDropdown = function(event) {

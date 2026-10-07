@@ -142,6 +142,9 @@ window.showRegisterForm = function(e) {
     if (loginForm) loginForm.style.display = 'none';
     if (registerForm) registerForm.style.display = 'block';
     if (formSubtitle) formSubtitle.textContent = 'Register New Employee Account';
+    if (typeof window.evaluateRegPasswordRequirements === 'function') {
+        window.evaluateRegPasswordRequirements('');
+    }
 };
 
 window.showLoginForm = function(e) {
@@ -158,6 +161,9 @@ window.showLoginForm = function(e) {
         formSubtitle.textContent = selectedRoleInput.value === 'employee' 
             ? 'Employee Authentication Portal' 
             : 'Administrator Control Access';
+    }
+    if (typeof window.evaluateRegPasswordRequirements === 'function') {
+        window.evaluateRegPasswordRequirements('');
     }
 };
 
@@ -508,6 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         regSuccessMessage.style.display = 'block';
                     }
                     registerForm.reset();
+                    if (typeof window.evaluateRegPasswordRequirements === 'function') {
+                        window.evaluateRegPasswordRequirements('');
+                    }
                     const textSpan = document.getElementById('deptSelectText');
                     const trigger = document.getElementById('deptSelectTrigger');
                     const hiddenInput = document.getElementById('regDepartment');

@@ -1939,6 +1939,9 @@ window.openEmpProfileModal = function() {
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
+    if (typeof window.evaluateEmpPasswordRequirements === 'function') {
+        window.evaluateEmpPasswordRequirements('');
+    }
 };
 
 window.closeEmpProfileModal = function() {
@@ -1958,6 +1961,9 @@ window.closeEmpProfileModal = function() {
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
+    if (typeof window.evaluateEmpPasswordRequirements === 'function') {
+        window.evaluateEmpPasswordRequirements('');
+    }
 };
 
 // Real-time Employee Password Requirements Evaluator
