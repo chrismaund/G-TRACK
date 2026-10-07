@@ -137,14 +137,8 @@ window.showRegisterForm = function(e) {
     if (e) e.preventDefault();
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const actionResetForm = document.getElementById('actionResetPasswordForm');
-    const actionInvalidCard = document.getElementById('actionInvalidCodeCard');
-    const roleTabs = document.querySelector('.role-tabs');
     const formSubtitle = document.getElementById('formSubtitle');
 
-    if (actionResetForm) actionResetForm.style.display = 'none';
-    if (actionInvalidCard) actionInvalidCard.style.display = 'none';
-    if (roleTabs) roleTabs.style.display = 'flex';
     if (loginForm) loginForm.style.display = 'none';
     if (registerForm) registerForm.style.display = 'block';
     if (formSubtitle) formSubtitle.textContent = 'Register New Employee Account';
@@ -154,15 +148,9 @@ window.showLoginForm = function(e) {
     if (e) e.preventDefault();
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const actionResetForm = document.getElementById('actionResetPasswordForm');
-    const actionInvalidCard = document.getElementById('actionInvalidCodeCard');
-    const roleTabs = document.querySelector('.role-tabs');
     const selectedRoleInput = document.getElementById('selectedRole');
     const formSubtitle = document.getElementById('formSubtitle');
 
-    if (actionResetForm) actionResetForm.style.display = 'none';
-    if (actionInvalidCard) actionInvalidCard.style.display = 'none';
-    if (roleTabs) roleTabs.style.display = 'flex';
     if (registerForm) registerForm.style.display = 'none';
     if (loginForm) loginForm.style.display = 'block';
 
@@ -170,168 +158,6 @@ window.showLoginForm = function(e) {
         formSubtitle.textContent = selectedRoleInput.value === 'employee' 
             ? 'Employee Authentication Portal' 
             : 'Administrator Control Access';
-    }
-
-    // Clean URL query parameters if returning from password reset
-    if (window.location.search && (window.location.search.includes('mode=resetPassword') || window.location.search.includes('oobCode'))) {
-        try {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {}
-    }
-};
-
-let activeResetOobCode = null;
-let activeResetEmail = null;
-
-// Check if URL has Firebase Auth Action query parameters (e.g. ?mode=resetPassword&oobCode=...)
-async function checkAuthActionFromUrl() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        const oobCode = urlParams.get('oobCode');
-
-        if (mode === 'resetPassword' && oobCode) {
-            activeResetOobCode = oobCode;
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const roleTabs = document.querySelector('.role-tabs');
-            const formSubtitle = document.getElementById('formSubtitle');
-            const actionResetForm = document.getElementById('actionResetPasswordForm');
-            const actionInvalidCard = document.getElementById('actionInvalidCodeCard');
-            const emailDisplay = document.getElementById('actionResetEmailDisplay');
-            const resetErrorMsg = document.getElementById('action-reset-error-msg');
-            const resetSuccessMsg = document.getElementById('action-reset-success-msg');
-
-            if (loginForm) loginForm.style.display = 'none';
-            if (registerForm) registerForm.style.display = 'none';
-            if (roleTabs) roleTabs.style.display = 'none';
-            if (formSubtitle) formSubtitle.textContent = 'Verifying Reset Link...';
-
-            try {
-                // Verify the one-time code with Firebase Auth
-                const email = await auth.verifyPasswordResetCode(oobCode);
-                activeResetEmail = email;
-
-                if (formSubtitle) formSubtitle.textContent = 'Set New Account Password';
-                if (emailDisplay) emailDisplay.textContent = email;
-                if (actionResetForm) actionResetForm.style.display = 'block';
-                if (actionInvalidCard) actionInvalidCard.style.display = 'none';
-                if (resetErrorMsg) resetErrorMsg.style.display = 'none';
-                if (resetSuccessMsg) resetSuccessMsg.style.display = 'none';
-
-                const newPassInput = document.getElementById('actionNewPassword');
-                if (newPassInput) setTimeout(() => newPassInput.focus(), 100);
-
-            } catch (verifyErr) {
-                console.warn("Password reset code verification notice:", verifyErr);
-                if (formSubtitle) formSubtitle.textContent = 'Password Reset Link';
-                if (actionResetForm) actionResetForm.style.display = 'none';
-                if (actionInvalidCard) actionInvalidCard.style.display = 'block';
-            }
-        }
-    } catch (e) {
-        console.warn("URL Action parsing notice:", e);
-    }
-}
-
-// Handle Form Submission for Setting New Password
-window.handleConfirmNewPassword = async function(e) {
-    if (e) e.preventDefault();
-    const newPassInput = document.getElementById('actionNewPassword');
-    const confPassInput = document.getElementById('actionConfirmPassword');
-    const errorMsg = document.getElementById('action-reset-error-msg');
-    const successMsg = document.getElementById('action-reset-success-msg');
-    const submitBtn = document.getElementById('actionResetSubmitBtn');
-
-    if (errorMsg) errorMsg.style.display = 'none';
-    if (successMsg) successMsg.style.display = 'none';
-
-    const newPass = newPassInput ? newPassInput.value : '';
-    const confPass = confPassInput ? confPassInput.value : '';
-
-    if (!newPass) {
-        if (errorMsg) {
-            errorMsg.textContent = 'Please enter your new password.';
-            errorMsg.style.display = 'block';
-        }
-        if (newPassInput) newPassInput.focus();
-        return;
-    }
-
-    if (newPass.length < 6) {
-        if (errorMsg) {
-            errorMsg.textContent = 'Password must be at least 6 characters long.';
-            errorMsg.style.display = 'block';
-        }
-        if (newPassInput) newPassInput.focus();
-        return;
-    }
-
-    if (newPass !== confPass) {
-        if (errorMsg) {
-            errorMsg.textContent = 'Passwords do not match. Please verify and confirm your password.';
-            errorMsg.style.display = 'block';
-        }
-        if (confPassInput) confPassInput.focus();
-        return;
-    }
-
-    if (!activeResetOobCode) {
-        if (errorMsg) {
-            errorMsg.textContent = 'Missing authorization code. Please request a new link.';
-            errorMsg.style.display = 'block';
-        }
-        return;
-    }
-
-    const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '<span>Save New Password</span> <i class="fas fa-check-circle"></i>';
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Saving password...</span>';
-    }
-
-    try {
-        await auth.confirmPasswordReset(activeResetOobCode, newPass);
-
-        if (successMsg) {
-            successMsg.textContent = 'Password reset successfully! Redirecting you to sign in...';
-            successMsg.style.display = 'block';
-        }
-
-        if (newPassInput) newPassInput.value = '';
-        if (confPassInput) confPassInput.value = '';
-
-        setTimeout(() => {
-            window.showLoginForm();
-            const loginEmailInput = document.getElementById('email');
-            const loginPassInput = document.getElementById('password');
-            if (loginEmailInput && activeResetEmail) {
-                loginEmailInput.value = activeResetEmail;
-            }
-            if (loginPassInput) {
-                setTimeout(() => loginPassInput.focus(), 150);
-            }
-        }, 1800);
-
-    } catch (err) {
-        console.error("Confirm password reset error:", err);
-        let msg = "Failed to reset password. The link may have expired.";
-        if (err.code === 'auth/expired-action-code') {
-            msg = "This password reset link has expired. Please request a fresh reset link.";
-        } else if (err.code === 'auth/invalid-action-code') {
-            msg = "This password reset link is invalid or has already been used.";
-        } else if (err.code === 'auth/weak-password') {
-            msg = "The password is too weak. Please use at least 6 characters with letters and numbers.";
-        }
-        if (errorMsg) {
-            errorMsg.textContent = msg;
-            errorMsg.style.display = 'block';
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHTML;
-        }
     }
 };
 
@@ -399,17 +225,7 @@ window.handleSendPasswordReset = async function(e) {
     }
 
     try {
-        const actionCodeSettings = {
-            url: window.location.origin + '/login/index.html',
-            handleCodeInApp: false
-        };
-        try {
-            await auth.sendPasswordResetEmail(email, actionCodeSettings);
-        } catch (settingsErr) {
-            // Fallback to standard dispatch if custom action domain isn't registered yet
-            await auth.sendPasswordResetEmail(email);
-        }
-
+        await auth.sendPasswordResetEmail(email);
         if (successMsg) {
             successMsg.textContent = `Password reset email sent to ${email}. Please check your inbox or spam folder.`;
             successMsg.style.display = 'block';
@@ -441,13 +257,6 @@ document.addEventListener('keydown', function(e) {
         window.closeForgotPasswordModal();
     }
 });
-
-// Run auth action check on initialization
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkAuthActionFromUrl);
-} else {
-    checkAuthActionFromUrl();
-}
 
 function formatAuthError(error) {
     if (!error) return "An unknown error occurred. Please try again.";

@@ -283,69 +283,6 @@
                         </div>
                     </form>
 
-                    <!-- RESET PASSWORD ACTION FORM (TRIGGERED VIA EMAIL LINK) -->
-                    <form id="actionResetPasswordForm" style="display: none;" onsubmit="handleConfirmNewPassword(event)">
-                        <div class="form-section">
-                            <!-- User Email Pill -->
-                            <div id="actionResetEmailCard" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
-                                    <i class="fas fa-user-check"></i>
-                                </div>
-                                <div style="overflow: hidden; text-align: left;">
-                                    <span style="font-size: 11px; color: #94a3b8; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Account to reset</span>
-                                    <span id="actionResetEmailDisplay" style="font-size: 13px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">user@example.com</span>
-                                </div>
-                            </div>
-
-                            <div class="input-group">
-                                <label for="actionNewPassword">New Password</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock input-icon"></i>
-                                    <input type="password" id="actionNewPassword" placeholder="Minimum 6 characters" minlength="6" required autocomplete="new-password">
-                                    <i class="fas fa-eye toggle-password" onclick="togglePass('actionNewPassword', this)"></i>
-                                </div>
-                            </div>
-
-                            <div class="input-group">
-                                <label for="actionConfirmPassword">Confirm New Password</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-shield-alt input-icon"></i>
-                                    <input type="password" id="actionConfirmPassword" placeholder="Re-type new password" minlength="6" required autocomplete="new-password">
-                                    <i class="fas fa-eye toggle-password" onclick="togglePass('actionConfirmPassword', this)"></i>
-                                </div>
-                            </div>
-
-                            <div id="action-reset-error-msg" class="error-popup" style="display: none;"></div>
-                            <div id="action-reset-success-msg" class="success-popup" style="display: none;"></div>
-
-                            <button type="submit" id="actionResetSubmitBtn" class="sign-in-btn">
-                                <span>Save New Password</span> <i class="fas fa-check-circle"></i>
-                            </button>
-
-                            <div class="toggle-auth-mode">
-                                <span>Remembered your password?</span>
-                                <a href="#" onclick="showLoginForm(event)">Back to Sign In</a>
-                            </div>
-                        </div>
-                    </form>
-
-                    <!-- INVALID/EXPIRED CODE CARD -->
-                    <div id="actionInvalidCodeCard" style="display: none; text-align: center; padding: 10px 0;">
-                        <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 16px auto;">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h3 style="font-size: 16px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Link Expired or Invalid</h3>
-                        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 20px;">
-                            This password reset link has expired or has already been used. Please request a fresh reset link from the login page.
-                        </p>
-                        <button type="button" class="sign-in-btn" onclick="openForgotPasswordModal(event)" style="margin-bottom: 12px;">
-                            <span>Request New Link</span> <i class="fas fa-paper-plane"></i>
-                        </button>
-                        <div class="toggle-auth-mode">
-                            <a href="#" onclick="showLoginForm(event)">Back to Sign In</a>
-                        </div>
-                    </div>
-
                     <div class="security-disclaimer">
                         <i class="fas fa-shield-alt"></i>
                         <span>Restricted access. Authorized personnel only.</span>
