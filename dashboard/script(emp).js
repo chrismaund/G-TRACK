@@ -1960,6 +1960,30 @@ window.closeEmpProfileModal = function() {
     if (confPass) confPass.value = '';
 };
 
+// Real-time Employee Password Requirements Evaluator
+window.evaluateEmpPasswordRequirements = function(password) {
+    const p = password || '';
+    const isLen = p.length >= 8;
+    const isUpper = /[A-Z]/.test(p);
+    const isLower = /[a-z]/.test(p);
+    const isNum = /[0-9]/.test(p);
+    const isSpecial = /[^A-Za-z0-9]/.test(p);
+
+    const elLen = document.getElementById('emp-req-length');
+    const elUpper = document.getElementById('emp-req-upper');
+    const elLower = document.getElementById('emp-req-lower');
+    const elNum = document.getElementById('emp-req-number');
+    const elSpecial = document.getElementById('emp-req-special');
+
+    if (elLen) elLen.classList.toggle('valid', isLen);
+    if (elUpper) elUpper.classList.toggle('valid', isUpper);
+    if (elLower) elLower.classList.toggle('valid', isLower);
+    if (elNum) elNum.classList.toggle('valid', isNum);
+    if (elSpecial) elSpecial.classList.toggle('valid', isSpecial);
+
+    return isLen && isUpper && isLower && isNum && isSpecial;
+};
+
 const profileForm = document.getElementById('emp-profile-form');
 if (profileForm) {
     profileForm.addEventListener('submit', async (e) => {
@@ -1988,7 +2012,7 @@ if (profileForm) {
 
         const isPasswordChangeAttempt = Boolean(currentPassword || newPassword || confirmPassword);
 
-        // Validation 2: Google-style password validation rules
+        // Validation 2: Strong password validation rules
         if (isPasswordChangeAttempt) {
             if (!currentPassword) {
                 showProfileAlert('error', "Please enter your current password to authorize changing your credentials.");
@@ -2002,8 +2026,14 @@ if (profileForm) {
                 return;
             }
 
-            if (newPassword.length < 6) {
-                showProfileAlert('error', "Password must be at least 6 characters long.");
+            const isLen = newPassword.length >= 8;
+            const isUpper = /[A-Z]/.test(newPassword);
+            const isLower = /[a-z]/.test(newPassword);
+            const isNum = /[0-9]/.test(newPassword);
+            const isSpecial = /[^A-Za-z0-9]/.test(newPassword);
+
+            if (!isLen || !isUpper || !isLower || !isNum || !isSpecial) {
+                showProfileAlert('error', "New password does not satisfy all security rules (8+ characters, uppercase, lowercase, number, and special symbol).");
                 if (newPassInput) newPassInput.focus();
                 return;
             }

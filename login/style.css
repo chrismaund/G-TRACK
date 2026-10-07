@@ -803,3 +803,63 @@ body {
         gap: 12px;
     }
 }
+
+/* ========================================================================= */
+/* REAL-TIME PASSWORD SECURITY REQUIREMENTS CARD */
+/* ========================================================================= */
+.password-requirements-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 8px 0 14px 0;
+    transition: all 0.25s ease;
+}
+
+.pwd-req-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.pwd-req-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 10px;
+}
+
+.pwd-req-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+}
+
+.pwd-req-item .pwd-req-icon {
+    font-size: 8.5px;
+    color: #64748b;
+    transition: all 0.2s ease;
+    width: 12px;
+    text-align: center;
+}
+
+.pwd-req-item.valid {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.pwd-req-item.valid .pwd-req-icon {
+    color: #22c55e;
+}
+
+.pwd-req-item.valid .pwd-req-icon::before {
+    content: "\f058"; /* fas fa-circle-check */
+}

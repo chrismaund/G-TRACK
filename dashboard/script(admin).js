@@ -1486,6 +1486,30 @@ window.selectAdminProfileDept = function(value, label) {
     }
 };
 
+// Real-time Admin Password Requirements Evaluator
+window.evaluateAdminPasswordRequirements = function(password) {
+    const p = password || '';
+    const isLen = p.length >= 8;
+    const isUpper = /[A-Z]/.test(p);
+    const isLower = /[a-z]/.test(p);
+    const isNum = /[0-9]/.test(p);
+    const isSpecial = /[^A-Za-z0-9]/.test(p);
+
+    const elLen = document.getElementById('admin-req-length');
+    const elUpper = document.getElementById('admin-req-upper');
+    const elLower = document.getElementById('admin-req-lower');
+    const elNum = document.getElementById('admin-req-number');
+    const elSpecial = document.getElementById('admin-req-special');
+
+    if (elLen) elLen.classList.toggle('valid', isLen);
+    if (elUpper) elUpper.classList.toggle('valid', isUpper);
+    if (elLower) elLower.classList.toggle('valid', isLower);
+    if (elNum) elNum.classList.toggle('valid', isNum);
+    if (elSpecial) elSpecial.classList.toggle('valid', isSpecial);
+
+    return isLen && isUpper && isLower && isNum && isSpecial;
+};
+
 window.saveAdminProfileChanges = async function(event) {
     if (event) event.preventDefault();
     clearAdminProfileAlerts();
@@ -1549,8 +1573,14 @@ window.saveAdminProfileChanges = async function(event) {
             return;
         }
 
-        if (newPassword.length < 6) {
-            showAdminProfileAlert('error', "Password must be at least 6 characters long.");
+        const isLen = newPassword.length >= 8;
+        const isUpper = /[A-Z]/.test(newPassword);
+        const isLower = /[a-z]/.test(newPassword);
+        const isNum = /[0-9]/.test(newPassword);
+        const isSpecial = /[^A-Za-z0-9]/.test(newPassword);
+
+        if (!isLen || !isUpper || !isLower || !isNum || !isSpecial) {
+            showAdminProfileAlert('error', "New password does not satisfy all security rules (8+ characters, uppercase, lowercase, number, and special symbol).");
             if (newPassInput) newPassInput.focus();
             return;
         }

@@ -260,12 +260,42 @@
                                 </div>
                             </div>
                             
-                            <div class="input-group">
+                            <div class="input-group" style="margin-bottom: 8px;">
                                 <label for="regPassword">Create Password</label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-lock input-icon"></i>
-                                    <input type="password" id="regPassword" placeholder="Minimum 6 characters" required>
+                                    <input type="password" id="regPassword" placeholder="Enter secure password" required minlength="8" oninput="evaluateRegPasswordRequirements(this.value)">
                                     <i class="fas fa-eye toggle-password" onclick="togglePass('regPassword', this)"></i>
+                                </div>
+                            </div>
+
+                            <!-- Real-time Password Security Requirements Card -->
+                            <div class="password-requirements-card">
+                                <div class="pwd-req-header">
+                                    <i class="fas fa-shield-halved"></i>
+                                    <span>Password Security Rules</span>
+                                </div>
+                                <div class="pwd-req-grid">
+                                    <div class="pwd-req-item" id="reg-req-length">
+                                        <i class="fas fa-circle-dot pwd-req-icon"></i>
+                                        <span>8+ characters</span>
+                                    </div>
+                                    <div class="pwd-req-item" id="reg-req-upper">
+                                        <i class="fas fa-circle-dot pwd-req-icon"></i>
+                                        <span>Uppercase (A-Z)</span>
+                                    </div>
+                                    <div class="pwd-req-item" id="reg-req-lower">
+                                        <i class="fas fa-circle-dot pwd-req-icon"></i>
+                                        <span>Lowercase (a-z)</span>
+                                    </div>
+                                    <div class="pwd-req-item" id="reg-req-number">
+                                        <i class="fas fa-circle-dot pwd-req-icon"></i>
+                                        <span>At least 1 number</span>
+                                    </div>
+                                    <div class="pwd-req-item" id="reg-req-special" style="grid-column: span 2;">
+                                        <i class="fas fa-circle-dot pwd-req-icon"></i>
+                                        <span>Special symbol (!@#$%^&*)</span>
+                                    </div>
                                 </div>
                             </div>
                             

@@ -244,6 +244,30 @@ window.handleSendPasswordReset = async function(e) {
     }
 };
 
+// Real-time Registration Password Requirements Evaluator
+window.evaluateRegPasswordRequirements = function(password) {
+    const p = password || '';
+    const isLen = p.length >= 8;
+    const isUpper = /[A-Z]/.test(p);
+    const isLower = /[a-z]/.test(p);
+    const isNum = /[0-9]/.test(p);
+    const isSpecial = /[^A-Za-z0-9]/.test(p);
+
+    const elLen = document.getElementById('reg-req-length');
+    const elUpper = document.getElementById('reg-req-upper');
+    const elLower = document.getElementById('reg-req-lower');
+    const elNum = document.getElementById('reg-req-number');
+    const elSpecial = document.getElementById('reg-req-special');
+
+    if (elLen) elLen.classList.toggle('valid', isLen);
+    if (elUpper) elUpper.classList.toggle('valid', isUpper);
+    if (elLower) elLower.classList.toggle('valid', isLower);
+    if (elNum) elNum.classList.toggle('valid', isNum);
+    if (elSpecial) elSpecial.classList.toggle('valid', isSpecial);
+
+    return isLen && isUpper && isLower && isNum && isSpecial;
+};
+
 // Dismiss Forgot Password modal on backdrop click or Escape key
 document.addEventListener('click', function(e) {
     const modal = document.getElementById('forgot-password-modal');
@@ -446,11 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (!password || password.length < 6) {
+            const isLen = password.length >= 8;
+            const isUpper = /[A-Z]/.test(password);
+            const isLower = /[a-z]/.test(password);
+            const isNum = /[0-9]/.test(password);
+            const isSpecial = /[^A-Za-z0-9]/.test(password);
+
+            if (!isLen || !isUpper || !isLower || !isNum || !isSpecial) {
                 if (regErrorMessage) {
-                    regErrorMessage.textContent = 'Password must be at least 6 characters long.';
+                    regErrorMessage.textContent = 'Password does not meet all security requirements (8+ characters, uppercase, lowercase, number, and special symbol).';
                     regErrorMessage.style.display = 'block';
                 }
+                const regPassInput = document.getElementById('regPassword');
+                if (regPassInput) regPassInput.focus();
                 return;
             }
 
