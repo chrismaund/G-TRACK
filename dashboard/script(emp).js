@@ -2291,12 +2291,15 @@ inventoryRef.on('value', (snapshot) => {
 
 // 2. Initialize Supabase Realtime Sync (for background data sync only)
 if (supabaseClient) {
-    supabaseClient
-        .channel('public:inventory_emp')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
-            fetchInventoryFromSupabase();
-        })
-        .subscribe();
+    supabaseClient.from('inventory').select('id').limit(1).then(({ error }) => {
+        if (error) return;
+        supabaseClient
+            .channel('public:inventory_emp')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+                fetchInventoryFromSupabase();
+            })
+            .subscribe();
+    }).catch(() => {});
 }
 
 // Helper: Open Request History stack directly

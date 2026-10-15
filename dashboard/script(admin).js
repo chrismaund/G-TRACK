@@ -4000,12 +4000,12 @@ async function fetchInventoryFromSupabase() {
 
 // Auto-migration helper from Firebase to Supabase on startup
 async function checkAndMigrateData() {
-    if (!supabaseClient) return;
+    if (!supabaseClient) return false;
     try {
         const { data, error } = await supabaseClient.from('inventory').select('id').limit(1);
         if (error) {
-            console.warn("Supabase initial check error:", error.message);
-            return;
+            console.info("Supabase sync currently offline (operating in primary Firebase Realtime mode).");
+            return false;
         }
         if (!data || data.length === 0) {
             console.log("Supabase inventory is empty. Migrating existing records from Firebase Realtime DB...");
@@ -4025,8 +4025,10 @@ async function checkAndMigrateData() {
                 }
             });
         }
+        return true;
     } catch (e) {
-        console.error("Migration error:", e);
+        console.info("Supabase sync unavailable (operating in primary Firebase Realtime mode).");
+        return false;
     }
 }
 
@@ -4043,17 +4045,17 @@ inventoryRef.on('value', (snapshot) => {
     }
 });
 
-// 2. Initialize Supabase Listeners & Realtime Sync if configured (for background data sync only)
+// 2. Initialize Supabase Listeners & Realtime Sync only if configured and reachable
 if (supabaseClient) {
-    checkAndMigrateData();
-
-    // Subscribe to public.inventory changes in Realtime
-    supabaseClient
-        .channel('public:inventory')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
-            fetchInventoryFromSupabase();
-        })
-        .subscribe();
+    checkAndMigrateData().then((isAvailable) => {
+        if (!isAvailable) return;
+        supabaseClient
+            .channel('public:inventory')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+                fetchInventoryFromSupabase();
+            })
+            .subscribe();
+    }).catch(() => {});
 }
 
 function updateClearSearchVisibility() {
@@ -4246,9 +4248,12 @@ if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebarNavMe
 if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebarNavMenu);
 
 if (sidebarPrintBtn) {
-    sidebarPrintBtn.addEventListener('click', () => {
-        closeSidebarNavMenu();
-        window.print();
+    sidebarPrintBtn.addEventListener('click', (e) => {
+        if (typeof window.openPrintReportPopover === 'function') {
+            window.openPrintReportPopover(e);
+        } else {
+            window.print();
+        }
     });
 }
 
@@ -4406,25 +4411,69 @@ window.populateAdminPrintAccountCheckboxes = function() {
 };
 
 /**
+ * Opens and initializes the admin print report popover dialog.
+ * @param {Event} [event]
+ */
+window.openPrintReportPopover = function(event) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
+    const popover = document.getElementById('printPopover');
+    if (!popover) return;
+
+    window.populateAdminPrintAccountCheckboxes();
+
+    // Dynamically default as of date to current month/year if empty or old hardcoded default
+    const dateInput = document.getElementById('reportAsOfDate');
+    if (dateInput && (!dateInput.value || dateInput.value.trim() === '' || dateInput.value === 'July 2026')) {
+        const now = new Date();
+        dateInput.value = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    popover.classList.remove('hidden');
+    popover.style.display = 'flex';
+};
+
+/**
+ * Closes the admin print report modal dialog.
+ * @param {Event} [event]
+ */
+window.closePrintReportModal = function(event) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
+    const popover = document.getElementById('printPopover');
+    if (!popover) return;
+
+    popover.classList.add('hidden');
+    popover.style.display = 'none';
+
+    // Also close the classification dropdown menu if open
+    const menu = document.getElementById('adminReportAccountDropdownMenu');
+    const chevron = document.getElementById('adminReportAccountDropdownChevron');
+    if (menu) menu.classList.add('hidden');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+};
+
+/**
  * Populates and toggles the print popover modal display.
  * @param {Event} [event] 
  */
 window.togglePrintPopover = function(event) {
-    if (event) event.stopPropagation();
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
     const popover = document.getElementById('printPopover');
     if (!popover) return;
 
-    const isOpening = popover.classList.contains('hidden');
+    const isOpening = popover.classList.contains('hidden') || popover.style.display === 'none';
     if (isOpening) {
-        window.populateAdminPrintAccountCheckboxes();
-        popover.classList.remove('hidden');
+        window.openPrintReportPopover(event);
     } else {
-        popover.classList.add('hidden');
-        // Also close the classification dropdown menu if open
-        const menu = document.getElementById('adminReportAccountDropdownMenu');
-        const chevron = document.getElementById('adminReportAccountDropdownChevron');
-        if (menu) menu.classList.add('hidden');
-        if (chevron) chevron.style.transform = 'rotate(0deg)';
+        window.closePrintReportModal(event);
     }
 };
 
@@ -4480,7 +4529,7 @@ window.executeSignOut = async function() {
     window.location.href = '../login/index.html';
 };
 
-// Dismiss print popover, classification dropdown, and signout popover on outside click
+// Dismiss classification dropdown and signout popover on outside click
 document.addEventListener('click', function(event) {
     // Classification dropdown outside click
     const dropdownWrapper = document.getElementById('adminReportAccountDropdownWrapper');
@@ -4488,14 +4537,6 @@ document.addEventListener('click', function(event) {
     const dropdownChevron = document.getElementById('adminReportAccountDropdownChevron');
     if (dropdownWrapper && dropdownMenu && !dropdownWrapper.contains(event.target)) {
         dropdownMenu.classList.add('hidden');
-        if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
-    }
-
-    const popover = document.getElementById('printPopover');
-    const btn = document.getElementById('btnPrint');
-    if (popover && btn && !popover.contains(event.target) && !btn.contains(event.target)) {
-        popover.classList.add('hidden');
-        if (dropdownMenu) dropdownMenu.classList.add('hidden');
         if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
     }
 
@@ -4564,7 +4605,8 @@ function executePrintReport() {
     const selectedFormat = formatSelect ? formatSelect.value : 'format1';
 
     const asOfDateInput = document.getElementById('reportAsOfDate');
-    const asOfDate = (asOfDateInput && asOfDateInput.value.trim() !== '') ? asOfDateInput.value.trim() : 'July 2026';
+    const currentMonthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const asOfDate = (asOfDateInput && asOfDateInput.value.trim() !== '') ? asOfDateInput.value.trim() : currentMonthYear;
     const fund = document.getElementById('reportFund') ? document.getElementById('reportFund').value : 'GENERAL FUND';
     const officer = document.getElementById('reportAccountableOfficer') ? document.getElementById('reportAccountableOfficer').value : 'RIZALDO A. RICAFORT';
     const designation = document.getElementById('reportDesignation') ? document.getElementById('reportDesignation').value : 'MGDH I - GSO';
@@ -4607,10 +4649,13 @@ function executePrintReport() {
         accountGroup: accountGroupTitle
     };
 
-    const printArea = document.getElementById('printArea');
+    let printArea = document.getElementById('printArea');
     if (!printArea) {
-        console.error("Print area container (#printArea) not found in DOM.");
-        return;
+        printArea = document.createElement('div');
+        printArea.id = 'printArea';
+        printArea.className = 'print-area';
+        printArea.style.display = 'none';
+        document.body.appendChild(printArea);
     }
 
     // Source masterlist records
@@ -4640,11 +4685,20 @@ function executePrintReport() {
         });
     }
 
+    if (rawData.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('warning', 'Inventory Empty', 'No equipment records found in the masterlist to generate a report.');
+        } else {
+            alert('No equipment records found in the masterlist to generate a report.');
+        }
+        return;
+    }
+
     if (dataToPrint.length === 0) {
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Matching Items', 'No equipment records matched the selected classification(s) and period.');
+            window.showGTrackToast('warning', 'No Matching Items', `No equipment records matched "${sanitizeText(asOfDate)}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
         } else {
-            alert('No equipment records matched the selected classification(s) and period.');
+            alert(`No equipment records matched "${asOfDate}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
         }
         return;
     }
@@ -4666,11 +4720,19 @@ function executePrintReport() {
     // 1. Inject generated HTML into print container
     printArea.innerHTML = reportHTML;
 
-    // 2. Close the popover modal
-    togglePrintPopover();
+    // 2. Close the modal
+    if (typeof window.closePrintReportModal === 'function') {
+        window.closePrintReportModal();
+    } else {
+        window.togglePrintPopover();
+    }
 
     // 3. Display print area & launch print preview cleanly
     printArea.style.display = 'block';
+
+    if (typeof window.showGTrackToast === 'function') {
+        window.showGTrackToast('info', 'Opening Print Preview', 'Generating official RPCPPE report. Select your printer or "Save as PDF".');
+    }
 
     setTimeout(() => {
         window.print();
@@ -4679,6 +4741,7 @@ function executePrintReport() {
         }, 500);
     }, 150);
 }
+window.executePrintReport = executePrintReport;
 /**
  * Builds HTML report string for Format 1 (Physical Count Card vs Count Balance)
  */
