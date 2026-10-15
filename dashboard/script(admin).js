@@ -4432,7 +4432,7 @@ window.openPrintReportPopover = function(event) {
     }
 
     popover.classList.remove('hidden');
-    popover.style.display = 'flex';
+    popover.style.display = 'block';
 };
 
 /**
@@ -4529,7 +4529,7 @@ window.executeSignOut = async function() {
     window.location.href = '../login/index.html';
 };
 
-// Dismiss classification dropdown and signout popover on outside click
+// Dismiss classification dropdown, print popover, and signout popover on outside click
 document.addEventListener('click', function(event) {
     // Classification dropdown outside click
     const dropdownWrapper = document.getElementById('adminReportAccountDropdownWrapper');
@@ -4538,6 +4538,23 @@ document.addEventListener('click', function(event) {
     if (dropdownWrapper && dropdownMenu && !dropdownWrapper.contains(event.target)) {
         dropdownMenu.classList.add('hidden');
         if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
+    }
+
+    // Print popover outside click dismiss
+    const popover = document.getElementById('printPopover');
+    const btn = document.getElementById('btnPrint');
+    const homeGenCard = document.querySelector('.action-card[onclick*="printPopover"], .action-card[onclick*="PrintReport"]');
+    const masterlistBtn = document.getElementById('masterlist-print-report-btn');
+    if (popover && !popover.classList.contains('hidden') && popover.style.display !== 'none') {
+        const isTrigger = (btn && btn.contains(event.target)) || 
+                          (homeGenCard && homeGenCard.contains(event.target)) || 
+                          (masterlistBtn && masterlistBtn.contains(event.target));
+        if (!popover.contains(event.target) && !isTrigger) {
+            popover.classList.add('hidden');
+            popover.style.display = 'none';
+            if (dropdownMenu) dropdownMenu.classList.add('hidden');
+            if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
+        }
     }
 
     const signoutPopover = document.getElementById('signout-popover');

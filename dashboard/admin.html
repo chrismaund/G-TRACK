@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=20261015_4">
+    <link rel="stylesheet" href="style(admin).css?v=20261015_5">
     <!-- Chart.js CDN for Analytics Visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -66,9 +66,90 @@
         </button>
         <hr class="sidebar-divider">
 
-        <button id="btnPrint" class="sidebar-link-btn" title="Print Report" onclick="openPrintReportPopover(event)">
-            <i class="fas fa-print"></i> <span class="sidebar-text">Print Report</span>
-        </button>
+        <div class="print-menu-wrapper" style="position: relative; width: 100%;">
+            <button id="btnPrint" class="sidebar-link-btn" title="Print Report" onclick="togglePrintPopover(event)">
+                <i class="fas fa-print"></i> <span class="sidebar-text">Print Report</span>
+            </button>
+
+            <div id="printPopover" class="hidden" style="
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                z-index: 1200;
+                margin-top: 8px;
+                background-color: #1e293b;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 14px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                box-sizing: border-box;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">SELECT PPE REPORT FORMAT</span>
+                    <button type="button" onclick="togglePrintPopover(event)" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">&times;</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Report Template:</label>
+                        <select id="reportFormatSelect" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                            <option value="format1">Format 1: Physical Count (Card vs Count)</option>
+                            <option value="format2">Format 2: Equipment &amp; Furniture List</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px; position: relative;" id="adminReportAccountDropdownWrapper">
+                        <label style="font-size: 11px; color: #94a3b8; font-weight: 500;">Equipment Classification(s):</label>
+                        <div id="adminReportAccountDropdownTrigger" onclick="toggleAdminReportAccountDropdown(event)" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px 10px; border-radius: 6px; font-size: 11px; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                            <span id="adminReportAccountDropdownLabel" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">All Classifications (9 Selected)</span>
+                            <i id="adminReportAccountDropdownChevron" class="fas fa-chevron-down" style="font-size: 10px; color: #94a3b8; transition: transform 0.2s;"></i>
+                        </div>
+
+                        <!-- Collapsible Dropdown List with Checkboxes -->
+                        <div id="adminReportAccountDropdownMenu" class="hidden" style="position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 1050; background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); padding: 8px; box-sizing: border-box;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid #1e293b;">
+                                <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Filter by Category</span>
+                                <button type="button" onclick="toggleAllAdminReportAccounts(event)" style="background: none; border: none; color: #38bdf8; font-size: 10px; cursor: pointer; padding: 0; font-weight: 600;">Toggle All</button>
+                            </div>
+                            <div id="adminReportAccountCheckboxes" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">As of Date / Period (e.g. October 2026, All Dates):</label>
+                        <input type="text" id="reportAsOfDate" placeholder="e.g. Current Month, All Dates" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Fund Cluster:</label>
+                        <input type="text" id="reportFund" value="GENERAL FUND" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Accountable Officer:</label>
+                        <input type="text" id="reportAccountableOfficer" value="RIZALDO A. RICAFORT" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Officer Designation:</label>
+                        <input type="text" id="reportDesignation" value="MGDH I - GSO" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 11px; color: #94a3b8;">Date of Assumption:</label>
+                        <input type="text" id="reportAssumptionDate" value="January 5, 2022" placeholder="e.g. January 5, 2022" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; outline: none;">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px;">
+                        <button type="button" onclick="togglePrintPopover(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Cancel</button>
+                        <button type="button" onclick="executePrintReport()" style="background-color: #0284c7; color: #ffffff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Generate &amp; Print</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <button id="sidebar-csv-btn" class="sidebar-link-btn" title="Export CSV">
             <i class="fas fa-file-excel"></i> <span class="sidebar-text">Export CSV</span>
@@ -297,7 +378,7 @@
                         <span class="action-card-btn">Manage Custodians →</span>
                     </div>
 
-                    <div class="action-card" onclick="openPrintReportPopover(event)">
+                    <div class="action-card" onclick="togglePrintPopover(event)">
                         <div class="action-card-header">
                             <div>
                                 <h4 class="action-card-title">Generate Reports</h4>
@@ -474,7 +555,7 @@
                 </div>
                 
                 <div class="report-actions-group">
-                    <button type="button" id="masterlist-print-report-btn" class="add-eq-btn btn-blue" onclick="openPrintReportPopover(event)" title="Generate & Print Physical Count Report">
+                    <button type="button" id="masterlist-print-report-btn" class="add-eq-btn btn-blue" onclick="togglePrintPopover(event)" title="Generate & Print Physical Count Report">
                         <i class="fas fa-print"></i> <span>Print Report</span>
                     </button>
                     <button id="add-article-btn" class="add-eq-btn btn-blue">
@@ -1442,78 +1523,7 @@
     </div>
 </div>
 
-    <!-- Official PPE Print Report Modal Overlay -->
-    <div id="printPopover" class="modal-overlay hidden" style="z-index: 1300;" onclick="if(event.target === this) closePrintReportModal(event)">
-      <div class="modal-card" style="max-width: 480px; width: 92%; max-height: 90vh; overflow-y: auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 22px; box-shadow: 0 20px 45px rgba(0,0,0,0.7); color: #f8fafc; box-sizing: border-box;" onclick="event.stopPropagation()">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #334155; padding-bottom: 10px;">
-            <span style="font-size: 13px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-print"></i> SELECT PPE REPORT FORMAT
-            </span>
-            <button type="button" onclick="closePrintReportModal(event)" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px;" title="Close">&times;</button>
-        </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Report Template:</label>
-                <select id="reportFormatSelect" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%;">
-                    <option value="format1">Format 1: Physical Count (Card vs Count)</option>
-                    <option value="format2">Format 2: Equipment &amp; Furniture List</option>
-                </select>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px; position: relative;" id="adminReportAccountDropdownWrapper">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Equipment Classification(s):</label>
-                <div id="adminReportAccountDropdownTrigger" onclick="toggleAdminReportAccountDropdown(event)" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">
-                    <span id="adminReportAccountDropdownLabel" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">All Classifications (9 Selected)</span>
-                    <i id="adminReportAccountDropdownChevron" class="fas fa-chevron-down" style="font-size: 10px; color: #94a3b8; transition: transform 0.2s;"></i>
-                </div>
-
-                <!-- Collapsible Dropdown List with Checkboxes -->
-                <div id="adminReportAccountDropdownMenu" class="hidden" style="position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 1350; background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); padding: 8px; box-sizing: border-box;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid #1e293b;">
-                        <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Filter by Category</span>
-                        <button type="button" onclick="toggleAllAdminReportAccounts(event)" style="background: none; border: none; color: #38bdf8; font-size: 10px; cursor: pointer; padding: 0; font-weight: 600;">Toggle All</button>
-                    </div>
-                    <div id="adminReportAccountCheckboxes" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-                        <!-- Dynamically populated -->
-                    </div>
-                </div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">As of Date / Period (e.g. October 2026, All Dates):</label>
-                <input type="text" id="reportAsOfDate" placeholder="e.g. Current Month, All Dates" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Fund Cluster:</label>
-                <input type="text" id="reportFund" value="GENERAL FUND" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Accountable Officer:</label>
-                <input type="text" id="reportAccountableOfficer" value="RIZALDO A. RICAFORT" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Officer Designation:</label>
-                <input type="text" id="reportDesignation" value="MGDH I - GSO" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Date of Assumption:</label>
-                <input type="text" id="reportAssumptionDate" value="January 5, 2022" placeholder="e.g. January 5, 2022" style="background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 11.5px; outline: none; width: 100%; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
-                <button type="button" onclick="closePrintReportModal(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 7px 14px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Cancel</button>
-                <button type="button" onclick="executePrintReport()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
-                    <i class="fas fa-print"></i> Generate &amp; Print
-                </button>
-            </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Official Report PDF / Print Rendering Container -->
     <div id="printArea" class="print-area" style="display: none;"></div>
@@ -1527,7 +1537,7 @@
     <!-- Supabase JS SDK (For Masterlist & Requests) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="script(admin).js?v=20261015_4"></script>
+    <script src="script(admin).js?v=20261015_5"></script>
     
 </body>
 </html>
