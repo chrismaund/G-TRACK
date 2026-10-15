@@ -3399,6 +3399,126 @@ window.closeCOAReportPopover = function(event) {
 };
 
 /**
+ * Robust date parser for report period / as-of cutoff filters.
+ */
+function parseReportDateFilter(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const cleanStr = dateStr.trim();
+    if (!cleanStr) return null;
+    const lower = cleanStr.toLowerCase();
+    if (lower === 'all' || lower === 'all dates' || lower === 'none' || lower === '*' || lower === 'any') return null;
+
+    const months = {
+        'jan': 0, 'january': 0,
+        'feb': 1, 'february': 1,
+        'mar': 2, 'march': 2,
+        'apr': 3, 'april': 3,
+        'may': 4,
+        'jun': 5, 'june': 5,
+        'jul': 6, 'july': 6,
+        'aug': 7, 'august': 7,
+        'sep': 8, 'september': 8,
+        'oct': 9, 'october': 9,
+        'nov': 10, 'november': 10,
+        'dec': 11, 'december': 11
+    };
+
+    if (/^\d{4}$/.test(cleanStr)) {
+        const y = parseInt(cleanStr, 10);
+        return { cutoff: new Date(y, 11, 31, 23, 59, 59, 999), type: 'year' };
+    }
+
+    const isoMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (isoMatch) {
+        const y = parseInt(isoMatch[1], 10);
+        const m = parseInt(isoMatch[2], 10) - 1;
+        const d = parseInt(isoMatch[3], 10);
+        return { cutoff: new Date(y, m, d, 23, 59, 59, 999), type: 'day' };
+    }
+
+    const yearMonthMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})$/);
+    if (yearMonthMatch) {
+        const y = parseInt(yearMonthMatch[1], 10);
+        const m = parseInt(yearMonthMatch[2], 10) - 1;
+        return { cutoff: new Date(y, m + 1, 0, 23, 59, 59, 999), type: 'month' };
+    }
+
+    const monthDayYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{1,2}),?\s*(\d{4})$/i);
+    if (monthDayYearMatch) {
+        const mName = monthDayYearMatch[1].toLowerCase().slice(0, 3);
+        const d = parseInt(monthDayYearMatch[2], 10);
+        const y = parseInt(monthDayYearMatch[3], 10);
+        if (months[mName] !== undefined) {
+            return { cutoff: new Date(y, months[mName], d, 23, 59, 59, 999), type: 'day' };
+        }
+    }
+
+    const dayMonthYearMatch = cleanStr.match(/^(\d{1,2})\s*([a-z]+),?\s*(\d{4})$/i);
+    if (dayMonthYearMatch) {
+        const d = parseInt(dayMonthYearMatch[1], 10);
+        const mName = dayMonthYearMatch[2].toLowerCase().slice(0, 3);
+        const y = parseInt(dayMonthYearMatch[3], 10);
+        if (months[mName] !== undefined) {
+            return { cutoff: new Date(y, months[mName], d, 23, 59, 59, 999), type: 'day' };
+        }
+    }
+
+    const monthYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{4})$/i);
+    if (monthYearMatch) {
+        const mName = monthYearMatch[1].toLowerCase().slice(0, 3);
+        const y = parseInt(monthYearMatch[2], 10);
+        if (months[mName] !== undefined) {
+            return { cutoff: new Date(y, months[mName] + 1, 0, 23, 59, 59, 999), type: 'month' };
+        }
+    }
+
+    const numDateMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (numDateMatch) {
+        const p1 = parseInt(numDateMatch[1], 10);
+        const p2 = parseInt(numDateMatch[2], 10);
+        const y = parseInt(numDateMatch[3], 10);
+        const d = (p1 > 12) ? p1 : p2;
+        const m = (p1 > 12) ? p2 - 1 : p1 - 1;
+        return { cutoff: new Date(y, m, d, 23, 59, 59, 999), type: 'day' };
+    }
+
+    const parsed = new Date(cleanStr);
+    if (!isNaN(parsed.getTime())) {
+        return { cutoff: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999), type: 'day' };
+    }
+
+    return null;
+}
+
+function parseItemDate(item) {
+    if (!item) return null;
+    const raw = item.date || item.dateAcquired || item.date_acquired || item.acquisitionDate;
+    if (!raw) return null;
+    if (raw instanceof Date && !isNaN(raw.getTime())) return raw;
+    const str = String(raw).trim();
+    if (!str) return null;
+
+    const iso = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (iso) {
+        return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0);
+    }
+
+    const num = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (num) {
+        const p1 = parseInt(num[1], 10);
+        const p2 = parseInt(num[2], 10);
+        const y = parseInt(num[3], 10);
+        const d = (p1 > 12) ? p1 : p2;
+        const m = (p1 > 12) ? p2 - 1 : p1 - 1;
+        return new Date(y, m, d, 12, 0, 0);
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+    return null;
+}
+
+/**
  * Executes official COA RPCPPE PDF report generation based on the accountant's selected equipment type,
  * voucher tally status, equipment condition, and period filters.
  * Replicates the exact official Admin PDF report layout with pure black & white typography and signatories.
@@ -3415,6 +3535,13 @@ window.executeCOAPrintReport = function() {
     const asOfDateStr = document.getElementById('coaReportAsOfDate')?.value || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     // Filter dataset according to accountant's specifications
+    const dateFilterObj = (typeof parseReportDateFilter === 'function') 
+        ? parseReportDateFilter(asOfDateStr) 
+        : null;
+    const cutoffTime = (dateFilterObj && dateFilterObj.cutoff && asOfDateStr.toLowerCase() !== 'all' && asOfDateStr.toLowerCase() !== 'all dates') 
+        ? dateFilterObj.cutoff.getTime() 
+        : null;
+
     let filteredItems = inventoryData.filter(item => {
         if (selectedAccount !== 'All' && (item.account || '').toLowerCase() !== selectedAccount.toLowerCase()) {
             return false;
@@ -3430,6 +3557,17 @@ window.executeCOAPrintReport = function() {
             const cond = (item.condition || '').toUpperCase();
             if (selectedCondition.toUpperCase() === 'SERVICEABLE' && !cond.includes('SERVICEABLE')) return false;
             if (selectedCondition.toUpperCase() === 'UNSERVICEABLE' && !cond.includes('UNSERVICEABLE')) return false;
+        }
+        if (cutoffTime !== null) {
+            const itemDate = (typeof parseItemDate === 'function') ? parseItemDate(item) : (item.date ? new Date(item.date) : null);
+            if (itemDate && !isNaN(itemDate.getTime())) {
+                if (itemDate.getTime() > cutoffTime) return false;
+            } else if (item.createdAt) {
+                const cDate = new Date(item.createdAt);
+                if (!isNaN(cDate.getTime()) && cDate.getTime() > cutoffTime) return false;
+            } else {
+                return false;
+            }
         }
         return true;
     });

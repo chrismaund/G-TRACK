@@ -4567,10 +4567,19 @@ document.addEventListener('click', function(event) {
 /**
  * Helper date parser for report period filters (e.g. "July 2026", "2026-07", "January 2026", etc.)
  */
+/**
+ * Robust date parser for report period / as-of cutoff filters.
+ * Returns an object containing:
+ *  - cutoff: Date object representing the inclusive end-of-period timestamp (23:59:59.999)
+ *  - type: 'day' | 'month' | 'year'
+ * Or null if 'all', 'all dates', or unparseable.
+ */
 function parseReportDateFilter(dateStr) {
     if (!dateStr || typeof dateStr !== 'string') return null;
-    const cleanStr = dateStr.trim().toLowerCase();
-    if (cleanStr === '' || cleanStr === 'all' || cleanStr === 'all dates' || cleanStr === 'none') return null;
+    const cleanStr = dateStr.trim();
+    if (!cleanStr) return null;
+    const lower = cleanStr.toLowerCase();
+    if (lower === 'all' || lower === 'all dates' || lower === 'none' || lower === '*' || lower === 'any') return null;
 
     const months = {
         'jan': 0, 'january': 0,
@@ -4587,30 +4596,145 @@ function parseReportDateFilter(dateStr) {
         'dec': 11, 'december': 11
     };
 
-    // Match "Month YYYY" (e.g. "July 2026", "Jul 2026")
-    const monthYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{4})$/i);
-    if (monthYearMatch) {
-        const mName = monthYearMatch[1].toLowerCase();
-        const year = parseInt(monthYearMatch[2], 10);
+    // 1. Year only (e.g. "2024" or "2026") -> Cutoff is end of that year (Dec 31, 23:59:59.999)
+    if (/^\d{4}$/.test(cleanStr)) {
+        const y = parseInt(cleanStr, 10);
+        return {
+            cutoff: new Date(y, 11, 31, 23, 59, 59, 999),
+            type: 'year'
+        };
+    }
+
+    // 2. ISO Date: YYYY-MM-DD (e.g. "2026-10-15" or "2026/10/15")
+    const isoMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (isoMatch) {
+        const y = parseInt(isoMatch[1], 10);
+        const m = parseInt(isoMatch[2], 10) - 1;
+        const d = parseInt(isoMatch[3], 10);
+        return {
+            cutoff: new Date(y, m, d, 23, 59, 59, 999),
+            type: 'day'
+        };
+    }
+
+    // 3. YYYY-MM (e.g. "2026-10" or "2026/10") -> Cutoff is end of that month
+    const yearMonthMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})$/);
+    if (yearMonthMatch) {
+        const y = parseInt(yearMonthMatch[1], 10);
+        const m = parseInt(yearMonthMatch[2], 10) - 1;
+        return {
+            cutoff: new Date(y, m + 1, 0, 23, 59, 59, 999),
+            type: 'month'
+        };
+    }
+
+    // 4. Month Day, Year (e.g. "October 15, 2026", "Oct 15 2026")
+    const monthDayYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{1,2}),?\s*(\d{4})$/i);
+    if (monthDayYearMatch) {
+        const mName = monthDayYearMatch[1].toLowerCase().slice(0, 3);
+        const d = parseInt(monthDayYearMatch[2], 10);
+        const y = parseInt(monthDayYearMatch[3], 10);
         if (months[mName] !== undefined) {
-            return new Date(year, months[mName], 1, 0, 0, 0, 0);
+            return {
+                cutoff: new Date(y, months[mName], d, 23, 59, 59, 999),
+                type: 'day'
+            };
         }
     }
 
-    // Match "YYYY-MM" (e.g. "2026-07")
-    const yearMonthMatch = cleanStr.match(/^(\d{4})[/-](\d{1,2})$/);
-    if (yearMonthMatch) {
-        const year = parseInt(yearMonthMatch[1], 10);
-        const month = parseInt(yearMonthMatch[2], 10) - 1;
-        return new Date(year, month, 1, 0, 0, 0, 0);
+    // 5. Day Month Year (e.g. "15 October 2026", "15 Oct 2026")
+    const dayMonthYearMatch = cleanStr.match(/^(\d{1,2})\s*([a-z]+),?\s*(\d{4})$/i);
+    if (dayMonthYearMatch) {
+        const d = parseInt(dayMonthYearMatch[1], 10);
+        const mName = dayMonthYearMatch[2].toLowerCase().slice(0, 3);
+        const y = parseInt(dayMonthYearMatch[3], 10);
+        if (months[mName] !== undefined) {
+            return {
+                cutoff: new Date(y, months[mName], d, 23, 59, 59, 999),
+                type: 'day'
+            };
+        }
     }
 
-    // Standard Date parser
-    const parsed = new Date(dateStr);
+    // 6. Month YYYY (e.g. "October 2026", "Oct 2026") -> Cutoff is end of that month
+    const monthYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{4})$/i);
+    if (monthYearMatch) {
+        const mName = monthYearMatch[1].toLowerCase().slice(0, 3);
+        const y = parseInt(monthYearMatch[2], 10);
+        if (months[mName] !== undefined) {
+            return {
+                cutoff: new Date(y, months[mName] + 1, 0, 23, 59, 59, 999),
+                type: 'month'
+            };
+        }
+    }
+
+    // 7. Numeric MM/DD/YYYY or DD/MM/YYYY (e.g. "10/15/2026", "15/10/2026", "10-15-2026", "15-10-2026")
+    const numDateMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (numDateMatch) {
+        const p1 = parseInt(numDateMatch[1], 10);
+        const p2 = parseInt(numDateMatch[2], 10);
+        const y = parseInt(numDateMatch[3], 10);
+        let m = 0;
+        let d = 1;
+        if (p1 > 12) {
+            // DD/MM/YYYY
+            d = p1;
+            m = p2 - 1;
+        } else {
+            // MM/DD/YYYY
+            m = p1 - 1;
+            d = p2;
+        }
+        return {
+            cutoff: new Date(y, m, d, 23, 59, 59, 999),
+            type: 'day'
+        };
+    }
+
+    // 8. General fallback via standard Date parser
+    const parsed = new Date(cleanStr);
     if (!isNaN(parsed.getTime())) {
-        return parsed;
+        return {
+            cutoff: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999),
+            type: 'day'
+        };
     }
 
+    return null;
+}
+
+/**
+ * Safely extracts and normalizes the date of an inventory record for comparison.
+ */
+function parseItemDate(item) {
+    if (!item) return null;
+    const raw = item.date || item.dateAcquired || item.date_acquired || item.acquisitionDate;
+    if (!raw) return null;
+    if (raw instanceof Date && !isNaN(raw.getTime())) return raw;
+    const str = String(raw).trim();
+    if (!str) return null;
+
+    // ISO: YYYY-MM-DD
+    const iso = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (iso) {
+        return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0);
+    }
+
+    // Numeric MM/DD/YYYY or DD/MM/YYYY
+    const num = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (num) {
+        const p1 = parseInt(num[1], 10);
+        const p2 = parseInt(num[2], 10);
+        const y = parseInt(num[3], 10);
+        if (p1 > 12) {
+            return new Date(y, p2 - 1, p1, 12, 0, 0);
+        }
+        return new Date(y, p1 - 1, p2, 12, 0, 0);
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
     return null;
 }
 
@@ -4689,16 +4813,21 @@ function executePrintReport() {
     }
 
     // Filter by Cutoff Date ("As of Date" includes all items recorded on or before this period)
-    const filterCutoffDate = parseReportDateFilter(asOfDate);
-    if (filterCutoffDate && asOfDate.toLowerCase() !== 'all' && asOfDate.toLowerCase() !== 'all dates') {
-        const endOfPeriodDate = new Date(filterCutoffDate.getFullYear(), filterCutoffDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    const dateFilterObj = parseReportDateFilter(asOfDate);
+    if (dateFilterObj && dateFilterObj.cutoff && asOfDate.toLowerCase() !== 'all' && asOfDate.toLowerCase() !== 'all dates') {
+        const cutoffTime = dateFilterObj.cutoff.getTime();
         dataToPrint = dataToPrint.filter(item => {
-            if (!item.date) return true;
-            const itemDate = new Date(item.date);
-            if (!isNaN(itemDate.getTime())) {
-                return itemDate <= endOfPeriodDate;
+            const itemDate = parseItemDate(item);
+            if (itemDate) {
+                return itemDate.getTime() <= cutoffTime;
             }
-            return true;
+            if (item.createdAt) {
+                const cDate = new Date(item.createdAt);
+                if (!isNaN(cDate.getTime())) {
+                    return cDate.getTime() <= cutoffTime;
+                }
+            }
+            return false;
         });
     }
 
