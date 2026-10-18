@@ -4410,6 +4410,27 @@ window.populateAdminPrintAccountCheckboxes = function() {
     window.updateAdminReportAccountDropdownLabel();
 };
 
+window.handleReportDateFilterModeChange = function() {
+    const modeEl = document.getElementById('reportDateFilterMode');
+    const dateInput = document.getElementById('reportAsOfDate');
+    const labelEl = document.getElementById('reportAsOfDateLabel');
+    if (!modeEl || !dateInput) return;
+    if (modeEl.value === 'all') {
+        dateInput.value = 'All Dates';
+        if (labelEl) labelEl.textContent = 'Report Period:';
+    } else if (modeEl.value === 'cutoff') {
+        if (dateInput.value === 'All Dates' || !dateInput.value.trim()) {
+            dateInput.value = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
+        if (labelEl) labelEl.textContent = 'Cutoff Date (All items on or before):';
+    } else {
+        if (dateInput.value === 'All Dates' || !dateInput.value.trim()) {
+            dateInput.value = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
+        if (labelEl) labelEl.textContent = 'Target Date / Period:';
+    }
+};
+
 /**
  * Opens and initializes the admin print report popover dialog.
  * @param {Event} [event]
@@ -4544,11 +4565,9 @@ document.addEventListener('click', function(event) {
     const popover = document.getElementById('printPopover');
     const btn = document.getElementById('btnPrint');
     const homeGenCard = document.querySelector('.action-card[onclick*="printPopover"], .action-card[onclick*="PrintReport"]');
-    const masterlistBtn = document.getElementById('masterlist-print-report-btn');
     if (popover && !popover.classList.contains('hidden') && popover.style.display !== 'none') {
         const isTrigger = (btn && btn.contains(event.target)) || 
-                          (homeGenCard && homeGenCard.contains(event.target)) || 
-                          (masterlistBtn && masterlistBtn.contains(event.target));
+                          (homeGenCard && homeGenCard.contains(event.target));
         if (!popover.contains(event.target) && !isTrigger) {
             popover.classList.add('hidden');
             popover.style.display = 'none';
@@ -4596,10 +4615,13 @@ function parseReportDateFilter(dateStr) {
         'dec': 11, 'december': 11
     };
 
-    // 1. Year only (e.g. "2024" or "2026") -> Cutoff is end of that year (Dec 31, 23:59:59.999)
-    if (/^\d{4}$/.test(cleanStr)) {
-        const y = parseInt(cleanStr, 10);
+    // 1. Year only (e.g. "2024", "2026", "CY 2024", "Year 2024")
+    const yearOnlyMatch = cleanStr.match(/^(?:cy|year)?\s*(\d{4})$/i);
+    if (yearOnlyMatch) {
+        const y = parseInt(yearOnlyMatch[1], 10);
         return {
+            start: new Date(y, 0, 1, 0, 0, 0, 0),
+            end: new Date(y, 11, 31, 23, 59, 59, 999),
             cutoff: new Date(y, 11, 31, 23, 59, 59, 999),
             type: 'year'
         };
@@ -4612,17 +4634,21 @@ function parseReportDateFilter(dateStr) {
         const m = parseInt(isoMatch[2], 10) - 1;
         const d = parseInt(isoMatch[3], 10);
         return {
+            start: new Date(y, m, d, 0, 0, 0, 0),
+            end: new Date(y, m, d, 23, 59, 59, 999),
             cutoff: new Date(y, m, d, 23, 59, 59, 999),
             type: 'day'
         };
     }
 
-    // 3. YYYY-MM (e.g. "2026-10" or "2026/10") -> Cutoff is end of that month
+    // 3. YYYY-MM (e.g. "2026-10" or "2026/10") -> Period is full month
     const yearMonthMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})$/);
     if (yearMonthMatch) {
         const y = parseInt(yearMonthMatch[1], 10);
         const m = parseInt(yearMonthMatch[2], 10) - 1;
         return {
+            start: new Date(y, m, 1, 0, 0, 0, 0),
+            end: new Date(y, m + 1, 0, 23, 59, 59, 999),
             cutoff: new Date(y, m + 1, 0, 23, 59, 59, 999),
             type: 'month'
         };
@@ -4636,6 +4662,8 @@ function parseReportDateFilter(dateStr) {
         const y = parseInt(monthDayYearMatch[3], 10);
         if (months[mName] !== undefined) {
             return {
+                start: new Date(y, months[mName], d, 0, 0, 0, 0),
+                end: new Date(y, months[mName], d, 23, 59, 59, 999),
                 cutoff: new Date(y, months[mName], d, 23, 59, 59, 999),
                 type: 'day'
             };
@@ -4650,19 +4678,23 @@ function parseReportDateFilter(dateStr) {
         const y = parseInt(dayMonthYearMatch[3], 10);
         if (months[mName] !== undefined) {
             return {
+                start: new Date(y, months[mName], d, 0, 0, 0, 0),
+                end: new Date(y, months[mName], d, 23, 59, 59, 999),
                 cutoff: new Date(y, months[mName], d, 23, 59, 59, 999),
                 type: 'day'
             };
         }
     }
 
-    // 6. Month YYYY (e.g. "October 2026", "Oct 2026") -> Cutoff is end of that month
+    // 6. Month YYYY (e.g. "October 2026", "Oct 2026") -> Period is full month
     const monthYearMatch = cleanStr.match(/^([a-z]+)\s*(\d{4})$/i);
     if (monthYearMatch) {
         const mName = monthYearMatch[1].toLowerCase().slice(0, 3);
         const y = parseInt(monthYearMatch[2], 10);
         if (months[mName] !== undefined) {
             return {
+                start: new Date(y, months[mName], 1, 0, 0, 0, 0),
+                end: new Date(y, months[mName] + 1, 0, 23, 59, 59, 999),
                 cutoff: new Date(y, months[mName] + 1, 0, 23, 59, 59, 999),
                 type: 'month'
             };
@@ -4687,6 +4719,8 @@ function parseReportDateFilter(dateStr) {
             d = p2;
         }
         return {
+            start: new Date(y, m, d, 0, 0, 0, 0),
+            end: new Date(y, m, d, 23, 59, 59, 999),
             cutoff: new Date(y, m, d, 23, 59, 59, 999),
             type: 'day'
         };
@@ -4696,6 +4730,8 @@ function parseReportDateFilter(dateStr) {
     const parsed = new Date(cleanStr);
     if (!isNaN(parsed.getTime())) {
         return {
+            start: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0),
+            end: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999),
             cutoff: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 23, 59, 59, 999),
             type: 'day'
         };
@@ -4715,10 +4751,14 @@ function parseItemDate(item) {
     const str = String(raw).trim();
     if (!str) return null;
 
-    // ISO: YYYY-MM-DD
-    const iso = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    // ISO: YYYY-MM-DD or YYYYY-MM-DD (e.g. 2024-06-01 or 32023-03-04 typo)
+    const iso = str.match(/^(\d{4,5})[-/](\d{1,2})[-/](\d{1,2})/);
     if (iso) {
-        return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0);
+        let y = parseInt(iso[1], 10);
+        if (y > 30000) y = parseInt(String(y).slice(-4), 10);
+        const m = parseInt(iso[2], 10) - 1;
+        const d = parseInt(iso[3], 10);
+        return new Date(y, m, d, 12, 0, 0);
     }
 
     // Numeric MM/DD/YYYY or DD/MM/YYYY
@@ -4812,23 +4852,38 @@ function executePrintReport() {
         });
     }
 
-    // Filter by Cutoff Date ("As of Date" includes all items recorded on or before this period)
-    const dateFilterObj = parseReportDateFilter(asOfDate);
-    if (dateFilterObj && dateFilterObj.cutoff && asOfDate.toLowerCase() !== 'all' && asOfDate.toLowerCase() !== 'all dates') {
-        const cutoffTime = dateFilterObj.cutoff.getTime();
-        dataToPrint = dataToPrint.filter(item => {
-            const itemDate = parseItemDate(item);
-            if (itemDate) {
-                return itemDate.getTime() <= cutoffTime;
-            }
-            if (item.createdAt) {
-                const cDate = new Date(item.createdAt);
-                if (!isNaN(cDate.getTime())) {
-                    return cDate.getTime() <= cutoffTime;
+    // Filter by Date / Period according to selected mode
+    const filterModeEl = document.getElementById('reportDateFilterMode');
+    const filterMode = filterModeEl ? filterModeEl.value : 'period';
+    const asOfDateLower = asOfDate.toLowerCase();
+    const isAllDates = (filterMode === 'all' || asOfDateLower === 'all' || asOfDateLower === 'all dates' || asOfDateLower === 'none' || asOfDateLower === '*');
+
+    if (!isAllDates) {
+        const dateFilterObj = parseReportDateFilter(asOfDate);
+        if (dateFilterObj) {
+            const startTime = dateFilterObj.start ? dateFilterObj.start.getTime() : 0;
+            const endTime = dateFilterObj.end ? dateFilterObj.end.getTime() : Number.MAX_SAFE_INTEGER;
+            const cutoffTime = dateFilterObj.cutoff ? dateFilterObj.cutoff.getTime() : endTime;
+
+            dataToPrint = dataToPrint.filter(item => {
+                const itemDate = parseItemDate(item);
+                let itemTime = null;
+                if (itemDate && !isNaN(itemDate.getTime())) {
+                    itemTime = itemDate.getTime();
+                } else if (item.createdAt) {
+                    const cDate = new Date(item.createdAt);
+                    if (!isNaN(cDate.getTime())) itemTime = cDate.getTime();
                 }
-            }
-            return false;
-        });
+                if (itemTime === null) return false;
+
+                if (filterMode === 'cutoff') {
+                    return itemTime <= cutoffTime;
+                } else {
+                    // Exact period / specific date match
+                    return itemTime >= startTime && itemTime <= endTime;
+                }
+            });
+        }
     }
 
     if (rawData.length === 0) {
@@ -4841,10 +4896,13 @@ function executePrintReport() {
     }
 
     if (dataToPrint.length === 0) {
+        const modeDesc = (filterMode === 'cutoff') 
+            ? `on or before "${sanitizeText(asOfDate)}"` 
+            : `matching period "${sanitizeText(asOfDate)}"`;
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Matching Items', `No equipment records matched "${sanitizeText(asOfDate)}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
+            window.showGTrackToast('warning', 'No Matching Items', `No equipment records found ${modeDesc}. Check the date filter or switch to "All Dates".`);
         } else {
-            alert(`No equipment records matched "${asOfDate}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
+            alert(`No equipment records found ${modeDesc}. Try setting the As-of Date to "All Dates" or selecting all classifications.`);
         }
         return;
     }
