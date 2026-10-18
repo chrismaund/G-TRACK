@@ -5888,9 +5888,9 @@ function renderAdvisoryTable() {
     const fragment = document.createDocumentFragment();
     pagedItems.forEach(adv => {
         const tr = document.createElement('tr');
-        let priorityBadge = `<span class="priority-badge priority-low" title="In good condition with 3+ years left"><i class="fas fa-circle-check"></i> Low Risk</span>`;
-        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high" title="Needs urgent repair, disposal, or immediate replacement"><i class="fas fa-triangle-exclamation"></i> Urgent</span>`;
-        if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium" title="1 to 3 years left; prepare replacement plan"><i class="fas fa-clock"></i> Moderate</span>`;
+        let priorityBadge = `<span class="priority-badge priority-low">Low</span>`;
+        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high">Urgent</span>`;
+        if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium">Moderate</span>`;
 
         let badgeClass = 'serviceable-badge';
         const condUpper = (adv.condition || '').toUpperCase();
@@ -5914,13 +5914,13 @@ function renderAdvisoryTable() {
             </td>
             <td title="${sanitizeText(adv.location)}"><span style="color: #cbd5e1;">${sanitizeText(adv.location) || '-'}</span></td>
             <td><span class="badge ${badgeClass}" title="${sanitizeText(adv.condition)}">${sanitizeText(adv.condition) || 'Serviceable'}</span></td>
-            <td><span style="color: #cbd5e1; font-weight: 600;" title="${adv.ageYears ? adv.ageYears.toFixed(1) : '0.0'} years old out of ${adv.eulYears || 5} years standard lifespan">${adv.ageYears ? adv.ageYears.toFixed(1) : '0.0'} of ${adv.eulYears || 5} yrs</span></td>
-            <td><span class="rul-badge ${adv.rulClass || 'rul-good'}" title="Estimated service life remaining">${adv.rulText || '—'}</span></td>
-            <td><span class="action-year-pill" title="Recommended action and target fiscal year"><i class="fas fa-calendar-check text-cyan"></i> ${adv.actionText} (Year ${adv.targetYear})</span></td>
+            <td><span style="color: #cbd5e1; font-weight: 600;">${adv.ageYears ? adv.ageYears.toFixed(1) : '0.0'} yrs</span></td>
+            <td><span class="rul-badge ${adv.rulClass || 'rul-good'}">${adv.rulText || '—'}</span></td>
+            <td><span class="action-year-pill">${adv.actionText} (${adv.targetYear})</span></td>
             <td class="font-bold" style="color: #f8fafc;" title="₱${totalCostFormatted}">₱${totalCostFormatted}</td>
             <td>
-                <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(searchPropKey)}')" class="action-tag ${adv.actionClass}" title="Click to view and inspect this item in Masterlist">
-                    <i class="fas fa-magnifying-glass"></i> View
+                <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(searchPropKey)}')" class="action-tag ${adv.actionClass}">
+                    View
                 </button>
             </td>
         `;
@@ -6238,19 +6238,19 @@ window.renderAnalyticsDashboard = function() {
 
     if (totalValuationEl) animateNumberValue(totalValuationEl, totalAcquisitionCost, true, false, 850);
     if (bookValuationEl) {
-        bookValuationEl.innerHTML = `<i class="fas fa-chart-line text-cyan"></i> Est. Current Worth: ₱${totalBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        bookValuationEl.textContent = `Current Value: ₱${totalBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     if (serviceableRateEl) animateNumberValue(serviceableRateEl, fleetHealthPct, false, true, 850);
     if (serviceableRatioEl) {
-        serviceableRatioEl.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${serviceableCount} of ${totalArticles} operational (Avg. ${avgRUL} yrs left)`;
+        serviceableRatioEl.textContent = `${serviceableCount} of ${totalArticles} operational`;
     }
     if (repairAlertsEl) animateNumberValue(repairAlertsEl, highRiskCount, false, false, 750);
     if (riskAlertsSubEl) {
-        riskAlertsSubEl.innerHTML = `<i class="fas fa-triangle-exclamation text-danger"></i> Needs repair or expiring within 1 year`;
+        riskAlertsSubEl.textContent = `Repair needed or expiring soon`;
     }
     if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, threeYearCapExBudget, true, false, 850);
     if (replacementBudgetSubEl) {
-        replacementBudgetSubEl.innerHTML = `<i class="fas fa-calendar-check text-amber"></i> Needed over 3 years (FY ${currentYear}–${currentYear + 2})`;
+        replacementBudgetSubEl.textContent = `3-Year projection`;
     }
 
     // Update Live Sync time
