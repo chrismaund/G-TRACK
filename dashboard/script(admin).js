@@ -4410,27 +4410,6 @@ window.populateAdminPrintAccountCheckboxes = function() {
     window.updateAdminReportAccountDropdownLabel();
 };
 
-window.handleReportDateFilterModeChange = function() {
-    const modeEl = document.getElementById('reportDateFilterMode');
-    const dateInput = document.getElementById('reportAsOfDate');
-    const labelEl = document.getElementById('reportAsOfDateLabel');
-    if (!modeEl || !dateInput) return;
-    if (modeEl.value === 'all') {
-        dateInput.value = 'All Dates';
-        if (labelEl) labelEl.textContent = 'Report Period:';
-    } else if (modeEl.value === 'cutoff') {
-        if (dateInput.value === 'All Dates' || !dateInput.value.trim()) {
-            dateInput.value = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-        }
-        if (labelEl) labelEl.textContent = 'Cutoff Date (All items on or before):';
-    } else {
-        if (dateInput.value === 'All Dates' || !dateInput.value.trim()) {
-            dateInput.value = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-        }
-        if (labelEl) labelEl.textContent = 'Target Date / Period:';
-    }
-};
-
 /**
  * Opens and initializes the admin print report popover dialog.
  * @param {Event} [event]
@@ -4852,11 +4831,10 @@ function executePrintReport() {
         });
     }
 
-    // Filter by Date / Period according to selected mode
-    const filterModeEl = document.getElementById('reportDateFilterMode');
-    const filterMode = filterModeEl ? filterModeEl.value : 'period';
+    // Filter by Date / Period ("As of Date" filters matching period, date, or "All Dates")
     const asOfDateLower = asOfDate.toLowerCase();
-    const isAllDates = (filterMode === 'all' || asOfDateLower === 'all' || asOfDateLower === 'all dates' || asOfDateLower === 'none' || asOfDateLower === '*');
+    const isAllDates = (asOfDateLower === 'all' || asOfDateLower === 'all dates' || asOfDateLower === 'none' || asOfDateLower === '*');
+    const isCutoffExplicit = (asOfDateLower.startsWith('as of') || asOfDateLower.startsWith('cutoff') || asOfDateLower.startsWith('before') || asOfDateLower.startsWith('up to'));
 
     if (!isAllDates) {
         const dateFilterObj = parseReportDateFilter(asOfDate);
@@ -4876,7 +4854,7 @@ function executePrintReport() {
                 }
                 if (itemTime === null) return false;
 
-                if (filterMode === 'cutoff') {
+                if (isCutoffExplicit) {
                     return itemTime <= cutoffTime;
                 } else {
                     // Exact period / specific date match
@@ -4896,13 +4874,10 @@ function executePrintReport() {
     }
 
     if (dataToPrint.length === 0) {
-        const modeDesc = (filterMode === 'cutoff') 
-            ? `on or before "${sanitizeText(asOfDate)}"` 
-            : `matching period "${sanitizeText(asOfDate)}"`;
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Matching Items', `No equipment records found ${modeDesc}. Check the date filter or switch to "All Dates".`);
+            window.showGTrackToast('warning', 'No Matching Items', `No equipment records matched "${sanitizeText(asOfDate)}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
         } else {
-            alert(`No equipment records found ${modeDesc}. Try setting the As-of Date to "All Dates" or selecting all classifications.`);
+            alert(`No equipment records matched "${asOfDate}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
         }
         return;
     }
