@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=20261016_1">
+    <link rel="stylesheet" href="style(admin).css?v=20261018_1">
     <!-- Chart.js CDN for Analytics Visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -628,8 +628,9 @@
                 <div class="analytics-kpi-card kpi-card-valuation">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill">Total Asset Value</span>
+                            <span class="kpi-pill">Total Acquisition Value</span>
                             <span id="kpi-total-valuation" class="kpi-value">₱0.00</span>
+                            <span class="kpi-subtitle" id="kpi-book-valuation"><i class="fas fa-chart-line text-cyan"></i> Est. Book Value: ₱0.00</span>
                         </div>
                     </div>
                 </div>
@@ -637,8 +638,9 @@
                 <div class="analytics-kpi-card kpi-card-health">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-success">Serviceable Items</span>
+                            <span class="kpi-pill pill-success">Fleet Health Index</span>
                             <span id="kpi-serviceable-rate" class="kpi-value text-success">0%</span>
+                            <span class="kpi-subtitle" id="kpi-serviceable-ratio"><i class="fas fa-check-circle text-success"></i> 0 of 0 operational</span>
                         </div>
                     </div>
                 </div>
@@ -646,8 +648,9 @@
                 <div class="analytics-kpi-card kpi-card-alerts">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-danger">Needs Repair</span>
+                            <span class="kpi-pill pill-danger">High-Risk Assets</span>
                             <span id="kpi-repair-alerts" class="kpi-value text-danger">0</span>
+                            <span class="kpi-subtitle" id="kpi-risk-alerts-sub"><i class="fas fa-triangle-exclamation text-danger"></i> Failure risk in &lt; 12 mos</span>
                         </div>
                     </div>
                 </div>
@@ -655,8 +658,9 @@
                 <div class="analytics-kpi-card kpi-card-forecast">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-amber">Est. Replacement Cost</span>
+                            <span class="kpi-pill pill-amber">Forecasted CapEx Budget</span>
                             <span id="kpi-replacement-budget" class="kpi-value text-amber">₱0.00</span>
+                            <span class="kpi-subtitle" id="kpi-replacement-budget-sub"><i class="fas fa-calendar-check text-amber"></i> Projected 3-Year Need</span>
                         </div>
                     </div>
                 </div>
@@ -664,13 +668,13 @@
 
             <!-- Visual Analytics (4 Clear Visuals) -->
             <section class="analytics-charts-grid">
-                <!-- Graph 1: Asset Value Over Time -->
+                <!-- Graph 1: Predictive Asset Depreciation & Book Value Curve -->
                 <div class="chart-card chart-card-depreciation">
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Asset Value Over Time</h4>
-                                <span class="chart-card-subtitle">Original purchase cost vs estimated current value (₱)</span>
+                                <h4 class="chart-card-title">Predictive Depreciation &amp; Asset Value</h4>
+                                <span class="chart-card-subtitle">COA straight-line asset decay curve &amp; projected salvage value (₱)</span>
                             </div>
                         </div>
                     </div>
@@ -679,13 +683,13 @@
                     </div>
                 </div>
 
-                <!-- Graph 2: Value by Category -->
+                <!-- Graph 2: Multi-Year CapEx Forecast -->
                 <div class="chart-card chart-card-polar">
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Value by Account Category</h4>
-                                <span class="chart-card-subtitle">Total equipment cost per category classification</span>
+                                <h4 class="chart-card-title">Multi-Year Replacement Budget Forecast</h4>
+                                <span class="chart-card-subtitle">Projected capital expenditure required per fiscal year (₱)</span>
                             </div>
                         </div>
                     </div>
@@ -694,13 +698,13 @@
                     </div>
                 </div>
 
-                <!-- Graph 3: Equipment Age -->
+                <!-- Graph 3: Remaining Useful Life Horizon -->
                 <div class="chart-card chart-card-lifecycle">
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Equipment Age</h4>
-                                <span class="chart-card-subtitle">Number of years items have been in active service</span>
+                                <h4 class="chart-card-title">Remaining Useful Life (RUL) Horizon</h4>
+                                <span class="chart-card-subtitle">Fleet lifespan distribution before reaching COA obsolescence threshold</span>
                             </div>
                         </div>
                     </div>
@@ -709,13 +713,13 @@
                     </div>
                 </div>
 
-                <!-- Graph 4: Equipment Condition -->
+                <!-- Graph 4: Predictive Failure Risk Index -->
                 <div class="chart-card chart-card-serviceability">
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Equipment Condition</h4>
-                                <span class="chart-card-subtitle">Working, repairable, and unserviceable breakdown</span>
+                                <h4 class="chart-card-title">Predictive Failure Risk &amp; Fleet Health</h4>
+                                <span class="chart-card-subtitle">Degradation risk breakdown based on age, condition, and service stress</span>
                             </div>
                         </div>
                     </div>
@@ -723,7 +727,7 @@
                         <canvas id="serviceabilityDonutChart"></canvas>
                         <div class="doughnut-center-info">
                             <span class="donut-center-value" id="donut-serviceable-percent">0%</span>
-                            <span class="donut-center-label">Operational</span>
+                            <span class="donut-center-label" id="donut-center-label">Fleet Health</span>
                         </div>
                     </div>
                 </div>
@@ -734,27 +738,27 @@
                 <div class="advisory-header-panel">
                     <div class="advisory-title-group">
                         <div class="advisory-icon-badge">
-                            <i class="fas fa-clipboard-check"></i>
+                            <i class="fas fa-brain"></i>
                         </div>
                         <div>
-                            <h4 class="advisory-title">Equipment Recommendations</h4>
-                            <p class="advisory-subtitle">Suggested actions for damaged, unserviceable, or aging equipment.</p>
+                            <h4 class="advisory-title">Predictive Maintenance &amp; Replacement Advisory</h4>
+                            <p class="advisory-subtitle">COA lifecycle-driven predictions: Remaining Useful Life (RUL), failure risk rating, and target fiscal year budget planning.</p>
                         </div>
                     </div>
 
                     <!-- Priority Filter Tabs -->
                     <div class="advisory-tabs-group" id="advisory-priority-tabs">
                         <button type="button" class="advisory-tab active" data-priority="ALL" onclick="filterAdvisoryPriority('ALL')">
-                            All Items (<span id="advisory-count-all">0</span>)
+                            All Predictions (<span id="advisory-count-all">0</span>)
                         </button>
                         <button type="button" class="advisory-tab tab-high" data-priority="HIGH" onclick="filterAdvisoryPriority('HIGH')">
-                            <i class="fas fa-triangle-exclamation"></i> High Priority (<span id="advisory-count-high">0</span>)
+                            <i class="fas fa-triangle-exclamation"></i> Critical / High Risk (<span id="advisory-count-high">0</span>)
                         </button>
                         <button type="button" class="advisory-tab tab-medium" data-priority="MEDIUM" onclick="filterAdvisoryPriority('MEDIUM')">
-                            <i class="fas fa-clock"></i> Medium (<span id="advisory-count-medium">0</span>)
+                            <i class="fas fa-clock"></i> Medium Risk (<span id="advisory-count-medium">0</span>)
                         </button>
                         <button type="button" class="advisory-tab tab-low" data-priority="LOW" onclick="filterAdvisoryPriority('LOW')">
-                            <i class="fas fa-circle-info"></i> Low (<span id="advisory-count-low">0</span>)
+                            <i class="fas fa-circle-check"></i> Low Risk (<span id="advisory-count-low">0</span>)
                         </button>
                     </div>
                 </div>
@@ -763,14 +767,15 @@
                     <table class="advisory-table">
                         <thead>
                             <tr>
-                                <th>Priority</th>
+                                <th>Risk Priority</th>
                                 <th>Property No.</th>
-                                <th>Article</th>
-                                <th>Description</th>
+                                <th>Article &amp; Description</th>
                                 <th>Location</th>
                                 <th>Condition</th>
-                                <th>Age</th>
-                                <th>Total Cost</th>
+                                <th>Age / EUL</th>
+                                <th>Remaining Life</th>
+                                <th>Predicted Action &amp; Target Year</th>
+                                <th>Est. Cost</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -1537,7 +1542,7 @@
     <!-- Supabase JS SDK (For Masterlist & Requests) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="script(admin).js?v=20261016_1"></script>
+    <script src="script(admin).js?v=20261018_1"></script>
     
 </body>
 </html>

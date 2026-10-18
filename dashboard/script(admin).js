@@ -5722,6 +5722,48 @@ window.filterMetricModalSearch = function(query) {
 };
 
 /**
+ * Retrieves the standard COA (Commission on Audit) Estimated Useful Life (EUL) in years
+ * based on Philippine Government Accounting Manual (GAM) guidelines for LGU PPE accounts.
+ * @param {string} accountName 
+ * @param {string} articleName 
+ * @returns {number} Estimated Useful Life in years
+ */
+function getAssetUsefulLifeYears(accountName, articleName) {
+    const text = `${accountName || ''} ${articleName || ''}`.toLowerCase();
+    
+    // Motor Vehicles / Transportation Equipment (7 years)
+    if (text.includes('vehicle') || text.includes('transport') || text.includes('motor') || text.includes('ambulance') || text.includes('truck') || text.includes('car')) {
+        return 7;
+    }
+    // Furniture, Fixtures & Hardwood / Steel Installations (10 years)
+    if (text.includes('furniture') || text.includes('fixture') || text.includes('cabinet') || text.includes('table') || text.includes('chair') || text.includes('books')) {
+        return 10;
+    }
+    // Medical, Dental & Laboratory Equipment (10 years)
+    if (text.includes('medical') || text.includes('dental') || text.includes('hospital') || text.includes('laboratory')) {
+        return 10;
+    }
+    // Disaster Response & Rescue Equipment (5 years)
+    if (text.includes('disaster') || text.includes('rescue') || text.includes('emergency') || text.includes('fire')) {
+        return 5;
+    }
+    // ICT & IT Equipment (5 years)
+    if (text.includes('it equipment') || text.includes('computer') || text.includes('laptop') || text.includes('printer') || text.includes('ict') || text.includes('software') || text.includes('server') || text.includes('ups')) {
+        return 5;
+    }
+    // Communication Equipment (5 years)
+    if (text.includes('communication') || text.includes('radio') || text.includes('telecom') || text.includes('telephone')) {
+        return 5;
+    }
+    // Office Equipment (5 years)
+    if (text.includes('office') || text.includes('aircon') || text.includes('shredder') || text.includes('copier')) {
+        return 5;
+    }
+    // Default LGU PPE Useful Life
+    return 5;
+}
+
+/**
  * Parses an acquisition date string and calculates the item's age in years.
  * @param {string} dateStr 
  * @returns {number} Age in years (fractional or 0)
@@ -5793,7 +5835,7 @@ function renderAdvisoryTable() {
     if (filtered.length === 0) {
         advisoryTableBody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; color: #4ade80; padding: 26px 16px; font-weight: 600; font-size: 13px;">
+                <td colspan="10" style="text-align: center; color: #4ade80; padding: 26px 16px; font-weight: 600; font-size: 13px;">
                     <i class="fas fa-circle-check" style="font-size: 18px; margin-right: 8px;"></i>
                     No equipment items match the "${activeAdvisoryPriorityFilter}" advisory filter category.
                 </td>
@@ -5836,8 +5878,8 @@ function renderAdvisoryTable() {
     const fragment = document.createDocumentFragment();
     pagedItems.forEach(adv => {
         const tr = document.createElement('tr');
-        let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-info-circle"></i> Low</span>`;
-        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-triangle-exclamation"></i> High</span>`;
+        let priorityBadge = `<span class="priority-badge priority-low"><i class="fas fa-circle-check"></i> Low</span>`;
+        if (adv.priority === 'HIGH') priorityBadge = `<span class="priority-badge priority-high"><i class="fas fa-triangle-exclamation"></i> Critical</span>`;
         if (adv.priority === 'MEDIUM') priorityBadge = `<span class="priority-badge priority-medium"><i class="fas fa-clock"></i> Medium</span>`;
 
         let badgeClass = 'serviceable-badge';
@@ -5856,15 +5898,19 @@ function renderAdvisoryTable() {
         tr.innerHTML = `
             <td>${priorityBadge}</td>
             <td class="font-bold text-muted" style="font-family: monospace; font-size: 12px;" title="${sanitizeText(adv.propertyNo)}">${sanitizeText(adv.propertyNo) || '-'}</td>
-            <td class="font-bold article-cell" style="color: #f8fafc;" title="${sanitizeText(adv.article)}">${sanitizeText(adv.article) || '-'}</td>
-            <td class="description-cell" style="color: #cbd5e1; font-size: 12px;" title="${sanitizeText(adv.description)}">${sanitizeText(adv.description) || '-'}</td>
+            <td class="font-bold article-cell" style="color: #f8fafc;" title="${sanitizeText(adv.article)}">
+                ${sanitizeText(adv.article) || '-'}
+                <div style="font-size: 11px; font-weight: normal; color: #94a3b8; margin-top: 2px;">${sanitizeText(adv.description) || ''}</div>
+            </td>
             <td title="${sanitizeText(adv.location)}"><span style="color: #cbd5e1;">${sanitizeText(adv.location) || '-'}</span></td>
             <td><span class="badge ${badgeClass}" title="${sanitizeText(adv.condition)}">${sanitizeText(adv.condition) || 'Serviceable'}</span></td>
-            <td><span style="color: #94a3b8; font-weight: 600;">${sanitizeText(adv.age)}</span></td>
+            <td><span style="color: #cbd5e1; font-weight: 600;">${adv.ageYears ? adv.ageYears.toFixed(1) : '0.0'} / ${adv.eulYears || 5} yrs</span></td>
+            <td><span class="rul-badge ${adv.rulClass || 'rul-good'}">${adv.rulText || '—'}</span></td>
+            <td><span class="action-year-pill"><i class="fas fa-calendar-check text-cyan"></i> ${adv.actionText} (FY ${adv.targetYear})</span></td>
             <td class="font-bold" style="color: #f8fafc;" title="₱${totalCostFormatted}">₱${totalCostFormatted}</td>
             <td>
                 <button type="button" onclick="inspectAdvisoryItem('${sanitizeText(searchPropKey)}')" class="action-tag ${adv.actionClass}" title="Click to view and inspect this item in Masterlist">
-                    <i class="fas fa-magnifying-glass"></i> ${adv.actionText}
+                    <i class="fas fa-magnifying-glass"></i> Inspect
                 </button>
             </td>
         `;
@@ -5935,140 +5981,230 @@ function renderAdvisoryTable() {
 window.renderAnalyticsDashboard = function() {
     if (activeAdminView !== 'analytics') return;
     const totalValuationEl = document.getElementById('kpi-total-valuation');
+    const bookValuationEl = document.getElementById('kpi-book-valuation');
     const serviceableRateEl = document.getElementById('kpi-serviceable-rate');
     const serviceableRatioEl = document.getElementById('kpi-serviceable-ratio');
     const repairAlertsEl = document.getElementById('kpi-repair-alerts');
+    const riskAlertsSubEl = document.getElementById('kpi-risk-alerts-sub');
     const replacementBudgetEl = document.getElementById('kpi-replacement-budget');
+    const replacementBudgetSubEl = document.getElementById('kpi-replacement-budget-sub');
     const lastUpdatedEl = document.getElementById('analytics-last-updated');
 
     const totalArticles = inventoryData.length;
+    const currentYear = new Date().getFullYear();
 
-    // 1. Compute Executive Metrics
-    let totalValuation = 0;
+    // 1. Compute Executive Metrics & Predictive Indicators
+    let totalAcquisitionCost = 0;
+    let totalBookValue = 0;
     let serviceableCount = 0;
     let unserviceableCount = 0;
     let needsRepairCount = 0;
-    let replacementBudget = 0;
+    let highRiskCount = 0;
+    let threeYearCapExBudget = 0;
+    let totalRemainingLifeSum = 0;
 
-    const conditionCounts = {
-        'Serviceable': 0,
-        'Needs Repair': 0,
-        'Unserviceable': 0,
-        'For Disposal': 0,
-        'Other': 0
+    // Remaining Useful Life (RUL) Distribution
+    const rulBuckets = {
+        'Expired (0 Yrs left)': 0,
+        'Critical (< 1 Yr left)': 0,
+        'Moderate (1 - 3 Yrs)': 0,
+        'Optimal (3+ Yrs)': 0
     };
 
-    const categoryValuations = {};
-    const categoryCounts = {};
-    const departmentCounts = {};
-    const lifecycleBuckets = {
-        '< 1 Year (New)': 0,
-        '1 - 3 Years (Good)': 0,
-        '3 - 5 Years (Mid-Age)': 0,
-        '5+ Years (Old)': 0
+    // Predictive Failure Risk Spectrum
+    const riskCounts = {
+        'Critical Risk': 0,
+        'High Risk': 0,
+        'Moderate Risk': 0,
+        'Low Risk / Healthy': 0
     };
+
+    // Multi-Year Replacement Budget Demand (5 Horizon Windows)
+    const capexForecastBuckets = {};
+    const fy0Key = `FY ${currentYear} (Immediate)`;
+    const fy1Key = `FY ${currentYear + 1}`;
+    const fy2Key = `FY ${currentYear + 2}`;
+    const fy3Key = `FY ${currentYear + 3}`;
+    const fy4Key = `FY ${currentYear + 4}+`;
+
+    capexForecastBuckets[fy0Key] = { amount: 0, count: 0 };
+    capexForecastBuckets[fy1Key] = { amount: 0, count: 0 };
+    capexForecastBuckets[fy2Key] = { amount: 0, count: 0 };
+    capexForecastBuckets[fy3Key] = { amount: 0, count: 0 };
+    capexForecastBuckets[fy4Key] = { amount: 0, count: 0 };
 
     const advisoryItems = [];
 
     inventoryData.forEach(item => {
-        const qtyVal = parseInt(item.qty, 10) || 0;
+        const qtyVal = parseInt(item.qty, 10) || 1;
         const unitCostVal = parseFloat(item.unitCost) || 0;
         const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
-        totalValuation += computedTotalCost;
+        totalAcquisitionCost += computedTotalCost;
 
         const condStr = (item.condition || '').trim();
         const condUpper = condStr.toUpperCase();
 
-        // Categorize Condition
+        const eulYears = getAssetUsefulLifeYears(item.account, item.article);
+        const ageYears = calculateItemAge(item.date || item.dateAcquired || item.createdAt);
+
+        // COA Straight-Line Depreciation Formula (10% Residual Salvage Floor)
+        const salvageRate = 0.10;
+        const salvageValue = computedTotalCost * salvageRate;
+        const depreciableCost = Math.max(0, computedTotalCost - salvageValue);
+        const annualDepreciation = eulYears > 0 ? (depreciableCost / eulYears) : 0;
+        const accumulatedDepreciation = Math.min(depreciableCost, ageYears * annualDepreciation);
+        const itemBookValue = Math.max(salvageValue, computedTotalCost - accumulatedDepreciation);
+        totalBookValue += itemBookValue;
+
+        const remainingLifeYears = Math.max(0, eulYears - ageYears);
+        totalRemainingLifeSum += remainingLifeYears;
+
+        // Populate Remaining Useful Life (RUL) Horizon
+        if (remainingLifeYears <= 0) {
+            rulBuckets['Expired (0 Yrs left)']++;
+        } else if (remainingLifeYears < 1) {
+            rulBuckets['Critical (< 1 Yr left)']++;
+        } else if (remainingLifeYears <= 3) {
+            rulBuckets['Moderate (1 - 3 Yrs)']++;
+        } else {
+            rulBuckets['Optimal (3+ Yrs)']++;
+        }
+
+        // Determine Operational & Risk Status
+        const isDamaged = condUpper.includes('REPAIR') || condUpper === 'NEEDS REPAIR';
+        const isUnserviceable = condUpper === 'UNSERVICEABLE' || condUpper === 'FOR DISPOSAL' || condUpper === 'DISPOSED';
+        const isExpired = remainingLifeYears <= 0;
+
         if (condUpper === 'SERVICEABLE') {
             serviceableCount++;
-            conditionCounts['Serviceable']++;
-        } else if (condUpper.includes('REPAIR') || condUpper === 'NEEDS REPAIR') {
+        } else if (isDamaged) {
             needsRepairCount++;
-            conditionCounts['Needs Repair']++;
-            replacementBudget += (unitCostVal * qtyVal);
-        } else if (condUpper === 'UNSERVICEABLE') {
+        } else if (isUnserviceable) {
             unserviceableCount++;
-            conditionCounts['Unserviceable']++;
-            replacementBudget += (unitCostVal * qtyVal);
-        } else if (condUpper === 'FOR DISPOSAL' || condUpper === 'DISPOSED') {
-            unserviceableCount++;
-            conditionCounts['For Disposal']++;
-            replacementBudget += (unitCostVal * qtyVal);
-        } else {
-            conditionCounts['Other']++;
         }
 
-        // Account / Category Aggregation
-        const accGroup = (item.account && item.account.trim() !== '') ? item.account.trim() : 'Other Equipment';
-        categoryValuations[accGroup] = (categoryValuations[accGroup] || 0) + computedTotalCost;
-        categoryCounts[accGroup] = (categoryCounts[accGroup] || 0) + qtyVal;
+        let priority = 'LOW';
+        let riskCategory = 'Low Risk / Healthy';
+        let actionText = 'Active Service';
+        let actionClass = 'action-inspect';
+        let targetYear = currentYear;
+        let rulText = `${remainingLifeYears.toFixed(1)} yrs left`;
+        let rulClass = 'rul-good';
 
-        // Department Allocation Aggregation
-        const dept = (item.location && item.location.trim() !== '') ? item.location.trim() : 'Unassigned';
-        departmentCounts[dept] = (departmentCounts[dept] || 0) + qtyVal;
-
-        // Predictive Lifecycle & Age Calculation
-        const ageYears = calculateItemAge(item.date);
-        if (ageYears < 1) {
-            lifecycleBuckets['< 1 Year (New)']++;
-        } else if (ageYears <= 3) {
-            lifecycleBuckets['1 - 3 Years (Good)']++;
-        } else if (ageYears <= 5) {
-            lifecycleBuckets['3 - 5 Years (Mid-Age)']++;
-        } else {
-            lifecycleBuckets['5+ Years (Old)']++;
-            // If aging and not yet accounted in repair budget, add to forecasted replacement plan
-            if (condUpper === 'SERVICEABLE') {
-                replacementBudget += (unitCostVal * 0.5 * qtyVal); // 50% replacement allocation
-            }
-        }
-
-        // Check for Predictive Maintenance / Replacement Advisory Table
-        let priority = null;
-        let actionText = null;
-        let actionClass = null;
-
-        if (condUpper === 'UNSERVICEABLE' || condUpper === 'FOR DISPOSAL' || condUpper === 'DISPOSED') {
+        if (isUnserviceable) {
             priority = 'HIGH';
+            riskCategory = 'Critical Risk';
+            highRiskCount++;
+            actionText = 'Decommission';
+            actionClass = 'action-replace';
+            targetYear = currentYear;
+            capexForecastBuckets[fy0Key].amount += computedTotalCost;
+            capexForecastBuckets[fy0Key].count++;
+            threeYearCapExBudget += computedTotalCost;
+            rulText = 'Unserviceable';
+            rulClass = 'rul-expired';
+        } else if (isDamaged) {
+            priority = 'HIGH';
+            riskCategory = 'Critical Risk';
+            highRiskCount++;
+            actionText = 'Urgent Repair';
+            actionClass = 'action-repair';
+            targetYear = currentYear;
+            const repairEstimate = computedTotalCost * 0.40;
+            capexForecastBuckets[fy0Key].amount += repairEstimate;
+            capexForecastBuckets[fy0Key].count++;
+            threeYearCapExBudget += repairEstimate;
+            rulText = 'Needs Service';
+            rulClass = 'rul-critical';
+        } else if (isExpired) {
+            priority = 'HIGH';
+            riskCategory = 'Critical Risk';
+            highRiskCount++;
             actionText = 'Replace Item';
             actionClass = 'action-replace';
-        } else if (condUpper.includes('REPAIR') || condUpper === 'NEEDS REPAIR') {
+            targetYear = currentYear;
+            capexForecastBuckets[fy0Key].amount += computedTotalCost;
+            capexForecastBuckets[fy0Key].count++;
+            threeYearCapExBudget += computedTotalCost;
+            rulText = 'Expired (0 yrs)';
+            rulClass = 'rul-expired';
+        } else if (remainingLifeYears < 1) {
             priority = 'HIGH';
-            actionText = 'Repair Item';
-            actionClass = 'action-repair';
-        } else if (ageYears >= 5) {
-            priority = 'MEDIUM';
-            actionText = 'Plan Replacement';
+            riskCategory = 'High Risk';
+            highRiskCount++;
+            actionText = 'Budget CapEx';
             actionClass = 'action-replace';
-        } else if (ageYears >= 3.5) {
-            priority = 'LOW';
-            actionText = 'Inspect Item';
+            targetYear = currentYear + 1;
+            capexForecastBuckets[fy1Key].amount += computedTotalCost;
+            capexForecastBuckets[fy1Key].count++;
+            threeYearCapExBudget += computedTotalCost;
+            rulText = `${remainingLifeYears.toFixed(1)} yrs left`;
+            rulClass = 'rul-critical';
+        } else if (remainingLifeYears <= 2) {
+            priority = 'MEDIUM';
+            riskCategory = 'Moderate Risk';
+            actionText = 'Plan Forecast';
             actionClass = 'action-inspect';
+            targetYear = currentYear + 2;
+            capexForecastBuckets[fy2Key].amount += computedTotalCost;
+            capexForecastBuckets[fy2Key].count++;
+            threeYearCapExBudget += computedTotalCost;
+            rulText = `${remainingLifeYears.toFixed(1)} yrs left`;
+            rulClass = 'rul-moderate';
+        } else if (remainingLifeYears <= 3) {
+            priority = 'MEDIUM';
+            riskCategory = 'Moderate Risk';
+            actionText = 'Routine Audit';
+            actionClass = 'action-inspect';
+            targetYear = currentYear + 3;
+            capexForecastBuckets[fy3Key].amount += computedTotalCost;
+            capexForecastBuckets[fy3Key].count++;
+            threeYearCapExBudget += computedTotalCost;
+            rulText = `${remainingLifeYears.toFixed(1)} yrs left`;
+            rulClass = 'rul-moderate';
+        } else {
+            priority = 'LOW';
+            riskCategory = 'Low Risk / Healthy';
+            actionText = 'Operational';
+            actionClass = 'action-inspect';
+            targetYear = currentYear + Math.ceil(remainingLifeYears);
+            capexForecastBuckets[fy4Key].amount += computedTotalCost;
+            capexForecastBuckets[fy4Key].count++;
+            rulText = `${remainingLifeYears.toFixed(1)} yrs left`;
+            rulClass = 'rul-good';
         }
 
-        if (priority) {
-            advisoryItems.push({
-                id: item.id,
-                priority: priority,
-                propertyNo: item.propertyNo || '-',
-                article: item.article || '-',
-                description: item.description || '-',
-                location: dept,
-                condition: item.condition || 'Serviceable',
-                age: ageYears > 0 ? `${ageYears.toFixed(1)} yrs` : 'Unknown',
-                qty: qtyVal,
-                unitCost: unitCostVal,
-                totalCost: computedTotalCost,
-                actionText: actionText,
-                actionClass: actionClass
-            });
-        }
+        riskCounts[riskCategory]++;
+
+        advisoryItems.push({
+            id: item.id,
+            priority: priority,
+            propertyNo: item.propertyNo || '-',
+            article: item.article || '-',
+            description: item.description || '-',
+            location: item.location || 'Unassigned',
+            condition: item.condition || 'Serviceable',
+            ageYears: ageYears,
+            eulYears: eulYears,
+            rulYears: remainingLifeYears,
+            rulText: rulText,
+            rulClass: rulClass,
+            targetYear: targetYear,
+            totalCost: computedTotalCost,
+            actionText: actionText,
+            actionClass: actionClass
+        });
     });
 
-    // Update KPI Card UI Elements with smooth number counting animation
-    const serviceableRate = totalArticles > 0 ? Math.round((serviceableCount / totalArticles) * 100) : 0;
-    const totalRepairAlerts = needsRepairCount + unserviceableCount;
+    // 2. Compute Fleet Health Index & KPIs
+    const lowRiskCount = riskCounts['Low Risk / Healthy'] || 0;
+    const modRiskCount = riskCounts['Moderate Risk'] || 0;
+    const highRiskOnlyCount = riskCounts['High Risk'] || 0;
+    const fleetHealthPct = totalArticles > 0
+        ? Math.round(((lowRiskCount * 1.0) + (modRiskCount * 0.7) + (highRiskOnlyCount * 0.3)) / totalArticles * 100)
+        : 0;
+
+    const avgRUL = totalArticles > 0 ? (totalRemainingLifeSum / totalArticles).toFixed(1) : 0;
 
     function animateNumberValue(el, targetNum, isCurrency = false, isPercent = false, duration = 800) {
         if (!el) return;
@@ -6090,13 +6226,22 @@ window.renderAnalyticsDashboard = function() {
         requestAnimationFrame(frame);
     }
 
-    if (totalValuationEl) animateNumberValue(totalValuationEl, totalValuation, true, false, 850);
-    if (serviceableRateEl) animateNumberValue(serviceableRateEl, serviceableRate, false, true, 850);
-    if (serviceableRatioEl) {
-        serviceableRatioEl.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${serviceableCount} of ${totalArticles} items in good condition`;
+    if (totalValuationEl) animateNumberValue(totalValuationEl, totalAcquisitionCost, true, false, 850);
+    if (bookValuationEl) {
+        bookValuationEl.innerHTML = `<i class="fas fa-chart-line text-cyan"></i> Est. Book Value: ₱${totalBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-    if (repairAlertsEl) animateNumberValue(repairAlertsEl, totalRepairAlerts, false, false, 750);
-    if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, replacementBudget, true, false, 850);
+    if (serviceableRateEl) animateNumberValue(serviceableRateEl, fleetHealthPct, false, true, 850);
+    if (serviceableRatioEl) {
+        serviceableRatioEl.innerHTML = `<i class="fas fa-hourglass-half text-success"></i> Avg. Useful Life: ${avgRUL} yrs (${serviceableCount} of ${totalArticles} operational)`;
+    }
+    if (repairAlertsEl) animateNumberValue(repairAlertsEl, highRiskCount, false, false, 750);
+    if (riskAlertsSubEl) {
+        riskAlertsSubEl.innerHTML = `<i class="fas fa-triangle-exclamation text-danger"></i> Failure risk or EUL end in &lt; 12 mos`;
+    }
+    if (replacementBudgetEl) animateNumberValue(replacementBudgetEl, threeYearCapExBudget, true, false, 850);
+    if (replacementBudgetSubEl) {
+        replacementBudgetSubEl.innerHTML = `<i class="fas fa-calendar-check text-amber"></i> 3-Year CapEx Demand (FY ${currentYear}–${currentYear + 2})`;
+    }
 
     // Update Live Sync time
     if (lastUpdatedEl) {
@@ -6105,17 +6250,47 @@ window.renderAnalyticsDashboard = function() {
         lastUpdatedEl.innerHTML = `<i class="fas fa-clock-rotate-left"></i> <span>Live Sync: ${timeStr}</span>`;
     }
 
-    // 2. Render Chart.js Visualizations (Safely checking Chart availability)
-    if (typeof Chart !== 'undefined') {
-        renderPredictiveDepreciationChart(totalValuation);
-        renderAccountPolarChart(categoryValuations);
-        renderLifecycleStageChart(lifecycleBuckets, totalArticles);
-        renderServiceabilityDonutChart(conditionCounts);
+    // 3. Compute Real Timeline for Predictive Depreciation Curve
+    const timelineLabels = [];
+    const timelineValues = [];
+    for (let yrOffset = -5; yrOffset <= 3; yrOffset++) {
+        const yr = currentYear + yrOffset;
+        let label = (yrOffset === 0) ? `Current (${yr})` : (yrOffset > 0 ? `Proj. FY ${yr}` : `${yr}`);
+        timelineLabels.push(label);
+
+        let sumAtYear = 0;
+        inventoryData.forEach(item => {
+            const qtyVal = parseInt(item.qty, 10) || 1;
+            const unitCostVal = parseFloat(item.unitCost) || 0;
+            const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+            const eulYears = getAssetUsefulLifeYears(item.account, item.article);
+            const baseAge = calculateItemAge(item.date || item.dateAcquired || item.createdAt);
+            const ageAtYear = Math.max(0, baseAge + yrOffset);
+            const salvageValue = computedTotalCost * 0.10;
+            const depreciableCost = Math.max(0, computedTotalCost - salvageValue);
+            const annualDepreciation = eulYears > 0 ? (depreciableCost / eulYears) : 0;
+            const accumulatedDep = Math.min(depreciableCost, ageAtYear * annualDepreciation);
+            sumAtYear += Math.max(salvageValue, computedTotalCost - accumulatedDep);
+        });
+        timelineValues.push(sumAtYear);
     }
 
-    // 3. Cache & Sort Advisory Matrix Table
+    // 4. Render Chart.js Visualizations
+    if (typeof Chart !== 'undefined') {
+        renderPredictiveDepreciationChart(totalAcquisitionCost, totalBookValue, { labels: timelineLabels, values: timelineValues });
+        renderAccountPolarChart(capexForecastBuckets);
+        renderLifecycleStageChart(rulBuckets, totalArticles);
+        renderServiceabilityDonutChart(riskCounts, fleetHealthPct);
+    }
+
+    // 5. Cache & Sort Advisory Matrix Table
     const priorityOrder = { 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
-    advisoryItems.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    advisoryItems.sort((a, b) => {
+        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        return (a.rulYears || 0) - (b.rulYears || 0);
+    });
     cachedAdvisoryItems = advisoryItems;
 
     // Update Priority Tab Counts
@@ -6167,9 +6342,9 @@ let lifecycleStageChartInstance = null;
 let serviceabilityDonutChartInstance = null;
 
 /**
- * Graph 1: Predictive Asset Depreciation & Capital Retention Curve (Spline Area Curve)
+ * Graph 1: Predictive Asset Depreciation & Capital Retention Curve (COA Straight-Line Model)
  */
-function renderPredictiveDepreciationChart(totalValuation) {
+function renderPredictiveDepreciationChart(totalValuation, totalBookValuation, timeline) {
     if (predictiveDepreciationChartInstance) {
         predictiveDepreciationChartInstance.destroy();
         predictiveDepreciationChartInstance = null;
@@ -6178,19 +6353,9 @@ function renderPredictiveDepreciationChart(totalValuation) {
     const ctx = getFreshCanvas('predictiveDepreciationChart');
     if (!ctx) return;
 
-    const labels = ['6+ Years Ago', '5 Years Ago', '4 Years Ago', '3 Years Ago', '2 Years Ago', '1 Year Ago', 'Current / New'];
-    
-    // Straight-line depreciation model with 10% residual salvage value
+    const labels = timeline.labels;
     const acquisitionBaseline = labels.map(() => totalValuation);
-    const depreciatedValues = [
-        totalValuation * 0.10,
-        totalValuation * 0.15,
-        totalValuation * 0.28,
-        totalValuation * 0.46,
-        totalValuation * 0.64,
-        totalValuation * 0.82,
-        totalValuation
-    ];
+    const bookValues = timeline.values;
 
     predictiveDepreciationChartInstance = new Chart(ctx, {
         type: 'line',
@@ -6198,28 +6363,28 @@ function renderPredictiveDepreciationChart(totalValuation) {
             labels: labels,
             datasets: [
                 {
-                    label: 'Original Cost (₱)',
+                    label: 'Original Cost Baseline (₱)',
                     data: acquisitionBaseline,
                     borderColor: '#38bdf8',
-                    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                    backgroundColor: 'rgba(56, 189, 248, 0.05)',
                     borderWidth: 2,
                     borderDash: [5, 5],
                     fill: false,
-                    pointRadius: 3,
+                    pointRadius: 2,
                     pointBackgroundColor: '#38bdf8',
-                    tension: 0.1
+                    tension: 0
                 },
                 {
-                    label: 'Estimated Value (₱)',
-                    data: depreciatedValues,
+                    label: 'COA Depreciated Book Value (₱)',
+                    data: bookValues,
                     borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.18)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.16)',
                     borderWidth: 2.5,
                     fill: true,
                     pointRadius: 4,
                     pointBackgroundColor: '#10b981',
                     pointHoverRadius: 6,
-                    tension: 0.35
+                    tension: 0.3
                 }
             ]
         },
@@ -6281,9 +6446,9 @@ function renderPredictiveDepreciationChart(totalValuation) {
 }
 
 /**
- * Graph 2: PPE Account Group Polar Area Spectrum
+ * Graph 2: Multi-Year Capital Expenditure (CapEx) & Replacement Budget Forecast
  */
-function renderAccountPolarChart(valuations) {
+function renderAccountPolarChart(forecastData) {
     if (accountPolarChartInstance) {
         accountPolarChartInstance.destroy();
         accountPolarChartInstance = null;
@@ -6292,28 +6457,34 @@ function renderAccountPolarChart(valuations) {
     const ctx = getFreshCanvas('accountPolarChart');
     if (!ctx) return;
 
-    const labels = Object.keys(valuations);
-    const data = labels.map(k => valuations[k]);
-
-    const palette = [
-        'rgba(56, 189, 248, 0.75)',
-        'rgba(129, 140, 248, 0.75)',
-        'rgba(16, 185, 129, 0.75)',
-        'rgba(245, 158, 11, 0.75)',
-        'rgba(236, 72, 153, 0.75)',
-        'rgba(168, 85, 247, 0.75)',
-        'rgba(14, 165, 233, 0.75)'
-    ];
+    const labels = Object.keys(forecastData);
+    const amounts = labels.map(k => forecastData[k].amount);
+    const itemCounts = labels.map(k => forecastData[k].count);
 
     accountPolarChartInstance = new Chart(ctx, {
-        type: 'polarArea',
+        type: 'bar',
         data: {
-            labels: labels.length ? labels : ['No Accounts'],
+            labels: labels,
             datasets: [{
-                data: data.length ? data : [1],
-                backgroundColor: palette.slice(0, labels.length || 1),
-                borderColor: '#121a2b',
-                borderWidth: 2
+                label: 'Projected CapEx Budget (₱)',
+                data: amounts,
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.75)',   // Current / Immediate
+                    'rgba(245, 158, 11, 0.75)',  // FY+1
+                    'rgba(56, 189, 248, 0.75)',  // FY+2
+                    'rgba(129, 140, 248, 0.75)', // FY+3
+                    'rgba(16, 185, 129, 0.75)'   // FY+4+
+                ],
+                borderColor: [
+                    '#ef4444',
+                    '#f59e0b',
+                    '#38bdf8',
+                    '#818cf8',
+                    '#10b981'
+                ],
+                borderWidth: 1.5,
+                borderRadius: 6,
+                maxBarThickness: 38
             }]
         },
         options: {
@@ -6321,38 +6492,45 @@ function renderAccountPolarChart(valuations) {
             maintainAspectRatio: false,
             resizeDelay: 100,
             animation: {
-                duration: 800,
+                duration: 850,
                 easing: 'easeOutQuart'
             },
             plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        color: '#cbd5e1',
-                        font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' },
-                        boxWidth: 10,
-                        padding: 8
-                    }
-                },
+                legend: { display: false },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     titleColor: '#f8fafc',
                     bodyColor: '#94a3b8',
                     borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
+                    padding: 10,
                     callbacks: {
                         label: function(context) {
-                            const val = context.raw || 0;
-                            return ` Total Value: ₱${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                            const i = context.dataIndex;
+                            const amt = amounts[i] || 0;
+                            const count = itemCounts[i] || 0;
+                            return ` Budget Demand: ₱${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })} (${count} assets due)`;
                         }
                     }
                 }
             },
             scales: {
-                r: {
-                    ticks: { display: false },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    angleLines: { color: 'rgba(255, 255, 255, 0.08)' }
+                x: {
+                    ticks: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } },
+                    grid: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { family: 'Plus Jakarta Sans', size: 10 },
+                        callback: function(value) {
+                            if (value >= 1000000) return '₱' + (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return '₱' + (value / 1000).toFixed(0) + 'K';
+                            return '₱' + value;
+                        }
+                    },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 }
             }
         }
@@ -6360,9 +6538,9 @@ function renderAccountPolarChart(valuations) {
 }
 
 /**
- * Graph 3: Predictive Fleet Lifecycle Age Horizon (Horizontal Graded Bars)
+ * Graph 3: Remaining Useful Life (RUL) Horizon
  */
-function renderLifecycleStageChart(buckets, totalArticles) {
+function renderLifecycleStageChart(rulBuckets, totalArticles) {
     if (lifecycleStageChartInstance) {
         lifecycleStageChartInstance.destroy();
         lifecycleStageChartInstance = null;
@@ -6371,27 +6549,27 @@ function renderLifecycleStageChart(buckets, totalArticles) {
     const ctx = getFreshCanvas('lifecycleStageChart');
     if (!ctx) return;
 
-    const labels = Object.keys(buckets);
-    const data = labels.map(k => buckets[k]);
+    const labels = Object.keys(rulBuckets);
+    const data = labels.map(k => rulBuckets[k]);
 
     lifecycleStageChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Equipment Fleet Count',
+                label: 'Asset Count',
                 data: data,
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.75)',
-                    'rgba(56, 189, 248, 0.75)',
-                    'rgba(245, 158, 11, 0.75)',
-                    'rgba(239, 68, 68, 0.75)'
+                    'rgba(239, 68, 68, 0.75)',   // Expired
+                    'rgba(245, 158, 11, 0.75)',  // Critical (< 1 yr)
+                    'rgba(56, 189, 248, 0.75)',  // Moderate (1 - 3 yrs)
+                    'rgba(16, 185, 129, 0.75)'   // Optimal (3+ yrs)
                 ],
                 borderColor: [
-                    '#10b981',
-                    '#38bdf8',
+                    '#ef4444',
                     '#f59e0b',
-                    '#ef4444'
+                    '#38bdf8',
+                    '#10b981'
                 ],
                 borderWidth: 1.5,
                 borderRadius: 6,
@@ -6415,6 +6593,7 @@ function renderLifecycleStageChart(buckets, totalArticles) {
                     bodyColor: '#94a3b8',
                     borderColor: 'rgba(255, 255, 255, 0.1)',
                     borderWidth: 1,
+                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             const count = context.raw || 0;
@@ -6440,9 +6619,9 @@ function renderLifecycleStageChart(buckets, totalArticles) {
 }
 
 /**
- * Graph 4: Operational Serviceability Spectrum (Doughnut Ring Gauge)
+ * Graph 4: Predictive Equipment Failure Risk & Fleet Health Index
  */
-function renderServiceabilityDonutChart(counts) {
+function renderServiceabilityDonutChart(riskCounts, fleetHealthPct) {
     if (serviceabilityDonutChartInstance) {
         serviceabilityDonutChartInstance.destroy();
         serviceabilityDonutChartInstance = null;
@@ -6451,23 +6630,20 @@ function renderServiceabilityDonutChart(counts) {
     const ctx = getFreshCanvas('serviceabilityDonutChart');
     if (!ctx) return;
 
-    const labels = Object.keys(counts).filter(k => counts[k] > 0);
-    const data = labels.map(k => counts[k]);
+    const labels = Object.keys(riskCounts).filter(k => riskCounts[k] > 0);
+    const data = labels.map(k => riskCounts[k]);
     const totalItems = data.reduce((a, b) => a + b, 0);
 
-    const serviceableCount = counts['Serviceable'] || 0;
-    const serviceablePct = totalItems > 0 ? Math.round((serviceableCount / totalItems) * 100) : 0;
     const donutPercentEl = document.getElementById('donut-serviceable-percent');
     if (donutPercentEl) {
-        donutPercentEl.textContent = `${serviceablePct}%`;
+        donutPercentEl.textContent = `${fleetHealthPct}%`;
     }
 
     const colorMap = {
-        'Serviceable': '#10b981',
-        'Needs Repair': '#f59e0b',
-        'Unserviceable': '#ef4444',
-        'For Disposal': '#dc2626',
-        'Other': '#64748b'
+        'Critical Risk': '#ef4444',
+        'High Risk': '#f59e0b',
+        'Moderate Risk': '#38bdf8',
+        'Low Risk / Healthy': '#10b981'
     };
 
     const backgroundColors = labels.map(l => colorMap[l] || '#38bdf8');
@@ -6539,7 +6715,7 @@ function renderServiceabilityDonutChart(counts) {
                         label: function(context) {
                             const val = context.raw || 0;
                             const pct = totalItems > 0 ? ((val / totalItems) * 100).toFixed(1) : 0;
-                            return ` ${val} items • ${pct}% of total inventory`;
+                            return ` ${val} assets • ${pct}% of fleet`;
                         }
                     }
                 }
