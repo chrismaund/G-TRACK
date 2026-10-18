@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=20261018_1">
+    <link rel="stylesheet" href="style(admin).css?v=20261018_2">
     <!-- Chart.js CDN for Analytics Visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -623,44 +623,80 @@
         <!-- ANALYTICS & PREDICTIVE ASSET INTELLIGENCE VIEW (ADMIN ONLY) -->
         <!-- ========================================================================= -->
         <div id="analytics-view" class="analytics-view hidden">
+            <!-- Plain-English Quick Guide for All Users -->
+            <div class="analytics-explainer-banner" id="analytics-explainer-banner">
+                <div class="explainer-header">
+                    <div class="explainer-title-group">
+                        <span class="explainer-badge"><i class="fas fa-lightbulb"></i> Easy Guide</span>
+                        <h4 class="explainer-title">How to Read Your Predictive Analytics</h4>
+                    </div>
+                    <button type="button" class="explainer-toggle-btn" id="explainer-toggle-btn" onclick="toggleAnalyticsGuide()" title="Hide or show this guide">
+                        <span id="explainer-toggle-text">Hide Guide</span> <i class="fas fa-chevron-up" id="explainer-toggle-icon"></i>
+                    </button>
+                </div>
+                <div class="explainer-grid" id="explainer-grid">
+                    <div class="explainer-card">
+                        <div class="explainer-card-icon icon-cyan"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="explainer-card-content">
+                            <strong>Remaining Lifespan</strong>
+                            <p>Tells you how many years equipment can safely work before it gets too old, based on official COA lifespan rules.</p>
+                        </div>
+                    </div>
+                    <div class="explainer-card">
+                        <div class="explainer-card-icon icon-amber"><i class="fas fa-coins"></i></div>
+                        <div class="explainer-card-content">
+                            <strong>Future Replacement Budget</strong>
+                            <p>Forecasts how much money the LGU will need in upcoming years to replace aging items before they fail.</p>
+                        </div>
+                    </div>
+                    <div class="explainer-card">
+                        <div class="explainer-card-icon icon-danger"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="explainer-card-content">
+                            <strong>Breakdown &amp; Failure Risk</strong>
+                            <p>Highlights broken equipment and items expiring soon so you can schedule repairs or buy replacements early.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- KPI Cards (4 Cards) -->
             <section class="analytics-kpi-grid">
-                <div class="analytics-kpi-card kpi-card-valuation">
+                <div class="analytics-kpi-card kpi-card-valuation" title="Total money spent when purchasing this equipment vs its current estimated value today.">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill">Total Acquisition Value</span>
+                            <span class="kpi-pill">Total Equipment Cost</span>
                             <span id="kpi-total-valuation" class="kpi-value">₱0.00</span>
-                            <span class="kpi-subtitle" id="kpi-book-valuation"><i class="fas fa-chart-line text-cyan"></i> Est. Book Value: ₱0.00</span>
+                            <span class="kpi-subtitle" id="kpi-book-valuation"><i class="fas fa-chart-line text-cyan"></i> Est. Current Worth: ₱0.00</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-health">
+                <div class="analytics-kpi-card kpi-card-health" title="Overall percentage of equipment fleet that is in good working order and not expired.">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-success">Fleet Health Index</span>
+                            <span class="kpi-pill pill-success">Equipment Health Score</span>
                             <span id="kpi-serviceable-rate" class="kpi-value text-success">0%</span>
                             <span class="kpi-subtitle" id="kpi-serviceable-ratio"><i class="fas fa-check-circle text-success"></i> 0 of 0 operational</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-alerts">
+                <div class="analytics-kpi-card kpi-card-alerts" title="Number of equipment items that are broken, damaged, or will reach the end of their lifespan within 12 months.">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-danger">High-Risk Assets</span>
+                            <span class="kpi-pill pill-danger">Needs Immediate Attention</span>
                             <span id="kpi-repair-alerts" class="kpi-value text-danger">0</span>
-                            <span class="kpi-subtitle" id="kpi-risk-alerts-sub"><i class="fas fa-triangle-exclamation text-danger"></i> Failure risk in &lt; 12 mos</span>
+                            <span class="kpi-subtitle" id="kpi-risk-alerts-sub"><i class="fas fa-triangle-exclamation text-danger"></i> Broken or expiring within 1 year</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="analytics-kpi-card kpi-card-forecast">
+                <div class="analytics-kpi-card kpi-card-forecast" title="Estimated funding needed over the next 3 years to buy replacements for aging items.">
                     <div class="kpi-card-inner">
                         <div class="kpi-info">
-                            <span class="kpi-pill pill-amber">Forecasted CapEx Budget</span>
+                            <span class="kpi-pill pill-amber">3-Year Replacement Budget</span>
                             <span id="kpi-replacement-budget" class="kpi-value text-amber">₱0.00</span>
-                            <span class="kpi-subtitle" id="kpi-replacement-budget-sub"><i class="fas fa-calendar-check text-amber"></i> Projected 3-Year Need</span>
+                            <span class="kpi-subtitle" id="kpi-replacement-budget-sub"><i class="fas fa-calendar-check text-amber"></i> Needed for expiring items</span>
                         </div>
                     </div>
                 </div>
@@ -673,8 +709,8 @@
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Predictive Depreciation &amp; Asset Value</h4>
-                                <span class="chart-card-subtitle">COA straight-line asset decay curve &amp; projected salvage value (₱)</span>
+                                <h4 class="chart-card-title">Equipment Value Over Time &amp; Future Forecast</h4>
+                                <span class="chart-card-subtitle">Original purchase cost vs. how equipment value decreases over time, projecting future worth (₱)</span>
                             </div>
                         </div>
                     </div>
@@ -688,8 +724,8 @@
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Multi-Year Replacement Budget Forecast</h4>
-                                <span class="chart-card-subtitle">Projected capital expenditure required per fiscal year (₱)</span>
+                                <h4 class="chart-card-title">Yearly Budget Needed for New Equipment</h4>
+                                <span class="chart-card-subtitle">Estimated budget needed each year to replace old equipment as they expire (₱)</span>
                             </div>
                         </div>
                     </div>
@@ -703,8 +739,8 @@
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Remaining Useful Life (RUL) Horizon</h4>
-                                <span class="chart-card-subtitle">Fleet lifespan distribution before reaching COA obsolescence threshold</span>
+                                <h4 class="chart-card-title">How Much Lifespan Equipment Has Left</h4>
+                                <span class="chart-card-subtitle">Number of years equipment can still be used before reaching end-of-life</span>
                             </div>
                         </div>
                     </div>
@@ -718,8 +754,8 @@
                     <div class="chart-card-header">
                         <div class="chart-header-title-box">
                             <div>
-                                <h4 class="chart-card-title">Predictive Failure Risk &amp; Fleet Health</h4>
-                                <span class="chart-card-subtitle">Degradation risk breakdown based on age, condition, and service stress</span>
+                                <h4 class="chart-card-title">Equipment Health &amp; Breakdown Risk</h4>
+                                <span class="chart-card-subtitle">Risk of equipment failing or breaking down based on its age and condition</span>
                             </div>
                         </div>
                     </div>
@@ -727,7 +763,7 @@
                         <canvas id="serviceabilityDonutChart"></canvas>
                         <div class="doughnut-center-info">
                             <span class="donut-center-value" id="donut-serviceable-percent">0%</span>
-                            <span class="donut-center-label" id="donut-center-label">Fleet Health</span>
+                            <span class="donut-center-label" id="donut-center-label">Health Score</span>
                         </div>
                     </div>
                 </div>
@@ -741,24 +777,24 @@
                             <i class="fas fa-brain"></i>
                         </div>
                         <div>
-                            <h4 class="advisory-title">Predictive Maintenance &amp; Replacement Advisory</h4>
-                            <p class="advisory-subtitle">COA lifecycle-driven predictions: Remaining Useful Life (RUL), failure risk rating, and target fiscal year budget planning.</p>
+                            <h4 class="advisory-title">Smart Action Recommendations: What Needs Attention?</h4>
+                            <p class="advisory-subtitle">Clear predictions: Shows which items need repair, replacement, or future budget planning based on their age and condition.</p>
                         </div>
                     </div>
 
                     <!-- Priority Filter Tabs -->
                     <div class="advisory-tabs-group" id="advisory-priority-tabs">
-                        <button type="button" class="advisory-tab active" data-priority="ALL" onclick="filterAdvisoryPriority('ALL')">
-                            All Predictions (<span id="advisory-count-all">0</span>)
+                        <button type="button" class="advisory-tab active" data-priority="ALL" onclick="filterAdvisoryPriority('ALL')" title="Show all equipment items">
+                            All Equipment (<span id="advisory-count-all">0</span>)
                         </button>
-                        <button type="button" class="advisory-tab tab-high" data-priority="HIGH" onclick="filterAdvisoryPriority('HIGH')">
-                            <i class="fas fa-triangle-exclamation"></i> Critical / High Risk (<span id="advisory-count-high">0</span>)
+                        <button type="button" class="advisory-tab tab-high" data-priority="HIGH" onclick="filterAdvisoryPriority('HIGH')" title="Items that are broken, damaged, or expiring in less than 1 year">
+                            <i class="fas fa-triangle-exclamation"></i> Urgent Attention (<span id="advisory-count-high">0</span>)
                         </button>
-                        <button type="button" class="advisory-tab tab-medium" data-priority="MEDIUM" onclick="filterAdvisoryPriority('MEDIUM')">
-                            <i class="fas fa-clock"></i> Medium Risk (<span id="advisory-count-medium">0</span>)
+                        <button type="button" class="advisory-tab tab-medium" data-priority="MEDIUM" onclick="filterAdvisoryPriority('MEDIUM')" title="Items that have 1 to 3 years of lifespan left">
+                            <i class="fas fa-clock"></i> Plan Soon (<span id="advisory-count-medium">0</span>)
                         </button>
-                        <button type="button" class="advisory-tab tab-low" data-priority="LOW" onclick="filterAdvisoryPriority('LOW')">
-                            <i class="fas fa-circle-check"></i> Low Risk (<span id="advisory-count-low">0</span>)
+                        <button type="button" class="advisory-tab tab-low" data-priority="LOW" onclick="filterAdvisoryPriority('LOW')" title="Items in good condition with more than 3 years left">
+                            <i class="fas fa-circle-check"></i> Healthy (<span id="advisory-count-low">0</span>)
                         </button>
                     </div>
                 </div>
@@ -767,16 +803,16 @@
                     <table class="advisory-table">
                         <thead>
                             <tr>
-                                <th>Risk Priority</th>
+                                <th title="How urgently this item needs administrative action">Urgency / Risk</th>
                                 <th>Property No.</th>
-                                <th>Article &amp; Description</th>
+                                <th>Equipment &amp; Description</th>
                                 <th>Location</th>
                                 <th>Condition</th>
-                                <th>Age / EUL</th>
-                                <th>Remaining Life</th>
-                                <th>Predicted Action &amp; Target Year</th>
-                                <th>Est. Cost</th>
-                                <th>Action</th>
+                                <th title="Current age of the item vs its official COA expected lifespan">Age vs Lifespan</th>
+                                <th title="Estimated years of service left before obsolescence">Lifespan Left</th>
+                                <th title="Suggested next step and target fiscal year for procurement/maintenance">Recommended Action &amp; Year</th>
+                                <th>Cost</th>
+                                <th>Inspect</th>
                             </tr>
                         </thead>
                         <tbody id="advisory-table-body">
@@ -1542,7 +1578,7 @@
     <!-- Supabase JS SDK (For Masterlist & Requests) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="script(admin).js?v=20261018_1"></script>
+    <script src="script(admin).js?v=20261018_2"></script>
     
 </body>
 </html>
