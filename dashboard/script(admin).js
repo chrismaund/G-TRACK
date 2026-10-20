@@ -117,8 +117,8 @@ function mapSupabaseToInventoryItem(row) {
         date: row.date || '',
         qty: parseInt(row.qty, 10) || 0,
         unit: row.unit || '',
-        unitCost: parseFloat(row.unit_cost) || 0,
-        totalCost: parseFloat(row.total_cost) || 0,
+        unitCost: parseSafeFloat(row.unit_cost) || 0,
+        totalCost: parseSafeFloat(row.total_cost) || 0,
         article: row.article || '',
         description: row.description || '',
         propertyNo: row.property_no || '',
@@ -136,8 +136,8 @@ function mapInventoryItemToSupabase(item) {
         date: item.date || '',
         qty: parseInt(item.qty, 10) || 0,
         unit: item.unit || '',
-        unit_cost: parseFloat(item.unitCost) || 0,
-        total_cost: parseFloat(item.totalCost) || (parseInt(item.qty, 10) || 0) * (parseFloat(item.unitCost) || 0),
+        unit_cost: parseSafeFloat(item.unitCost) || 0,
+        total_cost: parseSafeFloat(item.totalCost) || (parseInt(item.qty, 10) || 0) * (parseSafeFloat(item.unitCost) || 0),
         article: item.article || '',
         description: item.description || '',
         property_no: item.propertyNo || '',
@@ -241,6 +241,22 @@ function sanitizeText(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+/**
+ * Safely parses numbers and currency strings, stripping commas, currency symbols, and whitespace.
+ * Prevents standard JavaScript parseFloat("45,000") from truncating to 45.
+ * @param {any} val 
+ * @param {number} fallback 
+ * @returns {number}
+ */
+function parseSafeFloat(val, fallback = 0) {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val === 'number') return isNaN(val) ? fallback : val;
+    const str = String(val).trim();
+    if (!str) return fallback;
+    const cleaned = str.replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? fallback : num;
+}
 
 /**
  * Generates a structured CSV payload from current inventory state.
@@ -281,7 +297,7 @@ function calculateMetrics() {
     
     const totalQuantity = inventoryData.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
     const totalValue = inventoryData.reduce((sum, item) => {
-        const itemTotal = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * (parseFloat(item.unitCost) || 0));
+        const itemTotal = parseSafeFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * (parseSafeFloat(item.unitCost) || 0));
         return sum + itemTotal;
     }, 0);
 
@@ -364,8 +380,8 @@ function renderTable() {
             const searchTerms = searchText.split(/\s+/).filter(Boolean);
             
             const qtyVal = String(item.qty || '');
-            const unitCostNum = parseFloat(item.unitCost) || 0;
-            const totalCostNum = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * unitCostNum);
+            const unitCostNum = parseSafeFloat(item.unitCost) || 0;
+            const totalCostNum = parseSafeFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * unitCostNum);
             const formattedUnitCost = unitCostNum ? unitCostNum.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '';
             const formattedTotalCost = totalCostNum ? totalCostNum.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '';
 
@@ -468,8 +484,8 @@ function renderTable() {
             : `<span class="badge unserviceable-badge" style="margin-left: 4px; font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px;" title="Pending Accounting Office Voucher Verification"><i class="far fa-clock"></i> Pending Tally</span>`;
 
         const qtyVal = parseInt(item.qty, 10) || 0;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const computedTotalCost = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
         const isChecked = selectedItemIds.has(item.id);
 
         const tr = document.createElement('tr');
@@ -985,7 +1001,7 @@ if (addForm) {
         e.preventDefault();
 
         const qtyVal = parseInt(document.getElementById('add-qty')?.value, 10) || 0;
-        const unitCostVal = parseFloat(document.getElementById('add-unit-cost')?.value) || 0;
+        const unitCostVal = parseSafeFloat(document.getElementById('add-unit-cost')?.value) || 0;
         const totalCostVal = qtyVal * unitCostVal;
 
         const formData = {
@@ -3981,6 +3997,7 @@ async function fetchInventoryFromSupabase() {
         const { data, error } = await supabaseClient
             .from('inventory')
             .select('*')
+            .range(0, 9999)
             .order('created_at', { ascending: false });
         if (error) {
             console.warn("Supabase notice (using Firebase data):", error.message);
@@ -4931,8 +4948,8 @@ function generateFormat1HTML(items, meta) {
     // Add Item Rows directly without subheader breaks
     items.forEach((item) => {
         const qty = parseInt(item.qty, 10) || 1;
-        const unitVal = parseFloat(item.unitCost) || 0;
-        const totalVal = parseFloat(item.totalCost) || (qty * unitVal);
+        const unitVal = parseSafeFloat(item.unitCost) || 0;
+        const totalVal = parseSafeFloat(item.totalCost) || (qty * unitVal);
         grandTotalValue += totalVal;
 
         const conditionText = sanitizeText(item.remarks || item.condition || 'SERVICEABLE');
@@ -5051,7 +5068,7 @@ function generateFormat1HTML(items, meta) {
  */
 function generateFormat2HTML(items, meta) {
     let rowsHTML = items.map((item) => {
-        const costVal = parseFloat(item.unitCost) || parseFloat(item.totalCost) || 0;
+        const costVal = parseSafeFloat(item.unitCost) || parseSafeFloat(item.totalCost) || 0;
 
         return `
             <tr>
@@ -5245,8 +5262,8 @@ window.renderHomeDashboard = function() {
 
     const totalValuation = inventoryData.reduce((sum, item) => {
         const qtyVal = parseInt(item.qty, 10) || 1;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        return sum + (parseFloat(item.totalCost) || (qtyVal * unitCostVal));
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        return sum + (parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal));
     }, 0);
 
     if (homeTotalArticlesEl) homeTotalArticlesEl.textContent = totalArticles.toLocaleString();
@@ -6096,8 +6113,8 @@ window.renderAnalyticsDashboard = function() {
 
     inventoryData.forEach(item => {
         const qtyVal = parseInt(item.qty, 10) || 1;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const computedTotalCost = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
         totalAcquisitionCost += computedTotalCost;
 
         const condStr = (item.condition || '').trim();
@@ -6320,8 +6337,8 @@ window.renderAnalyticsDashboard = function() {
         let sumAtYear = 0;
         inventoryData.forEach(item => {
             const qtyVal = parseInt(item.qty, 10) || 1;
-            const unitCostVal = parseFloat(item.unitCost) || 0;
-            const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+            const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+            const computedTotalCost = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
             const eulYears = getAssetUsefulLifeYears(item.account, item.article);
             const baseAge = calculateItemAge(item.date || item.dateAcquired || item.createdAt);
             const ageAtYear = Math.max(0, baseAge + yrOffset);

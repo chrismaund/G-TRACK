@@ -34,6 +34,22 @@ function sanitizeText(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+/**
+ * Safely parses numbers and currency strings, stripping commas, currency symbols, and whitespace.
+ * Prevents standard JavaScript parseFloat("45,000") from truncating to 45.
+ * @param {any} val 
+ * @param {number} fallback 
+ * @returns {number}
+ */
+function parseSafeFloat(val, fallback = 0) {
+    if (val === null || val === undefined) return fallback;
+    if (typeof val === 'number') return isNaN(val) ? fallback : val;
+    const str = String(val).trim();
+    if (!str) return fallback;
+    const cleaned = str.replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? fallback : num;
+}
 
 let currentEmployeeEmail = "";
 let currentEmployeeName = "";
@@ -204,8 +220,8 @@ function mapSupabaseToInventoryItem(row) {
         date: row.date || '',
         qty: parseInt(row.qty, 10) || 0,
         unit: row.unit || '',
-        unitCost: parseFloat(row.unit_cost) || 0,
-        totalCost: parseFloat(row.total_cost) || 0,
+        unitCost: parseSafeFloat(row.unit_cost) || 0,
+        totalCost: parseSafeFloat(row.total_cost) || 0,
         article: row.article || '',
         description: row.description || '',
         propertyNo: row.property_no || '',
@@ -936,8 +952,8 @@ function renderTable() {
             const searchTerms = searchText.split(/\s+/).filter(Boolean);
             
             const qtyVal = String(item.qty || '');
-            const unitCostNum = parseFloat(item.unitCost) || 0;
-            const totalCostNum = parseFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * unitCostNum);
+            const unitCostNum = parseSafeFloat(item.unitCost) || 0;
+            const totalCostNum = parseSafeFloat(item.totalCost) || ((parseInt(item.qty, 10) || 0) * unitCostNum);
             const formattedUnitCost = unitCostNum ? unitCostNum.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '';
             const formattedTotalCost = totalCostNum ? totalCostNum.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '';
 
@@ -1038,8 +1054,8 @@ function renderTable() {
         if (condUpper === 'FOR DISPOSAL') badgeClass = 'disposal-badge';
 
         const qtyVal = parseInt(item.qty, 10) || 0;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const computedTotalCost = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
 
         const isUserAssigned = isMatchingAccountablePerson(item.accountablePerson, currentEmployeeName);
 
@@ -1332,8 +1348,8 @@ function buildMasterlistCSVString() {
 
     const rows = inventoryData.map(item => {
         const qtyVal = parseInt(item.qty, 10) || 0;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        const totalCostVal = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const totalCostVal = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
         return [
             `"${(item.date || '').replace(/"/g, '""')}"`,
             qtyVal,
@@ -3058,8 +3074,8 @@ function renderAccountingView() {
 
     inventoryData.forEach(item => {
         const qty = parseInt(item.qty, 10) || 0;
-        const uCost = parseFloat(item.unitCost) || 0;
-        const tCost = parseFloat(item.totalCost) || (qty * uCost);
+        const uCost = parseSafeFloat(item.unitCost) || 0;
+        const tCost = parseSafeFloat(item.totalCost) || (qty * uCost);
         const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
 
         totalMunicipalVal += tCost;
@@ -3245,8 +3261,8 @@ function renderAccountingView() {
 
     pageData.forEach((item, index) => {
         const qtyVal = parseInt(item.qty, 10) || 0;
-        const unitCostVal = parseFloat(item.unitCost) || 0;
-        const computedTotalCost = parseFloat(item.totalCost) || (qtyVal * unitCostVal);
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const computedTotalCost = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
         const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
         const dateStr = item.date || '-';
 
@@ -3582,8 +3598,8 @@ window.executeCOAPrintReport = function() {
 
     filteredItems.forEach((item) => {
         const qty = parseInt(item.qty, 10) || 1;
-        const unitVal = parseFloat(item.unitCost) || 0;
-        const totalVal = parseFloat(item.totalCost) || (qty * unitVal);
+        const unitVal = parseSafeFloat(item.unitCost) || 0;
+        const totalVal = parseSafeFloat(item.totalCost) || (qty * unitVal);
         grandTotalValue += totalVal;
 
         const isTallied = (item.tallyStatus !== 'Pending' && item.tallied !== false);
