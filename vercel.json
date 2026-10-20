@@ -11,7 +11,7 @@
   "rewrites": [
     {
       "source": "/predictive-analytics",
-      "destination": "/features/predictive-analytics"
+      "destination": "/features/predictive-analytics/index.html"
     }
   ],
   "headers": [
