@@ -8,12 +8,6 @@
       "permanent": true
     }
   ],
-  "rewrites": [
-    {
-      "source": "/predictive-analytics",
-      "destination": "/features/predictive-analytics/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)\\.css",
