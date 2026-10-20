@@ -5155,11 +5155,27 @@ let categoryValuationChartInstance = null;
 let lifecycleAgingChartInstance = null;
 let departmentAllocationChartInstance = null;
 
+// Clean up any stale injected elements immediately on script execution
+(function cleanStaleInjectedElements() {
+    ['sidebar-predictive-btn', 'predictive-view', 'pa-analytics-switch-pill', 'pa-injected-styles', 'pa-dashboard-root', 'pa-drawer', 'pa-drawer-backdrop'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
+})();
+
 /**
  * Switches the active Admin view between Home, Masterlist Table, and Analytics Dashboard.
  * @param {'home'|'masterlist'|'analytics'} viewName 
  */
 window.switchAdminView = function(viewName) {
+    // Clean up any stale injected elements from previous cached sessions
+    ['sidebar-predictive-btn', 'predictive-view', 'pa-analytics-switch-pill', 'pa-injected-styles', 'pa-dashboard-root', 'pa-drawer', 'pa-drawer-backdrop'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
+    if (viewName !== 'masterlist' && viewName !== 'analytics') {
+        viewName = 'home';
+    }
     activeAdminView = viewName;
     const homeView = document.getElementById('home-view');
     const masterlistView = document.getElementById('masterlist-view');
