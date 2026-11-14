@@ -1370,21 +1370,259 @@ function buildMasterlistCSVString() {
     return [headers.join(','), ...rows].join('\r\n');
 }
 
-window.downloadApprovedMasterlistCopy = function(requestId, btn) {
+async function generateProtectedMasterlistExcel(requestId) {
+    if (typeof ExcelJS === 'undefined') {
+        throw new Error('ExcelJS library is not loaded');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'G-TRACK GSO Inventory & Property Management System';
+    workbook.lastModifiedBy = 'GSO Administrator';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    const worksheet = workbook.addWorksheet('GSO Masterlist', {
+        views: [{ showGridLines: true }]
+    });
+
+    // 1. Column Definitions (Generous Widths & Padding to prevent overlapping)
+    const columnsConfig = [
+        { colIdx: 1, header: 'Date Acquired', width: 16, align: 'center' },
+        { colIdx: 2, header: 'Quantity', width: 12, align: 'center', numFmt: '#,##0' },
+        { colIdx: 3, header: 'Unit', width: 12, align: 'center' },
+        { colIdx: 4, header: 'Unit Cost (₱)', width: 18, align: 'right', numFmt: '#,##0.00' },
+        { colIdx: 5, header: 'Article', width: 25, align: 'left' },
+        { colIdx: 6, header: 'Description / Specifications', width: 45, align: 'left', wrapText: true },
+        { colIdx: 7, header: 'Property No.', width: 22, align: 'center' },
+        { colIdx: 8, header: 'Total Cost (₱)', width: 20, align: 'right', numFmt: '#,##0.00' },
+        { colIdx: 9, header: 'Office / Location', width: 32, align: 'left' },
+        { colIdx: 10, header: 'Accountable Person', width: 28, align: 'left' },
+        { colIdx: 11, header: 'Condition', width: 16, align: 'center' },
+        { colIdx: 12, header: 'Account Classification', width: 28, align: 'left' },
+        { colIdx: 13, header: 'Remarks', width: 28, align: 'left' }
+    ];
+
+    columnsConfig.forEach(col => {
+        worksheet.getColumn(col.colIdx).width = col.width;
+    });
+
+    // 2. Official Header Banner
+    worksheet.getRow(1).height = 10;
+
+    worksheet.getRow(2).height = 24;
+    const titleCell = worksheet.getCell('A2');
+    titleCell.value = 'MUNICIPALITY OF PAGBILAO • GENERAL SERVICES OFFICE (GSO)';
+    titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF0F172A' } };
+
+    worksheet.getRow(3).height = 19;
+    const subtitleCell = worksheet.getCell('A3');
+    subtitleCell.value = 'OFFICIAL PROPERTY, PLANT & EQUIPMENT MASTERLIST (AUTHORIZED COPY)';
+    subtitleCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+
+    worksheet.getRow(4).height = 18;
+    const metaCell = worksheet.getCell('A4');
+    const nowStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    metaCell.value = `Export Date: ${nowStr} | Request Reference: ${requestId || 'GSO-OFFICIAL'} | Security: Read-Only Document (Password Protected)`;
+    metaCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
+
+    worksheet.getRow(5).height = 10;
+
+    // 3. Table Headers Row (Row 6)
+    const headerRow = worksheet.getRow(6);
+    headerRow.height = 30;
+
+    columnsConfig.forEach(col => {
+        const cell = headerRow.getCell(col.colIdx);
+        cell.value = col.header;
+        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF0F172A' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FF334155' } },
+            bottom: { style: 'medium', color: { argb: 'FF38BDF8' } },
+            left: { style: 'thin', color: { argb: 'FF334155' } },
+            right: { style: 'thin', color: { argb: 'FF334155' } }
+        };
+        cell.protection = { locked: true };
+    });
+
+    // 4. Data Rows
+    let currentRowIdx = 7;
+    let grandTotalCost = 0;
+    let grandTotalQty = 0;
+    const sourceData = (inventoryData && inventoryData.length > 0) ? inventoryData : [];
+
+    sourceData.forEach((item, index) => {
+        const row = worksheet.getRow(currentRowIdx);
+        row.height = 24;
+
+        const qtyVal = parseInt(item.qty, 10) || 0;
+        const unitCostVal = parseSafeFloat(item.unitCost) || 0;
+        const totalCostVal = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
+        grandTotalQty += qtyVal;
+        grandTotalCost += totalCostVal;
+
+        const isEven = (index % 2 === 0);
+        const rowBgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
+
+        const rowValues = [
+            item.date || '',
+            qtyVal,
+            item.unit || '',
+            unitCostVal,
+            item.article || '',
+            item.description || '',
+            item.propertyNo || '',
+            totalCostVal,
+            item.location || '',
+            item.accountablePerson || '',
+            item.condition || 'Serviceable',
+            item.account || '',
+            item.remarks || ''
+        ];
+
+        columnsConfig.forEach((col, cIdx) => {
+            const cell = row.getCell(col.colIdx);
+            cell.value = rowValues[cIdx];
+            cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF1E293B' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: rowBgColor }
+            };
+            cell.alignment = {
+                vertical: 'middle',
+                horizontal: col.align,
+                wrapText: col.wrapText || false
+            };
+            if (col.numFmt) {
+                cell.numFmt = col.numFmt;
+            }
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+            cell.protection = { locked: true };
+        });
+
+        currentRowIdx++;
+    });
+
+    // 5. Total Valuation Row
+    const totalRow = worksheet.getRow(currentRowIdx);
+    totalRow.height = 28;
+
+    worksheet.mergeCells(`A${currentRowIdx}:C${currentRowIdx}`);
+    const countCell = totalRow.getCell(1);
+    countCell.value = `TOTAL RECORDS: ${sourceData.length}`;
+    countCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    countCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.mergeCells(`E${currentRowIdx}:G${currentRowIdx}`);
+    const totalLabelCell = totalRow.getCell(5);
+    totalLabelCell.value = 'GRAND TOTAL VALUATION:';
+    totalLabelCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    totalLabelCell.alignment = { vertical: 'middle', horizontal: 'right' };
+
+    const totalValCell = totalRow.getCell(8);
+    totalValCell.value = grandTotalCost;
+    totalValCell.numFmt = '#,##0.00';
+    totalValCell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FF0F172A' } };
+    totalValCell.alignment = { vertical: 'middle', horizontal: 'right' };
+
+    for (let c = 1; c <= 13; c++) {
+        const cell = totalRow.getCell(c);
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF1F5F9' }
+        };
+        cell.border = {
+            top: { style: 'medium', color: { argb: 'FF94A3B8' } },
+            bottom: { style: 'double', color: { argb: 'FF0F172A' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+        cell.protection = { locked: true };
+    }
+
+    // 6. Security Notice Footer
+    const footerRowIdx = currentRowIdx + 2;
+    worksheet.mergeCells(`A${footerRowIdx}:M${footerRowIdx}`);
+    const footerCell = worksheet.getCell(`A${footerRowIdx}`);
+    footerCell.value = 'Official LGU Pagbilao GSO Inventory Masterlist • Password Protected Read-Only Document • Unauthorized alteration is strictly prohibited under municipal asset accountability guidelines.';
+    footerCell.font = { name: 'Calibri', size: 8.5, italic: true, color: { argb: 'FF64748B' } };
+    footerCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+    // 7. Enable Sheet Protection (Password Locked)
+    await worksheet.protect('GSO_Admin_Lock_2026!', {
+        selectLockedCells: true,
+        selectUnlockedCells: true,
+        formatCells: false,
+        formatColumns: false,
+        formatRows: false,
+        insertColumns: false,
+        insertRows: false,
+        insertHyperlinks: false,
+        deleteColumns: false,
+        deleteRows: false,
+        sort: true,
+        autoFilter: true
+    });
+
+    // 8. Generate & Download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+    downloadLink.setAttribute("href", url);
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${dateStr}.xlsx`);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+}
+
+window.downloadApprovedMasterlistCopy = async function(requestId, btn) {
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Generating Excel...`;
+    }
+
     try {
-        const csvContent = buildMasterlistCSVString();
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const downloadLink = document.createElement("a");
-        downloadLink.setAttribute("href", url);
-        downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        window.showGTrackToast('success', 'Download Complete', 'Authorized GSO Masterlist CSV copy has been downloaded.');
+        if (typeof ExcelJS !== 'undefined') {
+            await generateProtectedMasterlistExcel(requestId);
+            window.showGTrackToast('success', 'Download Complete', 'Authorized GSO Masterlist (Protected Excel) downloaded successfully.');
+        } else {
+            console.warn("ExcelJS not available, falling back to CSV export.");
+            const csvContent = buildMasterlistCSVString();
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            downloadLink.setAttribute("href", url);
+            downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+            window.showGTrackToast('success', 'Download Complete', 'Authorized GSO Masterlist CSV copy has been downloaded.');
+        }
     } catch (err) {
         console.error("Error downloading masterlist copy:", err);
-        window.showGTrackToast('error', 'Download Failed', 'Failed to generate masterlist file.');
+        window.showGTrackToast('error', 'Download Failed', 'Failed to generate masterlist file: ' + (err.message || ''));
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText || `<i class="fas fa-file-excel"></i> Download Official Excel (.xlsx)`;
+        }
     }
 };
 
@@ -1853,19 +2091,19 @@ async function renderEmpRequestsPanel() {
                         </div>
                         <div class="req-data-row">
                             <span class="req-data-label">Request Type</span>
-                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Full Inventory Masterlist Export (CSV)</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Full Inventory Masterlist Export (Excel)</span>
                         </div>
                         <div class="req-data-row">
                             <span class="req-data-label">Authorization Status</span>
                             <span class="req-data-val" style="color: ${isApproved ? '#4ade80' : (isRejected ? '#f87171' : '#fde047')};">
-                                ${isApproved ? '<i class="fas fa-check-circle"></i> Approved by Admin • Ready for CSV download.' : (isRejected ? '<i class="fas fa-times-circle"></i> Request declined by Administrator.' : '<i class="fas fa-clock"></i> Waiting for administrator authorization.')}
+                                ${isApproved ? '<i class="fas fa-check-circle"></i> Approved by Admin • Ready for Excel download.' : (isRejected ? '<i class="fas fa-times-circle"></i> Request declined by Administrator.' : '<i class="fas fa-clock"></i> Waiting for administrator authorization.')}
                             </span>
                         </div>
                     </div>
                     ${isApproved ? `
                         <div class="req-actions" style="margin-top: 4px;">
                             <button onclick="downloadApprovedMasterlistCopy('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
-                                <i class="fas fa-cloud-download-alt"></i> Download CSV Copy
+                                <i class="fas fa-file-excel"></i> Download Official Excel (.xlsx)
                             </button>
                         </div>
                     ` : ''}
