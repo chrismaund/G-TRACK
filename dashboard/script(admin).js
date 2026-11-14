@@ -4520,56 +4520,39 @@ if (pendingRequestsContainer) {
 // =========================================================================
 
 /**
- * Toggles the collapsible equipment classification dropdown menu inside the print modal.
+ * Formats a YYYY-MM-DD date string to a human-readable format like "October 15, 2026".
  */
-window.toggleAdminReportAccountDropdown = function(event) {
-    if (event) event.stopPropagation();
-    const menu = document.getElementById('adminReportAccountDropdownMenu');
-    const chevron = document.getElementById('adminReportAccountDropdownChevron');
-    if (!menu) return;
+function formatPrintDate(ymdStr) {
+    if (!ymdStr) return '';
+    try {
+        const parts = ymdStr.split('-');
+        if (parts.length === 3) {
+            const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            if (!isNaN(dt.getTime())) {
+                return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            }
+        }
+    } catch (e) {}
+    return ymdStr;
+}
 
-    const isOpening = menu.classList.contains('hidden');
-    if (isOpening) {
-        menu.classList.remove('hidden');
-        if (chevron) chevron.style.transform = 'rotate(180deg)';
-    } else {
-        menu.classList.add('hidden');
-        if (chevron) chevron.style.transform = 'rotate(0deg)';
+/**
+ * Toggles the visibility of Date Range inputs based on selected radio button.
+ */
+window.toggleReportDateInputs = function() {
+    const isRange = document.getElementById('reportDateModeRange')?.checked;
+    const rangeContainer = document.getElementById('reportDateRangeInputs');
+    if (rangeContainer) {
+        rangeContainer.style.display = isRange ? 'grid' : 'none';
     }
 };
 
 /**
- * Updates the trigger label for the classification dropdown based on selected checkboxes.
+ * Populates the Account Group selector dropdown inside the print report modal.
  */
-window.updateAdminReportAccountDropdownLabel = function() {
-    const labelEl = document.getElementById('adminReportAccountDropdownLabel');
-    if (!labelEl) return;
-
-    const checkboxes = document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]');
-    const checked = Array.from(checkboxes).filter(cb => cb.checked);
-
-    if (checkboxes.length === 0) {
-        labelEl.textContent = 'All Classifications';
-        return;
-    }
-
-    if (checked.length === 0) {
-        labelEl.textContent = 'None Selected (0)';
-    } else if (checked.length === checkboxes.length) {
-        labelEl.textContent = `All Classifications (${checked.length} Selected)`;
-    } else if (checked.length === 1) {
-        labelEl.textContent = checked[0].value;
-    } else {
-        labelEl.textContent = `${checked.length} Classifications Selected`;
-    }
-};
-
-/**
- * Populates or synchronizes the multi-select equipment classification checkboxes in the admin print popover.
- */
-window.populateAdminPrintAccountCheckboxes = function() {
-    const container = document.getElementById('adminReportAccountCheckboxes');
-    if (!container) return;
+window.populateAdminPrintAccountDropdown = function() {
+    const select = document.getElementById('reportAccountGroupSelect');
+    if (!select) return;
 
     const standardClassifications = [
         "IT Equipment and Software",
@@ -4594,37 +4577,19 @@ window.populateAdminPrintAccountCheckboxes = function() {
 
     const currentTableAccount = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
 
-    // Check if user already had specific checkboxes checked
-    const existingInputs = container.querySelectorAll('input[type="checkbox"]');
-    const checkedMap = new Map();
-    if (existingInputs.length > 0) {
-        existingInputs.forEach(input => {
-            checkedMap.set(input.value.toLowerCase(), input.checked);
-        });
-    }
-
     const sortedGroups = Array.from(groupSet).sort();
-    let checkboxesHTML = '';
+    let optionsHTML = '<option value="All">All Account Groups (Comprehensive Masterlist)</option>';
+    
     sortedGroups.forEach(groupName => {
-        const lowerName = groupName.toLowerCase();
-        let isChecked = true;
-        if (checkedMap.has(lowerName)) {
-            isChecked = checkedMap.get(lowerName);
-        } else if (currentTableAccount && currentTableAccount !== 'All Accounts') {
-            isChecked = (lowerName === currentTableAccount.toLowerCase());
-        }
-
-        checkboxesHTML += `
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px;">
-                <input type="checkbox" value="${sanitizeText(groupName)}" ${isChecked ? 'checked' : ''} onchange="updateAdminReportAccountDropdownLabel()" style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
-                <span>${sanitizeText(groupName)}</span>
-            </label>
-        `;
+        const isSelected = (currentTableAccount && currentTableAccount !== 'All Accounts' && currentTableAccount.toLowerCase() === groupName.toLowerCase());
+        optionsHTML += `<option value="${sanitizeText(groupName)}" ${isSelected ? 'selected' : ''}>${sanitizeText(groupName)}</option>`;
     });
 
-    container.innerHTML = checkboxesHTML;
-    window.updateAdminReportAccountDropdownLabel();
+    select.innerHTML = optionsHTML;
 };
+
+// Backwards compatibility alias
+window.populateAdminPrintAccountCheckboxes = window.populateAdminPrintAccountDropdown;
 
 /**
  * Opens and initializes the admin print report popover dialog.
@@ -4638,14 +4603,14 @@ window.openPrintReportPopover = function(event) {
     const popover = document.getElementById('printPopover');
     if (!popover) return;
 
-    window.populateAdminPrintAccountCheckboxes();
+    window.populateAdminPrintAccountDropdown();
 
-    // Dynamically default as of date to current month/year if empty or old hardcoded default
-    const dateInput = document.getElementById('reportAsOfDate');
-    if (dateInput && (!dateInput.value || dateInput.value.trim() === '' || dateInput.value === 'July 2026')) {
-        const now = new Date();
-        dateInput.value = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    // Default to All Dates
+    const allRadio = document.getElementById('reportDateModeAll');
+    if (allRadio && !allRadio.checked && !document.getElementById('reportDateModeRange')?.checked) {
+        allRadio.checked = true;
     }
+    window.toggleReportDateInputs();
 
     popover.classList.remove('hidden');
     popover.style.display = 'block';
@@ -4665,12 +4630,6 @@ window.closePrintReportModal = function(event) {
 
     popover.classList.add('hidden');
     popover.style.display = 'none';
-
-    // Also close the classification dropdown menu if open
-    const menu = document.getElementById('adminReportAccountDropdownMenu');
-    const chevron = document.getElementById('adminReportAccountDropdownChevron');
-    if (menu) menu.classList.add('hidden');
-    if (chevron) chevron.style.transform = 'rotate(0deg)';
 };
 
 /**
@@ -4691,21 +4650,6 @@ window.togglePrintPopover = function(event) {
     } else {
         window.closePrintReportModal(event);
     }
-};
-
-/**
- * Toggles all classification checkboxes in the admin print report popover.
- */
-window.toggleAllAdminReportAccounts = function(event) {
-    if (event) event.stopPropagation();
-    const container = document.getElementById('adminReportAccountCheckboxes');
-    if (!container) return;
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-    if (checkboxes.length === 0) return;
-
-    const someUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-    checkboxes.forEach(cb => cb.checked = someUnchecked);
-    window.updateAdminReportAccountDropdownLabel();
 };
 
 // =========================================================================
@@ -4980,9 +4924,6 @@ function executePrintReport() {
     const formatSelect = document.getElementById('reportFormatSelect');
     const selectedFormat = formatSelect ? formatSelect.value : 'format1';
 
-    const asOfDateInput = document.getElementById('reportAsOfDate');
-    const currentMonthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-    const asOfDate = (asOfDateInput && asOfDateInput.value.trim() !== '') ? asOfDateInput.value.trim() : currentMonthYear;
     const fund = document.getElementById('reportFund') ? document.getElementById('reportFund').value : 'GENERAL FUND';
     const officer = document.getElementById('reportAccountableOfficer') ? document.getElementById('reportAccountableOfficer').value : 'RIZALDO A. RICAFORT';
     const designation = document.getElementById('reportDesignation') ? document.getElementById('reportDesignation').value : 'MGDH I - GSO';
@@ -4993,31 +4934,38 @@ function executePrintReport() {
         ? assumptionDateInput.value.trim() 
         : 'April 17,2024';
 
-    // Read selected equipment classifications from multi-select checkboxes
-    const checkedBoxes = Array.from(document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]:checked')).map(cb => cb.value);
-    const allCheckboxes = Array.from(document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]'));
-    const isAllChecked = (allCheckboxes.length > 0 && checkedBoxes.length === allCheckboxes.length);
+    // 1. Read Selected Account Group
+    const accountGroupSelect = document.getElementById('reportAccountGroupSelect');
+    const selectedAccountGroup = accountGroupSelect ? accountGroupSelect.value : 'All';
+    const isAllGroups = (!selectedAccountGroup || selectedAccountGroup === 'All' || selectedAccountGroup.toLowerCase() === 'all account groups');
 
-    if (checkedBoxes.length === 0) {
-        if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Classification Selected', 'Please select at least one equipment classification to print.');
-        } else {
-            alert('Please select at least one equipment classification to print.');
-        }
-        return;
+    let accountGroupTitle = 'COMPREHENSIVE PROPERTY, PLANT AND EQUIPMENT';
+    if (!isAllGroups) {
+        accountGroupTitle = selectedAccountGroup.toUpperCase();
     }
 
-    let accountGroupTitle = 'OTHER PROPERTY, PLANT AND EQUIPMENT';
-    if (checkedBoxes.length === 1) {
-        accountGroupTitle = checkedBoxes[0].toUpperCase();
-    } else if (isAllChecked) {
-        accountGroupTitle = 'OTHER PROPERTY, PLANT AND EQUIPMENT';
-    } else if (checkedBoxes.length > 1) {
-        accountGroupTitle = 'SELECTED PROPERTY, PLANT AND EQUIPMENT';
+    // 2. Read Date Filter Mode (All Dates vs Specific Date Range)
+    const isDateRangeMode = document.getElementById('reportDateModeRange')?.checked;
+    const dateFromVal = document.getElementById('reportDateFrom')?.value || '';
+    const dateToVal = document.getElementById('reportDateTo')?.value || '';
+
+    let asOfDateDisplay = '';
+    if (isDateRangeMode) {
+        if (dateFromVal && dateToVal) {
+            asOfDateDisplay = `Period: ${formatPrintDate(dateFromVal)} to ${formatPrintDate(dateToVal)}`;
+        } else if (dateFromVal) {
+            asOfDateDisplay = `From ${formatPrintDate(dateFromVal)} Onwards`;
+        } else if (dateToVal) {
+            asOfDateDisplay = `As of ${formatPrintDate(dateToVal)}`;
+        } else {
+            asOfDateDisplay = 'All Dates';
+        }
+    } else {
+        asOfDateDisplay = `All Dates (As of ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })})`;
     }
 
     const meta = {
-        asOfDate: asOfDate,
+        asOfDate: asOfDateDisplay,
         fund: fund,
         officer: officer,
         designation: designation,
@@ -5038,46 +4986,32 @@ function executePrintReport() {
     const rawData = (typeof inventoryData !== 'undefined' && inventoryData.length > 0) ? inventoryData : [];
     let dataToPrint = [...rawData];
 
-    // Filter by Selected Equipment Classifications (Multi-Select)
-    if (!isAllChecked && checkedBoxes.length > 0) {
-        const lowerChecked = checkedBoxes.map(c => c.toLowerCase().trim());
+    // Filter by Selected Account Group
+    if (!isAllGroups) {
+        const targetGroup = selectedAccountGroup.toLowerCase().trim();
         dataToPrint = dataToPrint.filter(item => {
             const itemAcc = (item.account || '').toLowerCase().trim();
-            return lowerChecked.some(c => itemAcc === c || itemAcc.includes(c) || c.includes(itemAcc));
+            return itemAcc === targetGroup || itemAcc.includes(targetGroup) || targetGroup.includes(itemAcc);
         });
     }
 
-    // Filter by Date / Period ("As of Date" filters matching period, date, or "All Dates")
-    const asOfDateLower = asOfDate.toLowerCase();
-    const isAllDates = (asOfDateLower === 'all' || asOfDateLower === 'all dates' || asOfDateLower === 'none' || asOfDateLower === '*');
-    const isCutoffExplicit = (asOfDateLower.startsWith('as of') || asOfDateLower.startsWith('cutoff') || asOfDateLower.startsWith('before') || asOfDateLower.startsWith('up to'));
+    // Filter by Date Range (From - To)
+    if (isDateRangeMode && (dateFromVal || dateToVal)) {
+        const fromTime = dateFromVal ? new Date(dateFromVal + 'T00:00:00').getTime() : 0;
+        const toTime = dateToVal ? new Date(dateToVal + 'T23:59:59.999').getTime() : Number.MAX_SAFE_INTEGER;
 
-    if (!isAllDates) {
-        const dateFilterObj = parseReportDateFilter(asOfDate);
-        if (dateFilterObj) {
-            const startTime = dateFilterObj.start ? dateFilterObj.start.getTime() : 0;
-            const endTime = dateFilterObj.end ? dateFilterObj.end.getTime() : Number.MAX_SAFE_INTEGER;
-            const cutoffTime = dateFilterObj.cutoff ? dateFilterObj.cutoff.getTime() : endTime;
-
-            dataToPrint = dataToPrint.filter(item => {
-                const itemDate = parseItemDate(item);
-                let itemTime = null;
-                if (itemDate && !isNaN(itemDate.getTime())) {
-                    itemTime = itemDate.getTime();
-                } else if (item.createdAt) {
-                    const cDate = new Date(item.createdAt);
-                    if (!isNaN(cDate.getTime())) itemTime = cDate.getTime();
-                }
-                if (itemTime === null) return false;
-
-                if (isCutoffExplicit) {
-                    return itemTime <= cutoffTime;
-                } else {
-                    // Exact period / specific date match
-                    return itemTime >= startTime && itemTime <= endTime;
-                }
-            });
-        }
+        dataToPrint = dataToPrint.filter(item => {
+            const itemDate = parseItemDate(item);
+            let itemTime = null;
+            if (itemDate && !isNaN(itemDate.getTime())) {
+                itemTime = itemDate.getTime();
+            } else if (item.createdAt) {
+                const cDate = new Date(item.createdAt);
+                if (!isNaN(cDate.getTime())) itemTime = cDate.getTime();
+            }
+            if (itemTime === null) return false;
+            return itemTime >= fromTime && itemTime <= toTime;
+        });
     }
 
     if (rawData.length === 0) {
@@ -5090,10 +5024,13 @@ function executePrintReport() {
     }
 
     if (dataToPrint.length === 0) {
+        const groupMsg = isAllGroups ? '' : ` in Account Group "${selectedAccountGroup}"`;
+        const dateMsg = isDateRangeMode ? ` for the period ${asOfDateDisplay}` : '';
+        const msg = `No equipment records matched${groupMsg}${dateMsg}. Try selecting "All Account Groups" or "All Dates".`;
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('warning', 'No Matching Items', `No equipment records matched "${sanitizeText(asOfDate)}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
+            window.showGTrackToast('warning', 'No Matching Items', msg);
         } else {
-            alert(`No equipment records matched "${asOfDate}". Try setting the As-of Date to "All Dates" or selecting all classifications.`);
+            alert(msg);
         }
         return;
     }
@@ -5176,7 +5113,7 @@ function generateFormat1HTML(items, meta) {
                 <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
                 <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
                 <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
-                <p style="margin: 0; font-size: 11px;">As of ${sanitizeText(meta.asOfDate)}</p>
+                <p style="margin: 0; font-size: 11px;">${sanitizeText(meta.asOfDate)}</p>
             </div>
             
             <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.4;">
@@ -5288,7 +5225,7 @@ function generateFormat2HTML(items, meta) {
         <div style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
-                <p style="margin: 0;"><strong>OFFICE EQUIPMENT</strong><br>As of ${sanitizeText(meta.asOfDate)}</p>
+                <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
             </div>
             
             <div style="margin-bottom: 20px; font-size: 11px; line-height: 1.2;">
