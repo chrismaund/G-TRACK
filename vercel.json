@@ -8,6 +8,24 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    {
+      "source": "/style.css",
+      "destination": "/login/style.css"
+    },
+    {
+      "source": "/logo.png",
+      "destination": "/login/logo.png"
+    },
+    {
+      "source": "/script.js",
+      "destination": "/login/script.js"
+    },
+    {
+      "source": "/buildingg.png",
+      "destination": "/login/buildingg.png"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.html",
