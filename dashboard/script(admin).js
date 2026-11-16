@@ -5232,77 +5232,79 @@ function generateFormat1HTML(items, meta) {
     });
 
     return `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
-                <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
-                <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
-                <p style="margin: 0; font-size: 11px;">${sanitizeText(meta.asOfDate)}</p>
-            </div>
-            
-            <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.4;">
-                <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin-bottom: 10px;">
-                    <span style="padding-top: 2px;">For which</span>
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 10px 15px; display: flex; flex-direction: column; min-height: 94vh; justify-content: space-between; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="flex: 1 0 auto;">
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
+                    <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
+                    <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
+                    <p style="margin: 0; font-size: 11px;">${sanitizeText(meta.asOfDate)}</p>
+                </div>
+                
+                <div style="margin-bottom: 12px; font-size: 11px; line-height: 1.4;">
+                    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin-bottom: 8px;">
+                        <span style="padding-top: 2px;">For which</span>
 
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.officer)}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Name of Accountable Officer)</small>
-                    </div>,
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.officer)}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">(Name of Accountable Officer)</small>
+                        </div>,
 
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.designation)}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Official Designation)</small>
-                    </div>,
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.designation)}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">(Official Designation)</small>
+                        </div>,
 
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">Pagbilao, Quezon</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">LGU</small>
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">Pagbilao, Quezon</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">LGU</small>
+                        </div>
+
+                        <span style="padding-top: 2px;">is accountable, having assumed such accountability on</span>
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.assumptionDate || 'April 17,2024')}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">Date of Assumption</small>
+                        </div>
                     </div>
 
-                    <span style="padding-top: 2px;">is accountable, having assumed such accountability on</span>
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.assumptionDate || 'April 17,2024')}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">Date of Assumption</small>
-                    </div>
+                    <p style="margin: 0; font-weight: bold;">${sanitizeText(meta.fund || 'GENERAL FUND')}</p>
                 </div>
 
-                <p style="margin: 0; font-weight: bold;">${sanitizeText(meta.fund || 'GENERAL FUND')}</p>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+                    <thead>
+                        <tr style="background-color: #ffffff; text-align: center;">
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 8%;">Date Acquired</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 11%;">Property Number</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 6%;">Unit of Measure</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 4px;">Balance per Card</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 4px;">On Hand Per Count</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 9%;">Total Value</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 13%;">Accountable Person</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 11%;">Remarks</th>
+                        </tr>
+                        <tr style="background-color: #ffffff; text-align: center;">
+                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
+                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
+                        
+                        <tr>
+                            <td colspan="8" style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: left;">Grand total</td>
+                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
+                            <td style="border: 1px solid #000; padding: 6px;"></td>
+                            <td style="border: 1px solid #000; padding: 6px;"></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px;">
-                <thead>
-                    <tr style="background-color: #ffffff; text-align: center;">
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 8%;">Date Acquired</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 11%;">Property Number</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 6%;">Unit of Measure</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 4px;">Balance per Card</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 4px;">On Hand Per Count</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 9%;">Total Value</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 13%;">Accountable Person</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 6px; width: 11%;">Remarks</th>
-                    </tr>
-                    <tr style="background-color: #ffffff; text-align: center;">
-                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
-                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
-                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
-                        <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
-                    
-                    <tr>
-                        <td colspan="8" style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: left;">Grand total</td>
-                        <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"></td>
-                        <td style="border: 1px solid #000; padding: 6px;"></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div style="display: flex; justify-content: space-between; text-align: center; font-size: 10px;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 25px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 30%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
@@ -5346,57 +5348,59 @@ function generateFormat2HTML(items, meta) {
     }).join('');
 
     return `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
-                <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
-            </div>
-            
-            <div style="margin-bottom: 20px; font-size: 11px; line-height: 1.2;">
-                <p style="margin: 0 0 10px 0;"><strong>Fund Cluster:</strong> ${sanitizeText(meta.fund)}</p>
-                
-                <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px;">
-                    <span style="align-self: flex-start; padding-top: 2px;">For which</span>
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.officer)}</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">(Name of Accountable Officer)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.designation)}</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">(Official Designation)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">Pagbilao, Quezon</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">LGU</small>
-                    </div>
-
-                    <span style="align-self: flex-start; padding-top: 2px;">is accountable.</span>
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 10px 15px; display: flex; flex-direction: column; min-height: 94vh; justify-content: space-between; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="flex: 1 0 auto;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
+                    <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
                 </div>
+                
+                <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.2;">
+                    <p style="margin: 0 0 8px 0;"><strong>Fund Cluster:</strong> ${sanitizeText(meta.fund)}</p>
+                    
+                    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px;">
+                        <span style="align-self: flex-start; padding-top: 2px;">For which</span>
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.officer)}</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">(Name of Accountable Officer)</small>
+                        </div>,
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.designation)}</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">(Official Designation)</small>
+                        </div>,
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">Pagbilao, Quezon</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">LGU</small>
+                        </div>
+
+                        <span style="align-self: flex-start; padding-top: 2px;">is accountable.</span>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2; text-align: center;">
+                            <th style="border: 1px solid #000; padding: 6px;">ARTICLE</th>
+                            <th style="border: 1px solid #000; padding: 6px;">DESCRIPTION</th>
+                            <th style="border: 1px solid #000; padding: 6px;">PROPERTY NO.</th>
+                            <th style="border: 1px solid #000; padding: 6px;">COST</th>
+                            <th style="border: 1px solid #000; padding: 6px;">LOCATION</th>
+                            <th style="border: 1px solid #000; padding: 6px;">ACCOUNTABLE PERSON</th>
+                            <th style="border: 1px solid #000; padding: 6px;">CONDITION</th>
+                            <th style="border: 1px solid #000; padding: 6px;">REMARKS</th>
+                            <th style="border: 1px solid #000; padding: 6px;">ACCOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
+                    </tbody>
+                </table>
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2; text-align: center;">
-                        <th style="border: 1px solid #000; padding: 6px;">ARTICLE</th>
-                        <th style="border: 1px solid #000; padding: 6px;">DESCRIPTION</th>
-                        <th style="border: 1px solid #000; padding: 6px;">PROPERTY NO.</th>
-                        <th style="border: 1px solid #000; padding: 6px;">COST</th>
-                        <th style="border: 1px solid #000; padding: 6px;">LOCATION</th>
-                        <th style="border: 1px solid #000; padding: 6px;">ACCOUNTABLE PERSON</th>
-                        <th style="border: 1px solid #000; padding: 6px;">CONDITION</th>
-                        <th style="border: 1px solid #000; padding: 6px;">REMARKS</th>
-                        <th style="border: 1px solid #000; padding: 6px;">ACCOUNT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
-                </tbody>
-            </table>
-
-            <div style="display: flex; justify-content: space-between; text-align: center; font-size: 10px;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 25px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 22%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>

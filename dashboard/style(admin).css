@@ -3160,35 +3160,45 @@ body.dark-theme-mode .btn-cancel:hover {
     display: none;
 }
 
+@page {
+    size: landscape;
+    margin: 10mm 12mm 12mm 12mm;
+}
+
 @media print {
     /* Hide dashboard UI elements */
     body > *:not(#printArea) {
         display: none !important;
     }
-@page {
-    /* Removes browser headers (date, title) and footers (URL, page numbers) */
-    margin: 0; 
-}
 
-@media print {
     body {
-        /* Adds margin directly to the document body so content isn't cut off at the paper edges */
-        margin: 1.5cm; 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
     }
 
-    /* Keeps your custom report layout clean */
-    #printArea {
-        display: block !important;
-        width: 100% !important;
-    }
-}
-    /* Force #printArea to show */
+    /* Force #printArea to show cleanly */
     #printArea {
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
+        color: #000000 !important;
+        font-family: Arial, sans-serif !important;
+    }
+
+    /* Print page flex container ensuring full height and bottom-anchored signatures */
+    .report-print-page {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: calc(100vh - 24mm) !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+    }
+
+    .report-table-wrapper {
+        flex: 1 0 auto !important;
     }
 
     /* Reset table layout properties for printing */
@@ -3197,6 +3207,7 @@ body.dark-theme-mode .btn-cancel:hover {
         width: 100% !important;
         border-collapse: collapse !important;
         table-layout: auto !important;
+        margin-bottom: 20px !important;
     }
 
     #printArea thead {
@@ -3209,43 +3220,28 @@ body.dark-theme-mode .btn-cancel:hover {
 
     #printArea tr {
         display: table-row !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     #printArea th, 
     #printArea td {
-        display: table-cell !important; /* CRITICAL: Prevents cells from stacking vertically */
+        display: table-cell !important;
         border: 1px solid #000000 !important;
-        padding: 4px 6px !important;
+        padding: 5px 6px !important;
         font-size: 10px !important;
         word-wrap: break-word !important;
+        vertical-align: middle !important;
     }
 
-    /* Signature layout structure */
-    #printArea .signature-section {
+    /* Anchors signatures to the bottom and protects against being split */
+    .report-signatures {
         display: flex !important;
         justify-content: space-between !important;
-        margin-top: 30px !important;
-    }
-
-    .report-header { text-align: center; margin-bottom: 20px; }
-    .report-header h2 { font-size: 14pt; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; color: #000; }
-    .report-header p { font-size: 10pt; margin: 0; color: #000; }
-    .report-meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 9pt; color: #000; }
-
-    .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 8pt; }
-    .report-table th, .report-table td { border: 1px solid #000000 !important; padding: 5px 6px; text-align: left; color: #000000 !important; }
-    .report-table th { background-color: #f2f2f2 !important; font-weight: bold; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-    .signature-section { display: flex; justify-content: space-between; margin-top: 35px; page-break-inside: avoid; }
-    .sig-box { width: 22%; text-align: center; font-size: 8pt; color: #000; }
-    .sig-line { margin-top: 35px; border-top: 1px solid #000000; padding-top: 4px; font-weight: bold; }
-}
-
-@media print {
-    /* Changes the font for everything inside the print area */
-    #printArea, 
-    #printArea * {
-        font-family: 'Times New Roman', Times, serif !important;
+        margin-top: auto !important;
+        padding-top: 25px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 }
 
