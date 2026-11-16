@@ -4589,13 +4589,73 @@ window.populateAdminPrintAccountDropdown = function() {
 };
 
 // Backwards compatibility alias
-// Populate Account Group checkboxes for admin print report
-// Populate Account Group checkboxes for admin print report
+/**
+ * Toggles the collapsible equipment classification dropdown menu inside the print modal.
+ */
+window.toggleAdminReportAccountDropdown = function(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('adminReportAccountDropdownMenu');
+    const chevron = document.getElementById('adminReportAccountDropdownChevron');
+    if (!menu) return;
+
+    const isOpening = menu.classList.contains('hidden');
+    if (isOpening) {
+        menu.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+    } else {
+        menu.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+};
+
+/**
+ * Updates the trigger label for the classification dropdown based on selected checkboxes.
+ */
+window.updateAdminReportAccountDropdownLabel = function() {
+    const labelEl = document.getElementById('adminReportAccountDropdownLabel');
+    if (!labelEl) return;
+
+    const checkboxes = document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]');
+    const checked = Array.from(checkboxes).filter(cb => cb.checked);
+
+    if (checkboxes.length === 0) {
+        labelEl.textContent = 'All Account Groups';
+        return;
+    }
+
+    if (checked.length === 0) {
+        labelEl.textContent = 'None Selected (0)';
+    } else if (checked.length === checkboxes.length) {
+        labelEl.textContent = `All Account Groups (${checked.length} Selected)`;
+    } else if (checked.length === 1) {
+        labelEl.textContent = checked[0].value;
+    } else {
+        labelEl.textContent = `${checked.length} Groups Selected`;
+    }
+};
+
+/**
+ * Toggles all checkboxes in the admin print report dropdown.
+ */
+window.toggleAllAdminReportAccounts = function(event) {
+    if (event) event.stopPropagation();
+    const checkboxes = document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]');
+    if (checkboxes.length === 0) return;
+
+    const someUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+    checkboxes.forEach(cb => {
+        cb.checked = someUnchecked;
+    });
+    window.updateAdminReportAccountDropdownLabel();
+};
+
+/**
+ * Populates or synchronizes the multi-select account group checkboxes in the admin print popover.
+ */
 window.populateAdminPrintAccountCheckboxes = function() {
     const container = document.getElementById('adminReportAccountCheckboxes');
     if (!container) return;
-    // Clear existing
-    container.innerHTML = '';
+
     const standardClassifications = [
         "IT Equipment and Software",
         "Office Equipment",
@@ -4607,6 +4667,7 @@ window.populateAdminPrintAccountCheckboxes = function() {
         "Medical, Dental and Laboratory Equipment",
         "Other Property, Plant and Equipment"
     ];
+
     const groupSet = new Set(standardClassifications);
     if (typeof inventoryData !== 'undefined' && Array.isArray(inventoryData)) {
         inventoryData.forEach(item => {
@@ -4615,104 +4676,39 @@ window.populateAdminPrintAccountCheckboxes = function() {
             }
         });
     }
-    const sortedGroups = Array.from(groupSet).sort();
-    // Master Toggle All checkbox
-    const masterLabel = document.createElement('label');
-    masterLabel.style.display = 'block';
-    const masterCheckbox = document.createElement('input');
-    masterCheckbox.type = 'checkbox';
-    masterCheckbox.id = 'adminReportAccountToggleAll';
-    masterCheckbox.checked = true; // default all selected
-    masterLabel.appendChild(masterCheckbox);
-    masterLabel.appendChild(document.createTextNode(' Toggle All'));
-    container.appendChild(masterLabel);
-    // Individual group checkboxes
-    sortedGroups.forEach(group => {
-        const lbl = document.createElement('label');
-        lbl.style.display = 'block';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = sanitizeText(group);
-        cb.checked = true; // default selected
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode(' ' + group));
-        container.appendChild(lbl);
-    });
-    // Update master toggle behavior based on child checkboxes
-    function syncMaster() {
-        const childCheckboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')).filter(chk => chk !== masterCheckbox);
-        const allChecked = childCheckboxes.every(chk => chk.checked);
-        masterCheckbox.checked = allChecked;
-    }
-    // Master toggles all children
-    masterCheckbox.addEventListener('change', () => {
-        const childCheckboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')).filter(chk => chk !== masterCheckbox);
-        childCheckboxes.forEach(chk => chk.checked = masterCheckbox.checked);
-    });
-    // Children update master on change
-    const childCheckboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')).filter(chk => chk !== masterCheckbox);
-    childCheckboxes.forEach(chk => {
-        chk.addEventListener('change', syncMaster);
-    });
-    // Initial sync
-    syncMaster();
-}; {
-    const container = document.getElementById('adminReportAccountCheckboxes');
-    if (!container) return;
-    // Clear existing
-    container.innerHTML = '';
-    const standardClassifications = [
-        "IT Equipment and Software",
-        "Office Equipment",
-        "Furniture and Fixtures",
-        "Transportation Equipment",
-        "Machinery and Equipment",
-        "Communication Equipment",
-        "Disaster Response and Rescue Equipment",
-        "Medical, Dental and Laboratory Equipment",
-        "Other Property, Plant and Equipment"
-    ];
-    const groupSet = new Set(standardClassifications);
-    if (typeof inventoryData !== 'undefined' && Array.isArray(inventoryData)) {
-        inventoryData.forEach(item => {
-            if (item && item.account && item.account.trim()) {
-                groupSet.add(item.account.trim());
-            }
+
+    const currentTableAccount = (typeof accountFilter !== 'undefined' && accountFilter) ? accountFilter.value : 'All Accounts';
+
+    // Check if user already had specific checkboxes checked
+    const existingInputs = container.querySelectorAll('input[type="checkbox"]');
+    const checkedMap = new Map();
+    if (existingInputs.length > 0) {
+        existingInputs.forEach(input => {
+            checkedMap.set(input.value.toLowerCase(), input.checked);
         });
     }
+
     const sortedGroups = Array.from(groupSet).sort();
-    // Master Toggle All checkbox
-    const masterLabel = document.createElement('label');
-    masterLabel.style.display = 'block';
-    const masterCheckbox = document.createElement('input');
-    masterCheckbox.type = 'checkbox';
-    masterCheckbox.id = 'adminReportAccountToggleAll';
-    masterCheckbox.checked = true; // default all selected
-    masterLabel.appendChild(masterCheckbox);
-    masterLabel.appendChild(document.createTextNode(' Toggle All'));
-    container.appendChild(masterLabel);
-    // Individual group checkboxes
-    sortedGroups.forEach(group => {
-        const lbl = document.createElement('label');
-        lbl.style.display = 'block';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = sanitizeText(group);
-        cb.checked = true; // default selected
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode(' ' + group));
-        container.appendChild(lbl);
+    let checkboxesHTML = '';
+    sortedGroups.forEach(groupName => {
+        const lowerName = groupName.toLowerCase();
+        let isChecked = true;
+        if (checkedMap.has(lowerName)) {
+            isChecked = checkedMap.get(lowerName);
+        } else if (currentTableAccount && currentTableAccount !== 'All Accounts') {
+            isChecked = (lowerName === currentTableAccount.toLowerCase());
+        }
+
+        checkboxesHTML += `
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px;">
+                <input type="checkbox" value="${sanitizeText(groupName)}" ${isChecked ? 'checked' : ''} onchange="updateAdminReportAccountDropdownLabel()" style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
+                <span>${sanitizeText(groupName)}</span>
+            </label>
+        `;
     });
-    // Update master toggle behavior
-    function updateMaster() {
-        const allChecked = Array.from(container.querySelectorAll('input[type="checkbox"]')).every(chk => chk.checked);
-        masterCheckbox.checked = allChecked;
-    }
-    container.querySelectorAll('input[type="checkbox"]').forEach(chk => {
-        chk.addEventListener('change', updateMaster);
-    });
-    // Initial sync
-    updateMaster();
+
+    container.innerHTML = checkboxesHTML;
+    window.updateAdminReportAccountDropdownLabel();
 };
 
 /**
@@ -4754,6 +4750,12 @@ window.closePrintReportModal = function(event) {
 
     popover.classList.add('hidden');
     popover.style.display = 'none';
+
+    // Also close the classification dropdown menu if open
+    const menu = document.getElementById('adminReportAccountDropdownMenu');
+    const chevron = document.getElementById('adminReportAccountDropdownChevron');
+    if (menu) menu.classList.add('hidden');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
 };
 
 /**
@@ -5059,24 +5061,12 @@ function executePrintReport() {
         : 'April 17,2024';
 
     // 1. Read Selected Account Groups (checkboxes)
-    const accountContainer = document.getElementById('adminReportAccountCheckboxes');
-    const checkboxes = accountContainer ? accountContainer.querySelectorAll('input[type="checkbox"]') : [];
-    let selectedGroups = [];
-    let allChildrenChecked = true;
-    checkboxes.forEach(cb => {
-        if (cb.id === 'adminReportAccountToggleAll') return;
-        if (cb.checked) {
-            selectedGroups.push(cb.value);
-        } else {
-            allChildrenChecked = false;
-        }
-    });
-    const isAllGroups = allChildrenChecked || selectedGroups.length === 0;
+    const accountCheckboxes = document.querySelectorAll('#adminReportAccountCheckboxes input[type="checkbox"]');
+    const checkedBoxes = Array.from(accountCheckboxes).filter(cb => cb.checked);
+    const selectedGroups = checkedBoxes.map(cb => cb.value.trim());
+    const isAllGroups = (accountCheckboxes.length === 0 || checkedBoxes.length === accountCheckboxes.length || checkedBoxes.length === 0);
 
-    let accountGroupTitle = 'COMPREHENSIVE PROPERTY, PLANT AND EQUIPMENT';
-    if (!isAllGroups) {
-        accountGroupTitle = selectedAccountGroup.toUpperCase();
-    }
+    const accountGroupTitle = 'COMPREHENSIVE PROPERTY, PLANT AND EQUIPMENT';
 
     // 2. Read Date Filter Mode (All Dates vs Specific Date Range)
     const isDateRangeMode = document.getElementById('reportDateModeRange')?.checked;
@@ -5122,10 +5112,10 @@ function executePrintReport() {
 
     // Filter by Selected Account Group
     if (!isAllGroups) {
-        const targetGroup = selectedAccountGroup.toLowerCase().trim();
+        const selectedGroupSet = new Set(selectedGroups.map(g => g.toLowerCase()));
         dataToPrint = dataToPrint.filter(item => {
             const itemAcc = (item.account || '').toLowerCase().trim();
-            return itemAcc === targetGroup || itemAcc.includes(targetGroup) || targetGroup.includes(itemAcc);
+            return selectedGroupSet.has(itemAcc);
         });
     }
 
@@ -5158,7 +5148,7 @@ function executePrintReport() {
     }
 
     if (dataToPrint.length === 0) {
-        const groupMsg = isAllGroups ? '' : ` in Account Group "${selectedAccountGroup}"`;
+        const groupMsg = isAllGroups ? '' : ' in the selected account group(s)';
         const dateMsg = isDateRangeMode ? ` for the period ${asOfDateDisplay}` : '';
         const msg = `No equipment records matched${groupMsg}${dateMsg}. Try selecting "All Account Groups" or "All Dates".`;
         if (typeof window.showGTrackToast === 'function') {
