@@ -3162,7 +3162,7 @@ body.dark-theme-mode .btn-cancel:hover {
 
 @page {
     size: landscape;
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 0;
 }
 
 @media print {
@@ -3177,12 +3177,13 @@ body.dark-theme-mode .btn-cancel:hover {
         background: #ffffff !important;
     }
 
-    /* Force #printArea to show cleanly */
+    /* Force #printArea to show cleanly without browser headers/footers */
     #printArea {
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 10mm 15mm 12mm 15mm !important;
+        box-sizing: border-box !important;
         background: #ffffff !important;
         color: #000000 !important;
         font-family: Arial, sans-serif !important;
@@ -3192,7 +3193,7 @@ body.dark-theme-mode .btn-cancel:hover {
     .report-print-page {
         display: flex !important;
         flex-direction: column !important;
-        min-height: calc(100vh - 24mm) !important;
+        min-height: calc(100vh - 22mm) !important;
         justify-content: space-between !important;
         box-sizing: border-box !important;
     }

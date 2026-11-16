@@ -5191,9 +5191,12 @@ function executePrintReport() {
     }
 
     setTimeout(() => {
+        const originalDocTitle = document.title;
+        document.title = ' ';
         window.print();
         setTimeout(() => {
             printArea.style.display = 'none';
+            document.title = originalDocTitle;
         }, 500);
     }, 150);
 }
