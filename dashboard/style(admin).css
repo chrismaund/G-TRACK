@@ -3196,6 +3196,24 @@ body.dark-theme-mode .btn-cancel:hover {
         box-sizing: border-box !important;
     }
 
+    /* Single-page report mode: anchors signatures directly to the bottom like a formal letter/report */
+    .report-print-page.is-single-page {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: calc(100vh - 22mm) !important;
+        justify-content: space-between !important;
+    }
+
+    .report-print-page.is-single-page .report-table-wrapper {
+        flex: 1 0 auto !important;
+        width: 100% !important;
+    }
+
+    .report-print-page.is-single-page .report-signatures {
+        margin-top: auto !important;
+        padding-top: 15px !important;
+    }
+
     .report-table-wrapper {
         width: 100% !important;
     }
