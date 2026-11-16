@@ -5186,11 +5186,15 @@ function executePrintReport() {
     // 3. Display print area & launch print preview cleanly
     printArea.style.display = 'block';
 
+    // Dynamically adjust signatures so they are anchored to the bottom of the last page
+    adjustPrintSignatures();
+
     if (typeof window.showGTrackToast === 'function') {
         window.showGTrackToast('info', 'Opening Print Preview', 'Generating official RPCPPE report. Select your printer or "Save as PDF".');
     }
 
     setTimeout(() => {
+        adjustPrintSignatures();
         const originalDocTitle = document.title;
         document.title = ' ';
         window.print();
@@ -5201,192 +5205,238 @@ function executePrintReport() {
     }, 150);
 }
 window.executePrintReport = executePrintReport;
+
+/**
+ * Dynamically positions .report-signatures to the bottom of the final page
+ * (for both single-page and multi-page reports) while preserving continuous,
+ * natural row flow with zero awkward spacing on preceding pages.
+ */
+function adjustPrintSignatures() {
+    const printArea = document.getElementById('printArea');
+    if (!printArea) return;
+    const sigBlock = printArea.querySelector('.report-signatures');
+    if (!sigBlock) return;
+
+    // Reset margin-top to measure natural layout
+    sigBlock.style.setProperty('margin-top', '0px', 'important');
+
+    const tableWrapper = printArea.querySelector('.report-table-wrapper');
+    if (!tableWrapper) return;
+    const table = tableWrapper.querySelector('table');
+    if (!table) return;
+
+    // Printable page height in Landscape A4 (210mm minus top/bottom padding)
+    // 210mm = ~794px @ 96dpi. Padding is 10mm top + 12mm bottom (~83px).
+    // Usable page height is ~710px. We use 695px with a safety buffer to prevent accidental blank pages.
+    const PAGE_HEIGHT = 695;
+
+    // Measure header block above the table (title, LGU, officer details)
+    let headerHeight = 0;
+    const headerElements = tableWrapper.children;
+    for (let i = 0; i < headerElements.length; i++) {
+        const el = headerElements[i];
+        if (el === table) break;
+        headerHeight += el.offsetHeight || 0;
+        const style = window.getComputedStyle(el);
+        headerHeight += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+    }
+
+    const thead = table.querySelector('thead');
+    const theadHeight = thead ? thead.offsetHeight : 85;
+
+    const tbody = table.querySelector('tbody');
+    const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+
+    const sigHeight = sigBlock.offsetHeight || 110;
+
+    // Simulate page-flow pagination
+    let currentPageHeight = headerHeight + theadHeight;
+
+    for (let i = 0; i < rows.length; i++) {
+        const rowHeight = rows[i].offsetHeight || 28;
+        if (currentPageHeight + rowHeight > PAGE_HEIGHT) {
+            // Row breaks to the next page; thead repeats at the top of continuation page
+            currentPageHeight = theadHeight + rowHeight;
+        } else {
+            currentPageHeight += rowHeight;
+        }
+    }
+
+    // currentPageHeight represents the total content height on the final page
+    // Space remaining on the final page before bottom margin:
+    const remainingSpace = PAGE_HEIGHT - currentPageHeight - sigHeight;
+
+    if (remainingSpace > 35) {
+        // Push signatures cleanly to the bottom of the last page
+        const dynamicMargin = Math.floor(remainingSpace - 15);
+        sigBlock.style.setProperty('margin-top', dynamicMargin + 'px', 'important');
+    } else {
+        // If content fills almost the entire last page, use neat default margin
+        sigBlock.style.setProperty('margin-top', '30px', 'important');
+    }
+}
+
 /**
  * Builds HTML report string for Format 1 (Physical Count Card vs Count Balance)
  */
 function generateFormat1HTML(items, meta) {
     let grandTotalValue = 0;
+    let rowsHTML = '';
+
     items.forEach((item) => {
         const qty = parseInt(item.qty, 10) || 1;
         const unitVal = parseSafeFloat(item.unitCost) || 0;
-        grandTotalValue += parseSafeFloat(item.totalCost) || (qty * unitVal);
+        const totalVal = parseSafeFloat(item.totalCost) || (qty * unitVal);
+        grandTotalValue += totalVal;
+
+        const conditionText = sanitizeText(item.remarks || item.condition || 'SERVICEABLE');
+
+        rowsHTML += `
+            <tr>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article || '')} ${item.description ? sanitizeText(item.description) : ''}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.date) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.unit) || 'UNIT'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${totalVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${conditionText}</td>
+            </tr>
+        `;
     });
 
-    // Determine pagination: Page 1 holds up to 10 items; continuation pages hold up to 12 items.
-    const pages = [];
-    if (items.length <= 10) {
-        pages.push(items);
-    } else {
-        pages.push(items.slice(0, 10));
-        let start = 10;
-        while (start < items.length) {
-            pages.push(items.slice(start, start + 12));
-            start += 12;
-        }
-    }
+    return `
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="width: 100%;">
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
+                    <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
+                    <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
+                    <p style="margin: 0; font-size: 11px;">${sanitizeText(meta.asOfDate)}</p>
+                </div>
+                
+                <div style="margin-bottom: 14px; font-size: 11px; line-height: 1.4;">
+                    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin-bottom: 8px;">
+                        <span style="padding-top: 2px;">For which</span>
 
-    const totalPages = pages.length;
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.officer)}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">(Name of Accountable Officer)</small>
+                        </div>,
 
-    const theadHTML = `
-        <thead style="display: table-header-group;">
-            <tr style="background-color: #ffffff; text-align: center;">
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 8%;">Date Acquired</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Property Number</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 6%;">Unit of Measure</th>
-                <th colspan="2" style="border: 1px solid #000; padding: 5px;">Balance per Card</th>
-                <th colspan="2" style="border: 1px solid #000; padding: 5px;">On Hand Per Count</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 9%;">Total Value</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 13%;">Accountable Person</th>
-                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Remarks</th>
-            </tr>
-            <tr style="background-color: #ffffff; text-align: center;">
-                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
-                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
-                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
-                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
-            </tr>
-        </thead>
-    `;
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.designation)}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">(Official Designation)</small>
+                        </div>,
 
-    const signaturesHTML = `
-        <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
-            <div style="width: 30%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
-                <div style="margin-top: 2px;">RCCI</div>
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">Pagbilao, Quezon</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">LGU</small>
+                        </div>
+
+                        <span style="padding-top: 2px;">is accountable, having assumed such accountability on</span>
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.assumptionDate || 'April 17,2024')}</span>
+                            <small style="font-size: 8px; color: #000; margin-top: 1px;">Date of Assumption</small>
+                        </div>
+                    </div>
+
+                    <p style="margin: 0; font-weight: bold;">${sanitizeText(meta.fund || 'GENERAL FUND')}</p>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 16px; font-size: 11px;">
+                    <thead style="display: table-header-group;">
+                        <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
+                            <th colspan="11" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+                        </tr>
+                        <tr style="background-color: #ffffff; text-align: center;">
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 8%;">Date Acquired</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Property Number</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 6%;">Unit of Measure</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">Balance per Card</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">On Hand Per Count</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 9%;">Total Value</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 13%;">Accountable Person</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Remarks</th>
+                        </tr>
+                        <tr style="background-color: #ffffff; text-align: center;">
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
+                        </tr>
+                    </thead>
+                    <tfoot style="display: table-footer-group;">
+                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
+                            <td colspan="11" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
+                        
+                        <tr>
+                            <td colspan="8" style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: left;">Grand total</td>
+                            <td style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
+                            <td style="border: 1px solid #000; padding: 7px 8px;"></td>
+                            <td style="border: 1px solid #000; padding: 7px 8px;"></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div style="width: 30%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">RECOMMENDING APPROVAL:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">${sanitizeText(meta.officer)}</div>
-                <div style="margin-top: 2px;">${sanitizeText(meta.designation)}</div>
-            </div>
-            <div style="width: 30%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">NOTED BY:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ANGELICA P. TATLONGHARI</div>
-                <div style="margin-top: 2px;">Municipal Mayor</div>
+
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: 35px; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
+                <div style="width: 30%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
+                    <div style="margin-top: 2px;">RCCI</div>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">RECOMMENDING APPROVAL:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">${sanitizeText(meta.officer)}</div>
+                    <div style="margin-top: 2px;">${sanitizeText(meta.designation)}</div>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">NOTED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ANGELICA P. TATLONGHARI</div>
+                    <div style="margin-top: 2px;">Municipal Mayor</div>
+                </div>
             </div>
         </div>
     `;
-
-    return pages.map((pageItems, pIndex) => {
-        const isLastPage = (pIndex === totalPages - 1);
-        const rowsHTML = pageItems.map((item) => {
-            const qty = parseInt(item.qty, 10) || 1;
-            const unitVal = parseSafeFloat(item.unitCost) || 0;
-            const totalVal = parseSafeFloat(item.totalCost) || (qty * unitVal);
-            const conditionText = sanitizeText(item.remarks || item.condition || 'SERVICEABLE');
-
-            return `
-                <tr>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article || '')} ${item.description ? sanitizeText(item.description) : ''}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.date) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.unit) || 'UNIT'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${totalVal.toFixed(2)}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${conditionText}</td>
-                </tr>
-            `;
-        }).join('');
-
-        const headerBlock = (pIndex === 0) ? `
-            <div style="text-align: center; margin-bottom: 12px;">
-                <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
-                <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
-                <p style="font-size: 10px; font-style: italic; margin: 0 0 4px 0;">(Type of Property, Plant and Equipment)</p>
-                <p style="margin: 0; font-size: 11px;">${sanitizeText(meta.asOfDate)}</p>
-            </div>
-            
-            <div style="margin-bottom: 14px; font-size: 11px; line-height: 1.4;">
-                <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin-bottom: 8px;">
-                    <span style="padding-top: 2px;">For which</span>
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.officer)}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Name of Accountable Officer)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.designation)}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">(Official Designation)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">Pagbilao, Quezon</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">LGU</small>
-                    </div>
-
-                    <span style="padding-top: 2px;">is accountable, having assumed such accountability on</span>
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 8px;">${sanitizeText(meta.assumptionDate || 'April 17,2024')}</span>
-                        <small style="font-size: 8px; color: #000; margin-top: 1px;">Date of Assumption</small>
-                    </div>
-                </div>
-
-                <p style="margin: 0; font-weight: bold;">${sanitizeText(meta.fund || 'GENERAL FUND')}</p>
-            </div>
-        ` : `
-            <div style="text-align: center; margin-bottom: 12px;">
-                <h2 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT (Continuation)</h2>
-                <p style="margin: 0; font-size: 10px; font-style: italic;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')} — Page ${pIndex + 1} of ${totalPages}</p>
-            </div>
-        `;
-
-        const grandTotalHTML = isLastPage ? `
-            <tr>
-                <td colspan="8" style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: left;">Grand total</td>
-                <td style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
-                <td style="border: 1px solid #000; padding: 7px 8px;"></td>
-                <td style="border: 1px solid #000; padding: 7px 8px;"></td>
-            </tr>
-        ` : '';
-
-        return `
-            <div class="report-print-page ${isLastPage ? 'is-last-page' : ''}" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; ${isLastPage ? 'display: flex; flex-direction: column; min-height: calc(100vh - 22mm); justify-content: space-between; page-break-after: auto; break-after: auto;' : 'display: block; page-break-after: always; break-after: page;'}">
-                <div class="report-table-wrapper" style="width: 100%; ${isLastPage ? 'flex: 1 0 auto;' : ''}">
-                    ${headerBlock}
-
-                    <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 16px; font-size: 11px;">
-                        ${theadHTML}
-                        <tbody>
-                            ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
-                            ${grandTotalHTML}
-                        </tbody>
-                    </table>
-                </div>
-
-                ${isLastPage ? signaturesHTML : ''}
-            </div>
-        `;
-    }).join('');
 }
 
 /**
  * Builds HTML report string for Format 2 (Equipment, Furniture & Location)
  */
 function generateFormat2HTML(items, meta) {
-    const pages = [];
-    if (items.length <= 10) {
-        pages.push(items);
-    } else {
-        pages.push(items.slice(0, 10));
-        let start = 10;
-        while (start < items.length) {
-            pages.push(items.slice(start, start + 12));
-            start += 12;
-        }
-    }
-
-    const totalPages = pages.length;
+    let rowsHTML = '';
+    items.forEach((item) => {
+        const costVal = parseSafeFloat(item.unitCost) || parseSafeFloat(item.totalCost) || 0;
+        rowsHTML += `
+            <tr>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.description) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">₱${costVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.location) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.condition) || 'SERVICEABLE'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.remarks) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.account) || 'OFFICE EQUIPMENT'}</td>
+            </tr>
+        `;
+    });
 
     const theadHTML = `
         <thead style="display: table-header-group;">
+            <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
+                <th colspan="9" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+            </tr>
             <tr style="background-color: #f2f2f2; text-align: center;">
                 <th style="border: 1px solid #000; padding: 6px 6px;">ARTICLE</th>
                 <th style="border: 1px solid #000; padding: 6px 6px;">DESCRIPTION</th>
@@ -5401,104 +5451,76 @@ function generateFormat2HTML(items, meta) {
         </thead>
     `;
 
-    const signaturesHTML = `
-        <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
-            <div style="width: 22%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
-                <div style="margin-top: 2px;">RCCI</div>
+    return `
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="width: 100%;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
+                    <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
+                </div>
+                
+                <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.2;">
+                    <p style="margin: 0 0 8px 0;"><strong>Fund Cluster:</strong> ${sanitizeText(meta.fund)}</p>
+                    
+                    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px;">
+                        <span style="align-self: flex-start; padding-top: 2px;">For which</span>
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.officer)}</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">(Name of Accountable Officer)</small>
+                        </div>,
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.designation)}</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">(Official Designation)</small>
+                        </div>,
+
+                        <div style="display: inline-flex; flex-direction: column; align-items: center;">
+                            <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">Pagbilao, Quezon</span>
+                            <small style="font-size: 8px; color: #333; margin-top: 2px;">LGU</small>
+                        </div>
+
+                        <span style="align-self: flex-start; padding-top: 2px;">is accountable.</span>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 20px;">
+                    ${theadHTML}
+                    <tfoot style="display: table-footer-group;">
+                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
+                            <td colspan="9" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
+                    </tbody>
+                </table>
             </div>
-            <div style="width: 22%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">CERTIFIED CORRECT:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">${sanitizeText(meta.officer)}</div>
-                <div style="margin-top: 2px;">${sanitizeText(meta.designation)}</div>
-            </div>
-            <div style="width: 22%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">NOTED BY:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ANGELICA P. TATLONGHARI</div>
-                <div style="margin-top: 2px;">Municipal Mayor</div>
-            </div>
-            <div style="width: 22%;">
-                <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">VERIFIED BY:</p>
-                <div style="border-bottom: 1px solid #000; padding-bottom: 2px; min-height: 14px;"></div>
-                <div style="margin-top: 2px;">COA Representative</div>
+
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: 35px; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
+                <div style="width: 22%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
+                    <div style="margin-top: 2px;">RCCI</div>
+                </div>
+                <div style="width: 22%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">CERTIFIED CORRECT:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">${sanitizeText(meta.officer)}</div>
+                    <div style="margin-top: 2px;">${sanitizeText(meta.designation)}</div>
+                </div>
+                <div style="width: 22%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">NOTED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ANGELICA P. TATLONGHARI</div>
+                    <div style="margin-top: 2px;">Municipal Mayor</div>
+                </div>
+                <div style="width: 22%;">
+                    <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">VERIFIED BY:</p>
+                    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; min-height: 14px;"></div>
+                    <div style="margin-top: 2px;">COA Representative</div>
+                </div>
             </div>
         </div>
     `;
-
-    return pages.map((pageItems, pIndex) => {
-        const isLastPage = (pIndex === totalPages - 1);
-        const rowsHTML = pageItems.map((item) => {
-            const costVal = parseSafeFloat(item.unitCost) || parseSafeFloat(item.totalCost) || 0;
-            return `
-                <tr>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.description) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">₱${costVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.location) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.condition) || 'SERVICEABLE'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.remarks) || '—'}</td>
-                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.account) || 'OFFICE EQUIPMENT'}</td>
-                </tr>
-            `;
-        }).join('');
-
-        const headerBlock = (pIndex === 0) ? `
-            <div style="text-align: center; margin-bottom: 15px;">
-                <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
-                <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
-            </div>
-            
-            <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.2;">
-                <p style="margin: 0 0 8px 0;"><strong>Fund Cluster:</strong> ${sanitizeText(meta.fund)}</p>
-                
-                <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px;">
-                    <span style="align-self: flex-start; padding-top: 2px;">For which</span>
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.officer)}</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">(Name of Accountable Officer)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">${sanitizeText(meta.designation)}</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">(Official Designation)</small>
-                    </div>,
-
-                    <div style="display: inline-flex; flex-direction: column; align-items: center;">
-                        <span style="border-bottom: 1px solid #000; font-weight: bold; padding: 0 10px;">Pagbilao, Quezon</span>
-                        <small style="font-size: 8px; color: #333; margin-top: 2px;">LGU</small>
-                    </div>
-
-                    <span style="align-self: flex-start; padding-top: 2px;">is accountable.</span>
-                </div>
-            </div>
-        ` : `
-            <div style="text-align: center; margin-bottom: 12px;">
-                <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE (Continuation)</h2>
-                <p style="margin: 0; font-size: 10px; font-style: italic;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')} — Page ${pIndex + 1} of ${totalPages}</p>
-            </div>
-        `;
-
-        return `
-            <div class="report-print-page ${isLastPage ? 'is-last-page' : ''}" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; ${isLastPage ? 'display: flex; flex-direction: column; min-height: calc(100vh - 22mm); justify-content: space-between; page-break-after: auto; break-after: auto;' : 'display: block; page-break-after: always; break-after: page;'}">
-                <div class="report-table-wrapper" style="width: 100%; ${isLastPage ? 'flex: 1 0 auto;' : ''}">
-                    ${headerBlock}
-
-                    <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 20px;">
-                        ${theadHTML}
-                        <tbody>
-                            ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
-                        </tbody>
-                    </table>
-                </div>
-
-                ${isLastPage ? signaturesHTML : ''}
-            </div>
-        `;
-    }).join('');
 }
 
 // =========================================================================

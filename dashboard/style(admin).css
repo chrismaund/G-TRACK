@@ -3189,40 +3189,24 @@ body.dark-theme-mode .btn-cancel:hover {
         font-family: Arial, sans-serif !important;
     }
 
-    /* Print page container ensuring proper separation across multiple pages */
+    /* Print page container: allows continuous natural table flow across pages */
     .report-print-page {
         display: block !important;
         width: 100% !important;
         box-sizing: border-box !important;
-        page-break-after: always !important;
-        break-after: page !important;
-    }
-
-    /* Last page of report (or single-page report): anchors signatures firmly to the bottom like a formal letter */
-    .report-print-page.is-last-page,
-    .report-print-page.is-single-page {
-        display: flex !important;
-        flex-direction: column !important;
-        min-height: calc(100vh - 22mm) !important;
-        justify-content: space-between !important;
-        page-break-after: auto !important;
-        break-after: auto !important;
-    }
-
-    .report-print-page.is-last-page .report-table-wrapper,
-    .report-print-page.is-single-page .report-table-wrapper {
-        flex: 1 0 auto !important;
-        width: 100% !important;
-    }
-
-    .report-print-page.is-last-page .report-signatures,
-    .report-print-page.is-single-page .report-signatures {
-        margin-top: auto !important;
-        padding-top: 15px !important;
     }
 
     .report-table-wrapper {
         width: 100% !important;
+    }
+
+    /* Signatures block: formatted cleanly, page-break protected, dynamically aligned to bottom */
+    .report-signatures {
+        display: flex !important;
+        justify-content: space-between !important;
+        padding-top: 15px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     /* Reset table layout properties for printing */
@@ -3285,15 +3269,6 @@ body.dark-theme-mode .btn-cancel:hover {
         box-shadow: none !important;
     }
 
-    /* Anchors signatures with clean breathing space and avoids awkward split */
-    .report-signatures {
-        display: flex !important;
-        justify-content: space-between !important;
-        margin-top: 35px !important;
-        padding-top: 10px !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
 }
 
 /* ==========================================================================
