@@ -5219,17 +5219,17 @@ function generateFormat1HTML(items, meta) {
 
         rowsHTML += `
             <tr>
-                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${sanitizeText(item.article || '')} ${item.description ? sanitizeText(item.description) : ''}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.date) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${sanitizeText(item.unit) || 'UNIT'}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${qty}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${unitVal.toFixed(2)}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${qty}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${unitVal.toFixed(2)}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${totalVal.toFixed(2)}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
-                <td style="border: 1px solid #000; padding: 4px; text-align: left;">${conditionText}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article || '')} ${item.description ? sanitizeText(item.description) : ''}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.date) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.unit) || 'UNIT'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${qty}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${unitVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">${totalVal.toFixed(2)}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${conditionText}</td>
             </tr>
         `;
     });
@@ -5276,43 +5276,48 @@ function generateFormat1HTML(items, meta) {
                     <p style="margin: 0; font-weight: bold;">${sanitizeText(meta.fund || 'GENERAL FUND')}</p>
                 </div>
 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 24px; font-size: 11px;">
                     <thead style="display: table-header-group;">
-                        <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
-                            <th colspan="11" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+                        <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
+                            <th colspan="11" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
                         </tr>
                         <tr style="background-color: #ffffff; text-align: center;">
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 8%;">Date Acquired</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 11%;">Property Number</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 6%;">Unit of Measure</th>
-                            <th colspan="2" style="border: 1px solid #000; padding: 4px;">Balance per Card</th>
-                            <th colspan="2" style="border: 1px solid #000; padding: 4px;">On Hand Per Count</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 9%;">Total Value</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 13%;">Accountable Person</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 11%;">Remarks</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 8%;">Date Acquired</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Property Number</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 6%;">Unit of Measure</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">Balance per Card</th>
+                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">On Hand Per Count</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 9%;">Total Value</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 13%;">Accountable Person</th>
+                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Remarks</th>
                         </tr>
                         <tr style="background-color: #ffffff; text-align: center;">
-                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
-                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
-                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Quantity</th>
-                            <th style="border: 1px solid #000; padding: 4px; width: 5%;">Unit Value</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
                         </tr>
                     </thead>
+                    <tfoot style="display: table-footer-group;">
+                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
+                            <td colspan="11" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+                        </tr>
+                    </tfoot>
                     <tbody>
                         ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
                         
                         <tr>
-                            <td colspan="8" style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: left;">Grand total</td>
-                            <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
-                            <td style="border: 1px solid #000; padding: 6px;"></td>
-                            <td style="border: 1px solid #000; padding: 6px;"></td>
+                            <td colspan="8" style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: left;">Grand total</td>
+                            <td style="border: 1px solid #000; padding: 7px 8px; font-weight: bold; text-align: right;">${grandTotalValue.toFixed(2)}</td>
+                            <td style="border: 1px solid #000; padding: 7px 8px;"></td>
+                            <td style="border: 1px solid #000; padding: 7px 8px;"></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: ${isSinglePage ? 'auto' : '35px'}; padding-top: 10px; page-break-inside: avoid; break-inside: avoid;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: ${isSinglePage ? 'auto' : '40px'}; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 30%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
@@ -5342,15 +5347,15 @@ function generateFormat2HTML(items, meta) {
 
         return `
             <tr>
-                <td style="border: 1px solid #000; padding: 6px; text-align: left;">${sanitizeText(item.article) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: left;">${sanitizeText(item.description) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: right;">₱${costVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: left;">${sanitizeText(item.location) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: center;">${sanitizeText(item.condition) || 'SERVICEABLE'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: left;">${sanitizeText(item.remarks) || '—'}</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: center;">${sanitizeText(item.account) || 'OFFICE EQUIPMENT'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.article) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.description) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.propertyNo) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: right;">₱${costVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.location) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.accountablePerson) || meta.officer}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.condition) || 'SERVICEABLE'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">${sanitizeText(item.remarks) || '—'}</td>
+                <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">${sanitizeText(item.account) || 'OFFICE EQUIPMENT'}</td>
             </tr>
         `;
     }).join('');
@@ -5390,30 +5395,35 @@ function generateFormat2HTML(items, meta) {
                     </div>
                 </div>
 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 24px;">
                     <thead style="display: table-header-group;">
-                        <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
-                            <th colspan="9" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+                        <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
+                            <th colspan="9" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
                         </tr>
                         <tr style="background-color: #f2f2f2; text-align: center;">
-                            <th style="border: 1px solid #000; padding: 6px;">ARTICLE</th>
-                            <th style="border: 1px solid #000; padding: 6px;">DESCRIPTION</th>
-                            <th style="border: 1px solid #000; padding: 6px;">PROPERTY NO.</th>
-                            <th style="border: 1px solid #000; padding: 6px;">COST</th>
-                            <th style="border: 1px solid #000; padding: 6px;">LOCATION</th>
-                            <th style="border: 1px solid #000; padding: 6px;">ACCOUNTABLE PERSON</th>
-                            <th style="border: 1px solid #000; padding: 6px;">CONDITION</th>
-                            <th style="border: 1px solid #000; padding: 6px;">REMARKS</th>
-                            <th style="border: 1px solid #000; padding: 6px;">ACCOUNT</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">ARTICLE</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">DESCRIPTION</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">PROPERTY NO.</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">COST</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">LOCATION</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">ACCOUNTABLE PERSON</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">CONDITION</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">REMARKS</th>
+                            <th style="border: 1px solid #000; padding: 6px 6px;">ACCOUNT</th>
                         </tr>
                     </thead>
+                    <tfoot style="display: table-footer-group;">
+                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
+                            <td colspan="9" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+                        </tr>
+                    </tfoot>
                     <tbody>
                         ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
                     </tbody>
                 </table>
             </div>
 
-            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: ${isSinglePage ? 'auto' : '35px'}; padding-top: 10px; page-break-inside: avoid; break-inside: avoid;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: ${isSinglePage ? 'auto' : '40px'}; padding-top: 15px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 22%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>

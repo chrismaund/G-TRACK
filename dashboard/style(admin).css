@@ -3223,23 +3223,22 @@ body.dark-theme-mode .btn-cancel:hover {
         display: table !important;
         width: 100% !important;
         border-collapse: collapse !important;
+        border-spacing: 0 !important;
+        border: none !important;
         table-layout: auto !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 24px !important;
     }
 
     #printArea thead {
         display: table-header-group !important;
     }
 
-    #printArea thead tr.print-page-spacer th {
-        height: 10mm !important;
-        border: none !important;
-        padding: 0 !important;
-        background: transparent !important;
-    }
-
     #printArea tbody {
         display: table-row-group !important;
+    }
+
+    #printArea tfoot {
+        display: table-footer-group !important;
     }
 
     #printArea tr {
@@ -3252,10 +3251,31 @@ body.dark-theme-mode .btn-cancel:hover {
     #printArea td {
         display: table-cell !important;
         border: 1px solid #000000 !important;
-        padding: 5px 6px !important;
-        font-size: 10px !important;
+        padding: 6px 8px !important;
+        font-size: 10.5px !important;
+        line-height: 1.35 !important;
         word-wrap: break-word !important;
         vertical-align: middle !important;
+    }
+
+    /* Force invisible spacers in thead and tfoot to have completely ZERO borders and outline */
+    #printArea table thead tr.print-page-spacer,
+    #printArea table thead tr.print-page-spacer th,
+    #printArea table thead tr.print-page-spacer td,
+    #printArea table tfoot tr.print-page-spacer-footer,
+    #printArea table tfoot tr.print-page-spacer-footer td,
+    #printArea table tfoot tr.print-page-spacer-footer th {
+        height: 12mm !important;
+        border: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
     }
 
     /* Anchors signatures with clean breathing space and avoids awkward split */
