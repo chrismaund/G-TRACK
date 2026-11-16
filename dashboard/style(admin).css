@@ -3182,7 +3182,7 @@ body.dark-theme-mode .btn-cancel:hover {
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
-        padding: 10mm 14mm 12mm 14mm !important;
+        padding: 8mm 12mm !important;
         box-sizing: border-box !important;
         background: #ffffff !important;
         color: #000000 !important;
@@ -3196,11 +3196,29 @@ body.dark-theme-mode .btn-cancel:hover {
         box-sizing: border-box !important;
     }
 
+    /* Single-page report: anchors signatures firmly to the bottom like a formal letter without creating page 2 */
+    .report-print-page.is-single-page {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: calc(100vh - 16mm) !important;
+        justify-content: space-between !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+
+    .report-print-page.is-single-page .report-table-wrapper {
+        flex: 1 0 auto !important;
+    }
+
+    .report-print-page.is-single-page .report-signatures {
+        margin-top: auto !important;
+    }
+
     .report-table-wrapper {
         width: 100% !important;
     }
 
-    /* Signatures block: formatted cleanly, page-break protected, dynamically aligned to bottom */
+    /* Signatures block: formatted cleanly, page-break protected */
     .report-signatures {
         display: flex !important;
         justify-content: space-between !important;
@@ -3217,7 +3235,7 @@ body.dark-theme-mode .btn-cancel:hover {
         border-spacing: 0 !important;
         border: none !important;
         table-layout: auto !important;
-        margin-bottom: 24px !important;
+        margin-bottom: 16px !important;
     }
 
     #printArea thead {

@@ -5214,10 +5214,17 @@ window.executePrintReport = executePrintReport;
 function adjustPrintSignatures() {
     const printArea = document.getElementById('printArea');
     if (!printArea) return;
+    const pageEl = printArea.querySelector('.report-print-page');
     const sigBlock = printArea.querySelector('.report-signatures');
     if (!sigBlock) return;
 
-    // Reset margin-top to measure natural layout
+    // For single page reports, CSS flexbox with margin-top: auto anchors to the bottom of Page 1 perfectly
+    if (pageEl && pageEl.classList.contains('is-single-page')) {
+        sigBlock.style.removeProperty('margin-top');
+        return;
+    }
+
+    // For multi-page reports:
     sigBlock.style.setProperty('margin-top', '0px', 'important');
 
     const tableWrapper = printArea.querySelector('.report-table-wrapper');
@@ -5225,54 +5232,29 @@ function adjustPrintSignatures() {
     const table = tableWrapper.querySelector('table');
     if (!table) return;
 
-    // Printable page height in Landscape A4 (210mm minus top/bottom padding)
-    // 210mm = ~794px @ 96dpi. Padding is 10mm top + 12mm bottom (~83px).
-    // Usable page height is ~710px. We use 695px with a safety buffer to prevent accidental blank pages.
-    const PAGE_HEIGHT = 695;
+    const page1Capacity = 640;
+    const continuationCapacity = 630;
+    const pageUsableHeight = 690;
+    const sigHeight = sigBlock.offsetHeight || 100;
 
-    // Measure header block above the table (title, LGU, officer details)
-    let headerHeight = 0;
-    const headerElements = tableWrapper.children;
-    for (let i = 0; i < headerElements.length; i++) {
-        const el = headerElements[i];
-        if (el === table) break;
-        headerHeight += el.offsetHeight || 0;
-        const style = window.getComputedStyle(el);
-        headerHeight += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+    const tableHeight = table.offsetHeight || 0;
+    const tableOffset = table.offsetTop || 0;
+    const totalContentHeight = tableOffset + tableHeight;
+
+    let rem = totalContentHeight - page1Capacity;
+    while (rem > continuationCapacity) {
+        rem -= continuationCapacity;
     }
 
-    const thead = table.querySelector('thead');
-    const theadHeight = thead ? thead.offsetHeight : 85;
+    const contentOnLastPage = rem > 0 ? rem : totalContentHeight;
+    const remainingGap = pageUsableHeight - contentOnLastPage - sigHeight;
 
-    const tbody = table.querySelector('tbody');
-    const rows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
-
-    const sigHeight = sigBlock.offsetHeight || 110;
-
-    // Simulate page-flow pagination
-    let currentPageHeight = headerHeight + theadHeight;
-
-    for (let i = 0; i < rows.length; i++) {
-        const rowHeight = rows[i].offsetHeight || 28;
-        if (currentPageHeight + rowHeight > PAGE_HEIGHT) {
-            // Row breaks to the next page; thead repeats at the top of continuation page
-            currentPageHeight = theadHeight + rowHeight;
-        } else {
-            currentPageHeight += rowHeight;
-        }
-    }
-
-    // currentPageHeight represents the total content height on the final page
-    // Space remaining on the final page before bottom margin:
-    const remainingSpace = PAGE_HEIGHT - currentPageHeight - sigHeight;
-
-    if (remainingSpace > 35) {
-        // Push signatures cleanly to the bottom of the last page
-        const dynamicMargin = Math.floor(remainingSpace - 15);
-        sigBlock.style.setProperty('margin-top', dynamicMargin + 'px', 'important');
+    // Apply safe margin so it drops down on the last page without ever triggering an extra blank page
+    if (remainingGap > 60) {
+        const safeMargin = Math.min(200, Math.floor(remainingGap - 50));
+        sigBlock.style.setProperty('margin-top', safeMargin + 'px', 'important');
     } else {
-        // If content fills almost the entire last page, use neat default margin
-        sigBlock.style.setProperty('margin-top', '30px', 'important');
+        sigBlock.style.setProperty('margin-top', '25px', 'important');
     }
 }
 
@@ -5308,8 +5290,44 @@ function generateFormat1HTML(items, meta) {
         `;
     });
 
+    const isSinglePage = items.length <= 13;
+
+    const theadHTML = `
+        <thead style="display: table-header-group;">
+            ${!isSinglePage ? `
+            <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
+                <th colspan="11" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+            </tr>` : ''}
+            <tr style="background-color: #ffffff; text-align: center;">
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 8%;">Date Acquired</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Property Number</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 6%;">Unit of Measure</th>
+                <th colspan="2" style="border: 1px solid #000; padding: 5px;">Balance per Card</th>
+                <th colspan="2" style="border: 1px solid #000; padding: 5px;">On Hand Per Count</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 9%;">Total Value</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 13%;">Accountable Person</th>
+                <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Remarks</th>
+            </tr>
+            <tr style="background-color: #ffffff; text-align: center;">
+                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
+                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
+                <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
+            </tr>
+        </thead>
+    `;
+
+    const tfootHTML = !isSinglePage ? `
+        <tfoot style="display: table-footer-group;">
+            <tr class="print-page-spacer-footer" style="height: 10mm; border: none !important;">
+                <td colspan="11" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+            </tr>
+        </tfoot>
+    ` : '';
+
     return `
-        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+        <div class="report-print-page ${isSinglePage ? 'is-single-page' : ''}" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
             <div class="report-table-wrapper" style="width: 100%;">
                 <div style="text-align: center; margin-bottom: 12px;">
                     <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
@@ -5349,33 +5367,8 @@ function generateFormat1HTML(items, meta) {
                 </div>
 
                 <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 16px; font-size: 11px;">
-                    <thead style="display: table-header-group;">
-                        <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
-                            <th colspan="11" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
-                        </tr>
-                        <tr style="background-color: #ffffff; text-align: center;">
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 8%;">Date Acquired</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Property Number</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 6%;">Unit of Measure</th>
-                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">Balance per Card</th>
-                            <th colspan="2" style="border: 1px solid #000; padding: 5px;">On Hand Per Count</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 9%;">Total Value</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 13%;">Accountable Person</th>
-                            <th rowspan="2" style="border: 1px solid #000; padding: 6px 6px; width: 11%;">Remarks</th>
-                        </tr>
-                        <tr style="background-color: #ffffff; text-align: center;">
-                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
-                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
-                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Quantity</th>
-                            <th style="border: 1px solid #000; padding: 5px; width: 5%;">Unit Value</th>
-                        </tr>
-                    </thead>
-                    <tfoot style="display: table-footer-group;">
-                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
-                            <td colspan="11" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
-                        </tr>
-                    </tfoot>
+                    ${theadHTML}
+                    ${tfootHTML}
                     <tbody>
                         ${rowsHTML.length ? rowsHTML : `<tr><td colspan="11" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
                         
@@ -5432,11 +5425,14 @@ function generateFormat2HTML(items, meta) {
         `;
     });
 
+    const isSinglePage = items.length <= 13;
+
     const theadHTML = `
         <thead style="display: table-header-group;">
-            <tr class="print-page-spacer" style="height: 12mm; border: none !important;">
-                <th colspan="9" style="height: 12mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
-            </tr>
+            ${!isSinglePage ? `
+            <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
+                <th colspan="9" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+            </tr>` : ''}
             <tr style="background-color: #f2f2f2; text-align: center;">
                 <th style="border: 1px solid #000; padding: 6px 6px;">ARTICLE</th>
                 <th style="border: 1px solid #000; padding: 6px 6px;">DESCRIPTION</th>
@@ -5451,8 +5447,16 @@ function generateFormat2HTML(items, meta) {
         </thead>
     `;
 
+    const tfootHTML = !isSinglePage ? `
+        <tfoot style="display: table-footer-group;">
+            <tr class="print-page-spacer-footer" style="height: 10mm; border: none !important;">
+                <td colspan="9" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+            </tr>
+        </tfoot>
+    ` : '';
+
     return `
-        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+        <div class="report-print-page ${isSinglePage ? 'is-single-page' : ''}" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
             <div class="report-table-wrapper" style="width: 100%;">
                 <div style="text-align: center; margin-bottom: 15px;">
                     <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
@@ -5486,11 +5490,7 @@ function generateFormat2HTML(items, meta) {
 
                 <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 20px;">
                     ${theadHTML}
-                    <tfoot style="display: table-footer-group;">
-                        <tr class="print-page-spacer-footer" style="height: 14mm; border: none !important;">
-                            <td colspan="9" style="height: 14mm; border: none !important; background: transparent !important; padding: 0 !important;"></td>
-                        </tr>
-                    </tfoot>
+                    ${tfootHTML}
                     <tbody>
                         ${rowsHTML.length ? rowsHTML : `<tr><td colspan="9" style="border: 1px solid #000; padding: 14px; text-align: center; font-style: italic;">No inventory records found for period: ${sanitizeText(meta.asOfDate)} - Present.</td></tr>`}
                     </tbody>
