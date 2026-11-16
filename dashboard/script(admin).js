@@ -5235,8 +5235,8 @@ function generateFormat1HTML(items, meta) {
     });
 
     return `
-        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 10px 15px; display: flex; flex-direction: column; min-height: 94vh; justify-content: space-between; box-sizing: border-box;">
-            <div class="report-table-wrapper" style="flex: 1 0 auto;">
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="width: 100%;">
                 <div style="text-align: center; margin-bottom: 12px;">
                     <h2 style="font-size: 13px; font-weight: bold; margin: 0 0 3px 0;">REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h2>
                     <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</h3>
@@ -5307,7 +5307,7 @@ function generateFormat1HTML(items, meta) {
                 </table>
             </div>
 
-            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 25px; page-break-inside: avoid; break-inside: avoid;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: 35px; padding-top: 10px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 30%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>
@@ -5351,8 +5351,8 @@ function generateFormat2HTML(items, meta) {
     }).join('');
 
     return `
-        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 10px 15px; display: flex; flex-direction: column; min-height: 94vh; justify-content: space-between; box-sizing: border-box;">
-            <div class="report-table-wrapper" style="flex: 1 0 auto;">
+        <div class="report-print-page" style="font-family: Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box;">
+            <div class="report-table-wrapper" style="width: 100%;">
                 <div style="text-align: center; margin-bottom: 15px;">
                     <h2 style="font-size: 14px; margin: 0 0 5px 0;">REPORT ON THE PHYSICAL COUNT OF EQUIPMENT, FURNITURES AND FIXTURES, AND OTHER PPE</h2>
                     <p style="margin: 0;"><strong>${sanitizeText(meta.accountGroup || 'OTHER PROPERTY, PLANT AND EQUIPMENT')}</strong><br>${sanitizeText(meta.asOfDate)}</p>
@@ -5403,7 +5403,7 @@ function generateFormat2HTML(items, meta) {
                 </table>
             </div>
 
-            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: auto; padding-top: 25px; page-break-inside: avoid; break-inside: avoid;">
+            <div class="report-signatures" style="display: flex; justify-content: space-between; text-align: center; font-size: 10px; margin-top: 35px; padding-top: 10px; page-break-inside: avoid; break-inside: avoid;">
                 <div style="width: 22%;">
                     <p style="margin: 0 0 30px 0; text-align: left; font-weight: bold;">PREPARED BY:</p>
                     <div style="border-bottom: 1px solid #000; padding-bottom: 2px; font-weight: bold;">ERROLD JAMES J. DIGUIDIG</div>

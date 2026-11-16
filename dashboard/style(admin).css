@@ -3162,7 +3162,7 @@ body.dark-theme-mode .btn-cancel:hover {
 
 @page {
     size: landscape;
-    margin: 0;
+    margin: 10mm 14mm 12mm 14mm;
 }
 
 @media print {
@@ -3177,29 +3177,26 @@ body.dark-theme-mode .btn-cancel:hover {
         background: #ffffff !important;
     }
 
-    /* Force #printArea to show cleanly without browser headers/footers */
+    /* Force #printArea to show cleanly */
     #printArea {
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
-        padding: 10mm 15mm 12mm 15mm !important;
-        box-sizing: border-box !important;
+        padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         font-family: Arial, sans-serif !important;
     }
 
-    /* Print page flex container ensuring full height and bottom-anchored signatures */
+    /* Print page container ensuring proper flow across multiple pages */
     .report-print-page {
-        display: flex !important;
-        flex-direction: column !important;
-        min-height: calc(100vh - 22mm) !important;
-        justify-content: space-between !important;
+        display: block !important;
+        width: 100% !important;
         box-sizing: border-box !important;
     }
 
     .report-table-wrapper {
-        flex: 1 0 auto !important;
+        width: 100% !important;
     }
 
     /* Reset table layout properties for printing */
@@ -3235,12 +3232,12 @@ body.dark-theme-mode .btn-cancel:hover {
         vertical-align: middle !important;
     }
 
-    /* Anchors signatures to the bottom and protects against being split */
+    /* Anchors signatures with clean breathing space and avoids awkward split */
     .report-signatures {
         display: flex !important;
         justify-content: space-between !important;
-        margin-top: auto !important;
-        padding-top: 25px !important;
+        margin-top: 35px !important;
+        padding-top: 10px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
