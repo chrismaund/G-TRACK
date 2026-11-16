@@ -3189,26 +3189,33 @@ body.dark-theme-mode .btn-cancel:hover {
         font-family: Arial, sans-serif !important;
     }
 
-    /* Print page container ensuring proper flow across multiple pages */
+    /* Print page container ensuring proper separation across multiple pages */
     .report-print-page {
         display: block !important;
         width: 100% !important;
         box-sizing: border-box !important;
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
-    /* Single-page report mode: anchors signatures directly to the bottom like a formal letter/report */
+    /* Last page of report (or single-page report): anchors signatures firmly to the bottom like a formal letter */
+    .report-print-page.is-last-page,
     .report-print-page.is-single-page {
         display: flex !important;
         flex-direction: column !important;
         min-height: calc(100vh - 22mm) !important;
         justify-content: space-between !important;
+        page-break-after: auto !important;
+        break-after: auto !important;
     }
 
+    .report-print-page.is-last-page .report-table-wrapper,
     .report-print-page.is-single-page .report-table-wrapper {
         flex: 1 0 auto !important;
         width: 100% !important;
     }
 
+    .report-print-page.is-last-page .report-signatures,
     .report-print-page.is-single-page .report-signatures {
         margin-top: auto !important;
         padding-top: 15px !important;
