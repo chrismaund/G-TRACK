@@ -5275,7 +5275,10 @@ function generateFormat1HTML(items, meta) {
                 </div>
 
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
-                    <thead>
+                    <thead style="display: table-header-group;">
+                        <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
+                            <th colspan="11" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+                        </tr>
                         <tr style="background-color: #ffffff; text-align: center;">
                             <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 22%;">ARTICLES/DESCRIPTION</th>
                             <th rowspan="2" style="border: 1px solid #000; padding: 5px 6px; width: 8%;">Date Acquired</th>
@@ -5384,7 +5387,10 @@ function generateFormat2HTML(items, meta) {
                 </div>
 
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <thead>
+                    <thead style="display: table-header-group;">
+                        <tr class="print-page-spacer" style="height: 10mm; border: none !important;">
+                            <th colspan="9" style="height: 10mm; border: none !important; background: transparent !important; padding: 0 !important;"></th>
+                        </tr>
                         <tr style="background-color: #f2f2f2; text-align: center;">
                             <th style="border: 1px solid #000; padding: 6px;">ARTICLE</th>
                             <th style="border: 1px solid #000; padding: 6px;">DESCRIPTION</th>
