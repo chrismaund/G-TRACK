@@ -696,4 +696,195 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // =========================================================================
+    // GOOGLE AUTHENTICATION SYSTEM
+    // =========================================================================
+    let pendingGoogleUser = null;
+
+    window.handleGoogleSignIn = async function() {
+        const googleBtn = document.getElementById('googleSignInBtn');
+        const errorMessage = document.getElementById('error-message');
+        const selectedRole = document.getElementById('selectedRole') ? document.getElementById('selectedRole').value : 'admin';
+
+        if (errorMessage) {
+            errorMessage.style.display = "none";
+            errorMessage.style.color = "";
+            errorMessage.style.borderColor = "";
+        }
+
+        const originalBtnHTML = googleBtn ? googleBtn.innerHTML : '';
+        if (googleBtn) {
+            googleBtn.disabled = true;
+            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Connecting to Google...</span>';
+        }
+
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+            if (!user) return;
+
+            // Fetch user profile from Firestore by UID
+            let docSnap = await db.collection("users").doc(user.uid).get();
+            let userData = null;
+
+            if (docSnap.exists) {
+                userData = docSnap.data();
+            } else {
+                // Check if there is an existing profile registered with this email
+                const userEmail = (user.email || '').toLowerCase().trim();
+                if (userEmail) {
+                    const emailSnap = await db.collection("users").where("email", "==", userEmail).get();
+                    if (!emailSnap.empty) {
+                        const matchedDoc = emailSnap.docs[0];
+                        userData = matchedDoc.data();
+                        // Mirror profile to user.uid so future lookups are instantaneous
+                        if (matchedDoc.id !== user.uid) {
+                            await db.collection("users").doc(user.uid).set({
+                                ...userData,
+                                uid: user.uid
+                            }, { merge: true });
+                        }
+                    }
+                }
+            }
+
+            // Case A: User profile does NOT exist yet (Brand new Google user)
+            if (!userData) {
+                pendingGoogleUser = user;
+                openGoogleDeptModal();
+                return;
+            }
+
+            // Case B: Existing User Profile Found - Route based on role & status
+            if (userData.role === 'admin') {
+                if (selectedRole === 'employee') {
+                    // Gracefully switch to Admin tab if account is an Administrator
+                    if (typeof window.switchRole === 'function') {
+                        window.switchRole('admin');
+                    }
+                }
+                sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
+                sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || user.displayName || 'Administrator');
+                sessionStorage.setItem('gtrack_user_role', 'admin');
+                window.location.replace("../dashboard/admin.html");
+                return;
+            } else {
+                // Account is an Employee
+                if (selectedRole === 'admin') {
+                    await auth.signOut();
+                    throw new Error("Unauthorized access. This account does not have Administrator privileges.");
+                }
+                if (userData.status === 'pending') {
+                    await auth.signOut();
+                    throw new Error("Your account is awaiting Admin authorization.");
+                }
+                if (userData.status === 'rejected') {
+                    await auth.signOut();
+                    throw new Error("Your registration request was rejected by an administrator.");
+                }
+
+                sessionStorage.setItem('gtrack_user_dept', userData.department || '');
+                sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || user.displayName || '');
+                sessionStorage.setItem('gtrack_user_role', 'employee');
+                window.location.replace("../dashboard/employee.html");
+                return;
+            }
+
+        } catch (error) {
+            // Silently ignore popup closed by user
+            if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                return;
+            }
+            if (errorMessage) {
+                errorMessage.textContent = formatAuthError(error);
+                errorMessage.style.display = "block";
+            }
+        } finally {
+            if (googleBtn) {
+                googleBtn.disabled = false;
+                googleBtn.innerHTML = originalBtnHTML;
+            }
+        }
+    };
+
+    window.openGoogleDeptModal = function() {
+        const modal = document.getElementById('google-dept-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.cancelGoogleDeptSelection = async function() {
+        const modal = document.getElementById('google-dept-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        pendingGoogleUser = null;
+        await auth.signOut();
+    };
+
+    // Handle New Google User Department Submission
+    const googleDeptForm = document.getElementById('googleDeptForm');
+    if (googleDeptForm) {
+        googleDeptForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!pendingGoogleUser) return;
+
+            const deptSelect = document.getElementById('googleUserDept');
+            const selectedDept = deptSelect ? deptSelect.value : '';
+            const submitBtn = document.getElementById('googleDeptSubmitBtn');
+            const errorMessage = document.getElementById('error-message');
+
+            if (!selectedDept) {
+                alert('Please select your municipal department.');
+                return;
+            }
+
+            const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Saving...</span>';
+            }
+
+            try {
+                // Write document to 'users' collection
+                await db.collection("users").doc(pendingGoogleUser.uid).set({
+                    uid: pendingGoogleUser.uid,
+                    fullName: pendingGoogleUser.displayName || 'Employee',
+                    email: (pendingGoogleUser.email || '').toLowerCase().trim(),
+                    department: selectedDept,
+                    role: "employee",
+                    status: "pending",
+                    photoURL: pendingGoogleUser.photoURL || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const modal = document.getElementById('google-dept-modal');
+                if (modal) modal.style.display = 'none';
+
+                await auth.signOut(); // Kept signed out until approved by admin
+
+                if (errorMessage) {
+                    errorMessage.innerHTML = `<i class="fas fa-check-circle" style="color: #4ade80; margin-right: 4px;"></i> Registration successful! Your account is awaiting Administrator approval.`;
+                    errorMessage.style.display = "block";
+                    errorMessage.style.borderColor = "rgba(74, 222, 128, 0.4)";
+                    errorMessage.style.color = "#4ade80";
+                }
+
+                pendingGoogleUser = null;
+            } catch (err) {
+                console.error("Error saving Google user department:", err);
+                alert("Could not complete registration: " + (err.message || err));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHTML;
+                }
+            }
+        });
+    }
 });
