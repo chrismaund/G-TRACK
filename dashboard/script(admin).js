@@ -1802,6 +1802,8 @@ window.openProfilesModal = function() {
         profilesModal.style.display = 'flex';
         setTimeout(() => {
             profilesModal.classList.add('open');
+            const searchInput = document.getElementById('profile-search-input');
+            if (searchInput) searchInput.focus();
         }, 10);
     }
 };
@@ -1875,8 +1877,212 @@ window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) 
     }
 };
 
-// Ensure Firestore listener runs smoothly
 // Ensure Firestore listener runs smoothly with date-ordered queue
+let allUserProfiles = [];
+let profileSearchQuery = '';
+let currentProfileTab = 'all';
+
+window.handleProfileSearch = function(query) {
+    profileSearchQuery = (query || '').toLowerCase().trim();
+    const clearBtn = document.getElementById('clear-profile-search-btn');
+    if (clearBtn) {
+        clearBtn.style.display = profileSearchQuery ? 'inline-flex' : 'none';
+    }
+    renderUserProfilesTable();
+};
+
+window.clearProfileSearch = function() {
+    profileSearchQuery = '';
+    const input = document.getElementById('profile-search-input');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    const clearBtn = document.getElementById('clear-profile-search-btn');
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    renderUserProfilesTable();
+};
+
+window.filterProfileTab = function(tabName, btn) {
+    currentProfileTab = tabName || 'all';
+    document.querySelectorAll('#profiles-modal .request-tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderUserProfilesTable();
+};
+
+function renderUserProfilesTable() {
+    const profilesTableBody = document.getElementById('profiles-table-body');
+    const statsEl = document.getElementById('profile-search-stats');
+    if (!profilesTableBody) return;
+
+    profilesTableBody.innerHTML = '';
+
+    if (!allUserProfiles || allUserProfiles.length === 0) {
+        profilesTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+                    <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
+                    No registered staff user accounts found.
+                </td>
+            </tr>
+        `;
+        if (statsEl) statsEl.textContent = '';
+        return;
+    }
+
+    // 1. Filter by active tab
+    let filtered = allUserProfiles.filter(item => {
+        if (currentProfileTab === 'all') return true;
+        if (currentProfileTab === 'admin') return item.role === 'admin';
+        if (currentProfileTab === 'employee') return item.role === 'employee';
+        if (currentProfileTab === 'approved') return item.status === 'approved';
+        if (currentProfileTab === 'pending') return item.status === 'pending';
+        if (currentProfileTab === 'rejected') return item.status === 'rejected';
+        return true;
+    });
+
+    // 2. Filter by search query
+    if (profileSearchQuery) {
+        filtered = filtered.filter(item => {
+            const user = item.data || {};
+            const name = (user.fullName || user.name || '').toLowerCase();
+            const email = (user.email || '').toLowerCase();
+            const dept = (user.department || '').toLowerCase();
+            const role = (item.role || '').toLowerCase();
+            const status = (item.status || '').toLowerCase();
+
+            return name.includes(profileSearchQuery) ||
+                   email.includes(profileSearchQuery) ||
+                   dept.includes(profileSearchQuery) ||
+                   role.includes(profileSearchQuery) ||
+                   status.includes(profileSearchQuery);
+        });
+    }
+
+    if (statsEl) {
+        if (profileSearchQuery || currentProfileTab !== 'all') {
+            statsEl.textContent = `Showing ${filtered.length} of ${allUserProfiles.length} accounts`;
+        } else {
+            statsEl.textContent = `${allUserProfiles.length} total staff accounts`;
+        }
+    }
+
+    if (filtered.length === 0) {
+        profilesTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding: 32px 16px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                    <i class="fas fa-search" style="font-size: 22px; display: block; margin-bottom: 10px; color: #475569;"></i>
+                    No staff accounts found matching <strong style="color: #f8fafc;">"${sanitizeText(profileSearchQuery || currentProfileTab)}"</strong>.
+                    <div style="margin-top: 10px;">
+                        <button type="button" onclick="clearProfileSearch(); filterProfileTab('all', document.getElementById('profile-tab-all'));" class="add-eq-btn secondary-btn" style="padding: 5px 12px; font-size: 11.5px; height: auto;">
+                            <i class="fas fa-undo"></i> Reset Filters
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    filtered.forEach((item) => {
+        const user = item.data;
+        const userId = item.id;
+        const userRole = item.role;
+        const userStatus = item.status;
+
+        // Role and Status styling
+        let roleBadge = '<span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 600;">Employee</span>';
+        if (userRole === 'admin') {
+            roleBadge = '<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Admin</span>';
+        }
+
+        let statusBadge = '<span style="background: rgba(234, 179, 8, 0.15); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Pending</span>';
+        if (userStatus === 'approved') statusBadge = '<span style="background: rgba(34, 197, 94, 0.15); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Approved</span>';
+        if (userStatus === 'rejected') statusBadge = '<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Rejected</span>';
+
+        // Format Date Created string with date and time
+        let dateCreatedStr = '-';
+        if (item.createdTime > 0) {
+            const d = new Date(item.createdTime);
+            dateCreatedStr = d.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            }) + ', ' + d.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        const deptName = user.department || 'N/A';
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.6)';
+        tr.innerHTML = `
+            <td style="padding: 12px 14px; font-weight: 600; color: #f8fafc;">
+                <i class="far fa-user" style="color: #94a3b8; margin-right: 6px;"></i> ${sanitizeText(user.fullName || user.name || 'N/A')} ${item.isSelf ? '<span style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 4px; margin-left: 4px;">(You)</span>' : ''}
+            </td>
+            <td style="padding: 12px 14px; color: #cbd5e1;">${sanitizeText(user.email || 'N/A')}</td>
+            <td style="padding: 12px 14px;">
+                <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+                    <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(deptName)}
+                </span>
+            </td>
+            <td style="padding: 12px 14px;">
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                    ${roleBadge}
+                    ${statusBadge}
+                </div>
+            </td>
+            <td style="padding: 12px 14px; color: #94a3b8; font-size: 11.5px;">
+                <i class="far fa-calendar-alt" style="margin-right: 4px; color: #64748b;"></i> ${sanitizeText(dateCreatedStr)}
+            </td>
+            <td style="padding: 12px 14px; text-align: center; position: relative;">
+                <button class="kebab-menu-btn" onclick="toggleKebabMenu(event, '${userId}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 165px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
+                    ${!item.isSelf ? `
+                        ${userRole === 'admin' ? `
+                            <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
+                                <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
+                            </button>
+                        ` : `
+                            <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
+                                <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
+                            </button>
+                        `}
+                        ${userStatus === 'pending' ? `
+                            <button onclick="updateUserStatus('${userId}', 'approved'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #4ade80; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                <i class="fas fa-check-circle" style="width: 14px;"></i> Approve
+                            </button>
+                            <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                <i class="fas fa-ban" style="width: 14px;"></i> Reject
+                            </button>
+                        ` : `
+                            <button onclick="updateUserStatus('${userId}', '${userStatus === 'approved' ? 'rejected' : 'approved'}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: ${userStatus === 'approved' ? '#fbbf24' : '#4ade80'}; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                                <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
+                            </button>
+                        `}
+                    ` : ''}
+                    <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                        <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
+                    </button>
+                    ${!item.isSelf ? `
+                        <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
+                        <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                            <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        `;
+        profilesTableBody.appendChild(tr);
+    });
+}
+
 function initUserProfilesListener() {
     if (typeof db === 'undefined') {
         console.error("Firestore instance 'db' is not initialized.");
@@ -1885,28 +2091,19 @@ function initUserProfilesListener() {
 
     // Listens to all user updates in real-time
     db.collection("users").onSnapshot((snapshot) => {
-        const profilesTableBody = document.getElementById('profiles-table-body');
         const pendingBadge = document.getElementById('pending-users-badge');
 
-        if (!profilesTableBody) {
-            console.error("Target tbody element 'profiles-table-body' was not found in the DOM.");
-            return;
-        }
-
-        profilesTableBody.innerHTML = '';
         let pendingCount = 0;
+        let countApproved = 0;
+        let countAdmin = 0;
+        let countRejected = 0;
+
         const employeeUsers = [];
         cachedStaffNames = [];
 
         if (snapshot.empty) {
-            profilesTableBody.innerHTML = `
-                <tr>
-                    <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
-                        No registered staff user accounts found.
-                    </td>
-                </tr>
-            `;
+            allUserProfiles = [];
+            renderUserProfilesTable();
             if (pendingBadge) pendingBadge.style.display = 'none';
             return;
         }
@@ -1924,6 +2121,9 @@ function initUserProfilesListener() {
             const userStatus = (user.status || 'pending').toLowerCase();
 
             if (userStatus === 'pending') pendingCount++;
+            if (userStatus === 'approved') countApproved++;
+            if (userStatus === 'rejected') countRejected++;
+            if (userRole === 'admin') countAdmin++;
 
             // Extract numeric timestamp for accurate date queue sorting
             let createdTime = 0;
@@ -1954,122 +2154,29 @@ function initUserProfilesListener() {
             });
         });
 
-        if (employeeUsers.length === 0) {
-            profilesTableBody.innerHTML = `
-                <tr>
-                    <td colspan="6" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <i class="far fa-user" style="font-size: 20px; display: block; margin-bottom: 8px; color: #475569;"></i>
-                        No registered staff user accounts found.
-                    </td>
-                </tr>
-            `;
-            if (pendingBadge) pendingBadge.style.display = 'none';
-            return;
-        }
-
         // Sort queue strictly based on Date Created (Newest accounts at the very top)
         employeeUsers.sort((a, b) => b.createdTime - a.createdTime);
+        allUserProfiles = employeeUsers;
 
-        employeeUsers.forEach((item) => {
-            const user = item.data;
-            const userId = item.id;
-            const userRole = item.role;
-            const userStatus = item.status;
+        // Update tab count badges
+        const tabCountAll = document.getElementById('profile-count-all');
+        const tabCountApproved = document.getElementById('profile-count-approved');
+        const tabCountPending = document.getElementById('profile-count-pending');
+        const tabCountAdmin = document.getElementById('profile-count-admin');
+        const tabCountRejected = document.getElementById('profile-count-rejected');
 
-            // Role and Status styling
-            let roleBadge = '<span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 600;">Employee</span>';
-            if (userRole === 'admin') {
-                roleBadge = '<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-user-shield"></i> Admin</span>';
-            }
-
-            let statusBadge = '<span style="background: rgba(234, 179, 8, 0.15); color: #fef08a; border: 1px solid rgba(234, 179, 8, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Pending</span>';
-            if (userStatus === 'approved') statusBadge = '<span style="background: rgba(34, 197, 94, 0.15); color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Approved</span>';
-            if (userStatus === 'rejected') statusBadge = '<span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">Rejected</span>';
-
-            // Format Date Created string with date and time
-            let dateCreatedStr = '-';
-            if (item.createdTime > 0) {
-                const d = new Date(item.createdTime);
-                dateCreatedStr = d.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                }) + ', ' + d.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-            }
-
-            const deptName = user.department || 'N/A';
-            const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.6)';
-            tr.innerHTML = `
-                <td style="padding: 12px 14px; font-weight: 600; color: #f8fafc;">
-                    <i class="far fa-user" style="color: #94a3b8; margin-right: 6px;"></i> ${sanitizeText(user.fullName || user.name || 'N/A')} ${item.isSelf ? '<span style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 4px; margin-left: 4px;">(You)</span>' : ''}
-                </td>
-                <td style="padding: 12px 14px; color: #cbd5e1;">${sanitizeText(user.email || 'N/A')}</td>
-                <td style="padding: 12px 14px;">
-                    <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
-                        <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(deptName)}
-                    </span>
-                <td style="padding: 12px 14px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-                        ${roleBadge}
-                        ${statusBadge}
-                    </div>
-                </td>
-                <td style="padding: 12px 14px; color: #94a3b8; font-size: 11.5px;">
-                    <i class="far fa-calendar-alt" style="margin-right: 4px; color: #64748b;"></i> ${sanitizeText(dateCreatedStr)}
-                </td>
-                <td style="padding: 12px 14px; text-align: center; position: relative;">
-                    <button class="kebab-menu-btn" onclick="toggleKebabMenu(event, '${userId}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Actions">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 165px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
-                        ${!item.isSelf ? `
-                            ${userRole === 'admin' ? `
-                                <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
-                                    <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
-                                </button>
-                            ` : `
-                                <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
-                                    <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
-                                </button>
-                            `}
-                            ${userStatus === 'pending' ? `
-                                <button onclick="updateUserStatus('${userId}', 'approved'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #4ade80; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                    <i class="fas fa-check-circle" style="width: 14px;"></i> Approve
-                                </button>
-                                <button onclick="updateUserStatus('${userId}', 'rejected'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                    <i class="fas fa-ban" style="width: 14px;"></i> Reject
-                                </button>
-                            ` : `
-                                <button onclick="updateUserStatus('${userId}', '${userStatus === 'approved' ? 'rejected' : 'approved'}'); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: ${userStatus === 'approved' ? '#fbbf24' : '#4ade80'}; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                    <i class="fas ${userStatus === 'approved' ? 'fa-ban' : 'fa-check-circle'}" style="width: 14px;"></i> ${userStatus === 'approved' ? 'Revoke Approval' : 'Approve'}
-                                </button>
-                            `}
-                        ` : ''}
-                        <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                            <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
-                        </button>
-                        ${!item.isSelf ? `
-                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
-                            <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
-                                <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
-            `;
-            profilesTableBody.appendChild(tr);
-        });
+        if (tabCountAll) tabCountAll.textContent = allUserProfiles.length;
+        if (tabCountApproved) tabCountApproved.textContent = countApproved;
+        if (tabCountPending) tabCountPending.textContent = pendingCount;
+        if (tabCountAdmin) tabCountAdmin.textContent = countAdmin;
+        if (tabCountRejected) tabCountRejected.textContent = countRejected;
 
         if (pendingBadge) {
             pendingBadge.textContent = '';
             pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
         }
 
+        renderUserProfilesTable();
         populateAddModalSuggestions();
     }, (error) => {
         console.error("Firestore Listener Error:", error.message);
