@@ -1921,15 +1921,11 @@ function initRecycleBinListener() {
         // Sort descending by deletedAt (newest deleted items at the top)
         allRecycledItems.sort((a, b) => (Number(b.deletedAt) || 0) - (Number(a.deletedAt) || 0));
 
-        // Update badge counter in sidebar
+        // Update notification indicator dot in sidebar (matches system style)
         const badge = document.getElementById('recycle-bin-badge');
         if (badge) {
-            if (allRecycledItems.length > 0) {
-                badge.textContent = allRecycledItems.length > 99 ? '99+' : allRecycledItems.length;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
+            badge.textContent = '';
+            badge.style.display = allRecycledItems.length > 0 ? 'inline-block' : 'none';
         }
 
         renderRecycledTable();
@@ -2068,13 +2064,17 @@ function renderRecycledTable() {
                     <i class="far fa-clock"></i> ${dateStr}
                 </div>
             </td>
-            <td style="padding: 12px 14px; text-align: center;">
-                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
-                    <button type="button" onclick="restoreRecycledItem('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 5px 10px; font-size: 11px; height: auto;" title="Restore this record back to active masterlist">
-                        <i class="fas fa-undo"></i> Restore
+            <td style="padding: 12px 14px; text-align: center; position: relative;">
+                <button class="kebab-menu-btn" onclick="toggleKebabMenu(event, '${item.id}')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div id="kebab-menu-${item.id}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 155px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
+                    <button onclick="restoreRecycledItem('${item.id}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Restore this property record back to masterlist">
+                        <i class="fas fa-undo" style="width: 14px;"></i> Restore Record
                     </button>
-                    <button type="button" onclick="purgeRecycledItem('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 5px 8px; font-size: 11px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Permanently delete forever">
-                        <i class="fas fa-trash-alt"></i>
+                    <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
+                    <button onclick="purgeRecycledItem('${item.id}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Permanently delete forever">
+                        <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Forever
                     </button>
                 </div>
             </td>

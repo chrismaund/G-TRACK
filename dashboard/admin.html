@@ -71,7 +71,7 @@
         <!-- RECYCLE BIN / ARCHIVE BUTTON -->
         <button id="sidebar-recycle-bin-btn" class="sidebar-link-btn" title="Recycle Bin (Backup Recovery)" onclick="openRecycleBinModal()">
             <i class="fas fa-trash-restore"></i> <span class="sidebar-text">Recycle Bin</span>
-            <span id="recycle-bin-badge" class="tab-badge" style="display: none; margin-left: auto; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 700;">0</span>
+            <span id="recycle-bin-badge" class="sidebar-notif-dot" style="display: none;"></span>
         </button>
         <hr class="sidebar-divider">
 
@@ -1334,30 +1334,29 @@
     <!-- Search & Actions Toolbar -->
     <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-shrink: 0;">
       <!-- Search Input Bar -->
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <div style="position: relative; flex: 1; display: flex; align-items: center;">
-          <i class="fas fa-search" style="position: absolute; left: 14px; color: #64748b; font-size: 13px; pointer-events: none;"></i>
-          <input type="text" id="recycle-search-input" placeholder="Search deleted records by article, property no, or department..." 
-                 oninput="handleRecycleSearch(this.value)"
-                 style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; padding: 9px 36px 9px 38px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;"
-                 onfocus="this.style.borderColor='#38bdf8'; this.style.boxShadow='0 0 0 2px rgba(56, 189, 248, 0.2)';"
-                 onblur="this.style.borderColor='#334155'; this.style.boxShadow='none';">
-          <button type="button" id="clear-recycle-search-btn" onclick="clearRecycleSearch()" 
-                  style="display: none; position: absolute; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; transition: color 0.15s;" 
-                  onmouseover="this.style.color='#f87171';" onmouseout="this.style.color='#94a3b8';" title="Clear search">
-            <i class="fas fa-times-circle"></i>
-          </button>
-        </div>
-
-        <button type="button" id="empty-recycle-bin-btn" onclick="emptyRecycleBin(event)" class="add-eq-btn secondary-btn" style="padding: 9px 14px; font-size: 12px; height: auto; border-color: rgba(239, 68, 68, 0.35); color: #fca5a5; white-space: nowrap; flex-shrink: 0;" title="Permanently clear all deleted backups">
-          <i class="fas fa-trash-alt"></i> Empty Bin
+      <div style="position: relative; width: 100%; display: flex; align-items: center;">
+        <i class="fas fa-search" style="position: absolute; left: 14px; color: #64748b; font-size: 13px; pointer-events: none;"></i>
+        <input type="text" id="recycle-search-input" placeholder="Search deleted records by article, property no, or department..." 
+               oninput="handleRecycleSearch(this.value)"
+               style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 12.5px; padding: 9px 36px 9px 38px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;"
+               onfocus="this.style.borderColor='#38bdf8'; this.style.boxShadow='0 0 0 2px rgba(56, 189, 248, 0.2)';"
+               onblur="this.style.borderColor='#334155'; this.style.boxShadow='none';">
+        <button type="button" id="clear-recycle-search-btn" onclick="clearRecycleSearch()" 
+                style="display: none; position: absolute; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; transition: color 0.15s;" 
+                onmouseover="this.style.color='#f87171';" onmouseout="this.style.color='#94a3b8';" title="Clear search">
+          <i class="fas fa-times-circle"></i>
         </button>
       </div>
 
-      <!-- Stats Bar -->
-      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #94a3b8;">
-        <span id="recycle-search-stats">0 backup records</span>
-        <span style="font-size: 11px; color: #64748b;"><i class="fas fa-shield-alt text-cyan"></i> Safely protected in cloud backup</span>
+      <!-- Stats Bar & Clear Link -->
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="recycle-search-stats" style="color: #94a3b8;">0 backup records</span>
+          <span style="font-size: 11px; color: #64748b;">• <i class="fas fa-shield-alt text-cyan"></i> Protected backup archive</span>
+        </div>
+        <button type="button" id="empty-recycle-bin-btn" onclick="emptyRecycleBin(event)" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; transition: color 0.2s; padding: 2px 4px;" onmouseover="this.style.color='#f87171';" onmouseout="this.style.color='#94a3b8';" title="Permanently clear all deleted backups">
+          <i class="fas fa-trash-alt"></i> Empty Bin
+        </button>
       </div>
     </div>
 
@@ -1372,7 +1371,7 @@
               <th style="padding: 12px 14px;">Department / Location</th>
               <th style="padding: 12px 14px;">Value</th>
               <th style="padding: 12px 14px;">Deleted By &amp; Date</th>
-              <th style="padding: 12px 14px; text-align: center; width: 140px;">Actions</th>
+              <th style="padding: 12px 14px; text-align: center; width: 60px;">Action</th>
             </tr>
           </thead>
           <tbody id="recycle-table-body">
@@ -1686,7 +1685,7 @@
     <!-- ExcelJS for Protected & Auto-Formatted Official Spreadsheet Downloads -->
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
-    <script src="script(admin).js?v=20261118_1"></script>
+    <script src="script(admin).js?v=20261118_2"></script>
     
 </body>
 </html>
