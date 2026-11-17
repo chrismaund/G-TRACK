@@ -375,70 +375,12 @@
         </div>
     </div>
 
-    <!-- FIRST-TIME GOOGLE USER DEPARTMENT SELECTION MODAL -->
-    <div id="google-dept-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
-        <div style="background: #111a2e; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; width: 100%; max-width: 440px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); box-sizing: border-box;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; border: 1px solid rgba(56, 189, 248, 0.3);">
-                    <i class="fas fa-building"></i>
-                </div>
-                <h3 style="margin: 0 0 6px 0; font-size: 17px; font-weight: 700; color: #ffffff;">Select Your Department</h3>
-                <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.4;">Welcome! To complete your G-TRACK profile, please select your assigned municipal office.</p>
-            </div>
-
-            <form id="googleDeptForm">
-                <div class="input-group" style="margin-bottom: 18px;">
-                    <label for="googleUserDept" style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Municipal Department</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-building input-icon"></i>
-                        <select id="googleUserDept" required style="width: 100%; background: transparent; border: none; color: #f8fafc; font-size: 13px; font-family: inherit; outline: none; padding: 12px 12px 12px 38px; cursor: pointer;">
-                            <option value="" disabled selected style="background: #0f172a; color: #94a3b8;">Choose Department / Office</option>
-                            <option value="ACCOUNTING" style="background: #0f172a; color: #fff;">Municipal Accounting Office (ACCOUNTING)</option>
-                            <option value="AGRI" style="background: #0f172a; color: #fff;">Municipal Agriculture Office (AGRI)</option>
-                            <option value="ASSESSOR" style="background: #0f172a; color: #fff;">Municipal Assessor's Office (ASSESSOR)</option>
-                            <option value="BFP" style="background: #0f172a; color: #fff;">Bureau of Fire Protection (BFP)</option>
-                            <option value="CCTV/IT" style="background: #0f172a; color: #fff;">CCTV / IT Unit (CCTV/IT)</option>
-                            <option value="COMELEC" style="background: #0f172a; color: #fff;">Commission on Elections (COMELEC)</option>
-                            <option value="DILG" style="background: #0f172a; color: #fff;">Dept. of the Interior &amp; Local Govt. (DILG)</option>
-                            <option value="GSO" style="background: #0f172a; color: #fff;">General Services Office (GSO)</option>
-                            <option value="HRMO" style="background: #0f172a; color: #fff;">Human Resource &amp; Management Office (HRMO)</option>
-                            <option value="LIGA" style="background: #0f172a; color: #fff;">Liga ng mga Barangay (LIGA)</option>
-                            <option value="MBO" style="background: #0f172a; color: #fff;">Municipal Budget Office (MBO)</option>
-                            <option value="MCR" style="background: #0f172a; color: #fff;">Municipal Civil Registry (MCR)</option>
-                            <option value="MDRRMO" style="background: #0f172a; color: #fff;">MDRRMO / Rescue (MDRRMO)</option>
-                            <option value="MHO" style="background: #0f172a; color: #fff;">Municipal Health Office (MHO)</option>
-                            <option value="MAYOR" style="background: #0f172a; color: #fff;">Office of the Municipal Mayor (MAYOR)</option>
-                            <option value="MPDO" style="background: #0f172a; color: #fff;">Municipal Planning &amp; Devt. Office (MPDO)</option>
-                            <option value="MSWDO" style="background: #0f172a; color: #fff;">MSWDO (Social Welfare)</option>
-                            <option value="MTO" style="background: #0f172a; color: #fff;">Municipal Treasury Office (MTO)</option>
-                            <option value="OSCA" style="background: #0f172a; color: #fff;">Office of Senior Citizens Affairs (OSCA)</option>
-                            <option value="PESO" style="background: #0f172a; color: #fff;">Public Employment Service Office (PESO)</option>
-                            <option value="PNP" style="background: #0f172a; color: #fff;">Philippine National Police (PNP)</option>
-                            <option value="SB" style="background: #0f172a; color: #fff;">Sangguniang Bayan (SB)</option>
-                            <option value="TOURISM" style="background: #0f172a; color: #fff;">Municipal Tourism Office (TOURISM)</option>
-                            <option value="WATERWORKS" style="background: #0f172a; color: #fff;">Municipal Waterworks System (WATERWORKS)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 14px;">
-                    <button type="button" onclick="cancelGoogleDeptSelection()" class="sign-in-btn" style="flex: 1; background: #334155; border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; margin: 0; padding: 11px;">
-                        Cancel
-                    </button>
-                    <button type="submit" id="googleDeptSubmitBtn" class="sign-in-btn" style="flex: 2; margin: 0; padding: 11px;">
-                        <span>Complete Setup</span> <i class="fas fa-check"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Firebase Core App (v8) -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 
 <!-- Firebase Auth & Firestore -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="script.js?v=20261118_3"></script>
+<script src="script.js?v=20261118_4"></script>
 </body>
 </html>

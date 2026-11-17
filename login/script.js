@@ -700,8 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // GOOGLE AUTHENTICATION SYSTEM
     // =========================================================================
-    let pendingGoogleUser = null;
-
     window.handleGoogleSignIn = async function() {
         const googleBtn = document.getElementById('googleSignInBtn');
         const errorMessage = document.getElementById('error-message');
@@ -769,10 +767,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Case A: User profile does NOT exist yet (Brand new Google user)
+            // Case A: User profile does NOT exist in Firestore (Not registered in G-TRACK)
             if (!userData) {
-                pendingGoogleUser = user;
-                openGoogleDeptModal();
+                await auth.signOut();
+                const userEmail = (user && user.email) ? user.email : 'this Google account';
+                if (errorMessage) {
+                    errorMessage.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> No registered account found with <strong>${userEmail}</strong>. This email is not in the system.`;
+                    errorMessage.style.display = "block";
+                    errorMessage.style.color = "#f87171";
+                    errorMessage.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                }
                 return;
             }
 
@@ -827,81 +831,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-
-    window.openGoogleDeptModal = function() {
-        const modal = document.getElementById('google-dept-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    };
-
-    window.cancelGoogleDeptSelection = async function() {
-        const modal = document.getElementById('google-dept-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-        pendingGoogleUser = null;
-        await auth.signOut();
-    };
-
-    // Handle New Google User Department Submission
-    const googleDeptForm = document.getElementById('googleDeptForm');
-    if (googleDeptForm) {
-        googleDeptForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (!pendingGoogleUser) return;
-
-            const deptSelect = document.getElementById('googleUserDept');
-            const selectedDept = deptSelect ? deptSelect.value : '';
-            const submitBtn = document.getElementById('googleDeptSubmitBtn');
-            const errorMessage = document.getElementById('error-message');
-
-            if (!selectedDept) {
-                alert('Please select your municipal department.');
-                return;
-            }
-
-            const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Saving...</span>';
-            }
-
-            try {
-                // Write document to 'users' collection
-                await db.collection("users").doc(pendingGoogleUser.uid).set({
-                    uid: pendingGoogleUser.uid,
-                    fullName: pendingGoogleUser.displayName || 'Employee',
-                    email: (pendingGoogleUser.email || '').toLowerCase().trim(),
-                    department: selectedDept,
-                    role: "employee",
-                    status: "pending",
-                    photoURL: pendingGoogleUser.photoURL || '',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                const modal = document.getElementById('google-dept-modal');
-                if (modal) modal.style.display = 'none';
-
-                await auth.signOut(); // Kept signed out until approved by admin
-
-                if (errorMessage) {
-                    errorMessage.innerHTML = `<i class="fas fa-check-circle" style="color: #4ade80; margin-right: 4px;"></i> Registration successful! Your account is awaiting Administrator approval.`;
-                    errorMessage.style.display = "block";
-                    errorMessage.style.borderColor = "rgba(74, 222, 128, 0.4)";
-                    errorMessage.style.color = "#4ade80";
-                }
-
-                pendingGoogleUser = null;
-            } catch (err) {
-                console.error("Error saving Google user department:", err);
-                alert("Could not complete registration: " + (err.message || err));
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHTML;
-                }
-            }
-        });
-    }
 });
