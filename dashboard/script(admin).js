@@ -1191,7 +1191,32 @@ window.executeBatchDelete = async function() {
     const confirmBtn = document.getElementById('confirm-batch-delete-btn');
     if (confirmBtn) {
         confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...';
+    }
+
+    const adminUser = auth.currentUser ? (auth.currentUser.email || 'Admin') : 'Admin';
+    const deleteTime = Date.now();
+
+    // 1. Safely back up items into Firebase recycledInventory first
+    try {
+        const backupPromises = idsToDelete.map(async (id) => {
+            let item = inventoryData.find(i => String(i.id) === String(id));
+            if (!item) {
+                const snap = await database.ref(`inventoryData/${id}`).once('value');
+                item = snap.val();
+            }
+            if (item) {
+                await database.ref(`recycledInventory/${id}`).set({
+                    ...item,
+                    id: String(id),
+                    deletedAt: deleteTime,
+                    deletedBy: adminUser
+                });
+            }
+        });
+        await Promise.all(backupPromises);
+    } catch(bErr) {
+        console.warn("Could not save backup to recycledInventory:", bErr);
     }
 
     if (supabaseClient) {
@@ -1211,6 +1236,9 @@ window.executeBatchDelete = async function() {
         closeDeletePopover();
         exitDeleteSelectionMode();
         if (supabaseClient) fetchInventoryFromSupabase();
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Moved to Recycle Bin', `${idsToDelete.length} item(s) safely moved to Recycle Bin.`);
+        }
     }).catch(err => {
         console.error("Error deleting items from Firebase:", err);
         closeDeletePopover();
@@ -1322,6 +1350,8 @@ window.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
     const profilesModal = document.getElementById('profiles-modal');
     if (profilesModal && e.target === profilesModal) closeProfilesModal();
+    const recycleModal = document.getElementById('recycle-bin-modal');
+    if (recycleModal && e.target === recycleModal) closeRecycleBinModal();
     const adminProfileModal = document.getElementById('admin-profile-modal');
     if (adminProfileModal && e.target === adminProfileModal) closeAdminProfileModal();
     const requestsModal = document.getElementById('requests-modal');
@@ -1347,6 +1377,7 @@ document.addEventListener('keydown', (e) => {
         closeModal();
         if (typeof window.closeAdminProfileModal === 'function') window.closeAdminProfileModal();
         if (typeof window.closeProfilesModal === 'function') window.closeProfilesModal();
+        if (typeof window.closeRecycleBinModal === 'function') window.closeRecycleBinModal();
         if (typeof window.closeRequestsModal === 'function') window.closeRequestsModal();
         if (typeof window.closeAdminReassignModal === 'function') window.closeAdminReassignModal();
         if (typeof window.closeMetricModal === 'function') window.closeMetricModal();
@@ -1828,6 +1859,350 @@ if (profilesDrawerModal) {
         }
     });
 }
+
+// =========================================================================
+// PROPERTY ARCHIVE & RECOVERY (RECYCLE BIN)
+// =========================================================================
+let allRecycledItems = [];
+let recycleSearchQuery = '';
+
+window.openRecycleBinModal = function() {
+    if (typeof closeSidebarNavMenu === 'function') {
+        closeSidebarNavMenu();
+    }
+    const modal = document.getElementById('recycle-bin-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('open');
+            const searchInput = document.getElementById('recycle-search-input');
+            if (searchInput) searchInput.focus();
+        }, 10);
+    }
+};
+
+window.closeRecycleBinModal = function() {
+    const modal = document.getElementById('recycle-bin-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }, 300);
+    }
+};
+
+const recycleDrawerModal = document.getElementById('recycle-bin-modal');
+if (recycleDrawerModal) {
+    recycleDrawerModal.addEventListener('click', (e) => {
+        if (e.target === recycleDrawerModal) {
+            window.closeRecycleBinModal();
+        }
+    });
+}
+
+function initRecycleBinListener() {
+    database.ref('recycledInventory').on('value', (snapshot) => {
+        allRecycledItems = [];
+        const data = snapshot.val();
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                if (item) {
+                    allRecycledItems.push({
+                        ...item,
+                        id: item.id || key
+                    });
+                }
+            });
+        }
+
+        // Sort descending by deletedAt (newest deleted items at the top)
+        allRecycledItems.sort((a, b) => (Number(b.deletedAt) || 0) - (Number(a.deletedAt) || 0));
+
+        // Update badge counter in sidebar
+        const badge = document.getElementById('recycle-bin-badge');
+        if (badge) {
+            if (allRecycledItems.length > 0) {
+                badge.textContent = allRecycledItems.length > 99 ? '99+' : allRecycledItems.length;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        renderRecycledTable();
+    });
+}
+
+window.handleRecycleSearch = function(query) {
+    recycleSearchQuery = (query || '').toLowerCase().trim();
+    const clearBtn = document.getElementById('clear-recycle-search-btn');
+    if (clearBtn) {
+        clearBtn.style.display = recycleSearchQuery ? 'inline-flex' : 'none';
+    }
+    renderRecycledTable();
+};
+
+window.clearRecycleSearch = function() {
+    recycleSearchQuery = '';
+    const input = document.getElementById('recycle-search-input');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    const clearBtn = document.getElementById('clear-recycle-search-btn');
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    renderRecycledTable();
+};
+
+function renderRecycledTable() {
+    const tbody = document.getElementById('recycle-table-body');
+    const statsEl = document.getElementById('recycle-search-stats');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!allRecycledItems || allRecycledItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding: 36px 16px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px auto;">
+                        <i class="fas fa-trash-restore"></i>
+                    </div>
+                    <strong style="color: #f8fafc; font-size: 13px; display: block; margin-bottom: 4px;">Recycle Bin is Empty</strong>
+                    No deleted property records currently in backup archive.
+                </td>
+            </tr>
+        `;
+        if (statsEl) statsEl.textContent = '0 backup records';
+        return;
+    }
+
+    let filtered = allRecycledItems;
+    if (recycleSearchQuery) {
+        filtered = filtered.filter(item => {
+            const article = (item.article || '').toLowerCase();
+            const desc = (item.description || '').toLowerCase();
+            const propNo = (item.propertyNo || '').toLowerCase();
+            const dept = (item.location || '').toLowerCase();
+            const delBy = (item.deletedBy || '').toLowerCase();
+
+            return article.includes(recycleSearchQuery) ||
+                   desc.includes(recycleSearchQuery) ||
+                   propNo.includes(recycleSearchQuery) ||
+                   dept.includes(recycleSearchQuery) ||
+                   delBy.includes(recycleSearchQuery);
+        });
+    }
+
+    if (statsEl) {
+        if (recycleSearchQuery) {
+            statsEl.textContent = `Showing ${filtered.length} of ${allRecycledItems.length} records`;
+        } else {
+            statsEl.textContent = `${allRecycledItems.length} backup record(s) in bin`;
+        }
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding: 32px 16px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                    <i class="fas fa-search" style="font-size: 22px; display: block; margin-bottom: 10px; color: #475569;"></i>
+                    No archived records found matching <strong style="color: #f8fafc;">"${sanitizeText(recycleSearchQuery)}"</strong>.
+                    <div style="margin-top: 10px;">
+                        <button type="button" onclick="clearRecycleSearch()" class="add-eq-btn secondary-btn" style="padding: 5px 12px; font-size: 11.5px; height: auto;">
+                            <i class="fas fa-undo"></i> Clear Search
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    filtered.forEach(item => {
+        let dateStr = '-';
+        if (item.deletedAt) {
+            const d = new Date(Number(item.deletedAt));
+            dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' +
+                      d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        const unitCostNum = parseSafeFloat(item.unitCost || item.unitValue, 0);
+        const qtyNum = parseSafeFloat(item.qty || item.quantity, 1);
+        const totalValNum = parseSafeFloat(item.totalCost || item.totalValue, unitCostNum * qtyNum);
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.6)';
+        tr.innerHTML = `
+            <td style="padding: 12px 14px; color: #f8fafc; font-weight: 600; max-width: 220px;">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <i class="fas fa-box" style="color: #64748b; margin-top: 3px; font-size: 12px;"></i>
+                    <div>
+                        <div>${sanitizeText(item.article || 'Property Item')}</div>
+                        ${item.description ? `<div style="font-size: 11px; color: #94a3b8; font-weight: normal; margin-top: 2px;">${sanitizeText(item.description)}</div>` : ''}
+                    </div>
+                </div>
+            </td>
+            <td style="padding: 12px 14px; color: #cbd5e1; font-family: monospace; font-size: 11.5px;">
+                ${sanitizeText(item.propertyNo || 'Unassigned')}
+            </td>
+            <td style="padding: 12px 14px;">
+                <span style="display: inline-flex; align-items: center; gap: 5px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+                    <i class="fas fa-building" style="font-size: 10px;"></i> ${sanitizeText(item.location || 'GSO')}
+                </span>
+            </td>
+            <td style="padding: 12px 14px; color: #cbd5e1;">
+                <div style="font-weight: 600; color: #f8fafc;">₱${totalValNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div style="font-size: 10.5px; color: #94a3b8;">${sanitizeText(item.qty || item.quantity || 1)} ${sanitizeText(item.unit || 'unit')}</div>
+            </td>
+            <td style="padding: 12px 14px; font-size: 11px; color: #94a3b8;">
+                <div style="color: #cbd5e1; display: flex; align-items: center; gap: 4px;">
+                    <i class="far fa-user" style="color: #64748b;"></i> ${sanitizeText(item.deletedBy || 'Admin')}
+                </div>
+                <div style="color: #64748b; margin-top: 2px;">
+                    <i class="far fa-clock"></i> ${dateStr}
+                </div>
+            </td>
+            <td style="padding: 12px 14px; text-align: center;">
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                    <button type="button" onclick="restoreRecycledItem('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 5px 10px; font-size: 11px; height: auto;" title="Restore this record back to active masterlist">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    <button type="button" onclick="purgeRecycledItem('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 5px 8px; font-size: 11px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Permanently delete forever">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.restoreRecycledItem = async function(id, triggerBtn = null) {
+    if (!id) return;
+    const ok = await window.showGTrackConfirm(
+        "Restore Property Item?",
+        "Restore this property record back to the active inventory masterlist?",
+        "Restore Record",
+        "Cancel",
+        false,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        const snap = await database.ref(`recycledInventory/${id}`).once('value');
+        if (!snap.exists()) {
+            if (typeof window.showGTrackToast === 'function') {
+                window.showGTrackToast('error', 'Item Not Found', 'Record could not be found in Recycle Bin.');
+            }
+            return;
+        }
+
+        const data = snap.val();
+        const restoredItem = { ...data };
+        delete restoredItem.deletedAt;
+        delete restoredItem.deletedBy;
+
+        // 1. Put back to active Firebase Realtime DB
+        await database.ref(`inventoryData/${id}`).set(restoredItem);
+
+        // 2. Put back to Supabase if connected
+        if (supabaseClient) {
+            try {
+                if (typeof mapInventoryItemToSupabase === 'function') {
+                    const supaPayload = mapInventoryItemToSupabase(restoredItem);
+                    supaPayload.id = id;
+                    await supabaseClient.from('inventory').upsert([supaPayload]);
+                }
+            } catch (supaErr) {
+                console.warn("Supabase restore sync note:", supaErr);
+            }
+        }
+
+        // 3. Remove from recycledInventory
+        await database.ref(`recycledInventory/${id}`).remove();
+
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('success', 'Item Restored', `${restoredItem.article || 'Property record'} has been restored to the masterlist.`);
+        }
+        if (supabaseClient && typeof fetchInventoryFromSupabase === 'function') {
+            fetchInventoryFromSupabase();
+        }
+
+    } catch (err) {
+        console.error("Error restoring recycled item:", err);
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Restore Failed', err.message || 'Could not restore item.');
+        }
+    }
+};
+
+window.purgeRecycledItem = async function(id, triggerBtn = null) {
+    if (!id) return;
+    const ok = await window.showGTrackConfirm(
+        "Permanently Delete Record?",
+        "Are you sure you want to permanently erase this archived record? This action cannot be undone.",
+        "Delete Forever",
+        "Cancel",
+        true,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        await database.ref(`recycledInventory/${id}`).remove();
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Record Purged', 'Item permanently removed from Recycle Bin.');
+        }
+    } catch (err) {
+        console.error("Error purging item:", err);
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Purge Failed', err.message || 'Could not delete item.');
+        }
+    }
+};
+
+window.emptyRecycleBin = async function(event) {
+    if (!allRecycledItems || allRecycledItems.length === 0) {
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Recycle Bin Empty', 'There are no deleted records in the Recycle Bin.');
+        }
+        return;
+    }
+
+    const triggerBtn = event ? (event.currentTarget || event.target) : null;
+    const ok = await window.showGTrackConfirm(
+        "Empty Entire Recycle Bin?",
+        `Are you sure you want to permanently delete all ${allRecycledItems.length} backup records? This action cannot be undone.`,
+        "Empty All Records",
+        "Cancel",
+        true,
+        triggerBtn
+    );
+    if (!ok) return;
+
+    try {
+        await database.ref('recycledInventory').remove();
+        allRecycledItems = [];
+        renderRecycledTable();
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('info', 'Recycle Bin Emptied', 'All archived records have been permanently cleared.');
+        }
+    } catch (err) {
+        console.error("Error emptying recycle bin:", err);
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Error', err.message || 'Could not empty Recycle Bin.');
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', initRecycleBinListener);
 
 // Permanently Delete User Account from Firestore
 window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) {

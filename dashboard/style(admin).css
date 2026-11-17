@@ -1244,8 +1244,9 @@ body,
     display: inline-block;
 }
 
-/* User Profiles & Authorizations Left-Side Sliding Drawer (Admin) */
-#profiles-modal.modal-overlay { 
+/* User Profiles, Recycle Bin & Authorizations Left-Side Sliding Drawer (Admin) */
+#profiles-modal.modal-overlay,
+#recycle-bin-modal.modal-overlay { 
     justify-content: flex-start; 
     align-items: stretch; 
     z-index: 1100; 
@@ -1254,16 +1255,18 @@ body,
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#profiles-modal.modal-overlay.open {
+#profiles-modal.modal-overlay.open,
+#recycle-bin-modal.modal-overlay.open {
     opacity: 1;
     pointer-events: auto;
 }
 
-#profiles-modal .modal-card { 
+#profiles-modal .modal-card,
+#recycle-bin-modal .modal-card { 
     position: fixed; 
     top: 0; 
-    left: -820px; 
-    width: 780px; 
+    left: -840px; 
+    width: 800px; 
     max-width: 95vw; 
     height: 100vh; 
     max-height: 100vh; 
@@ -1285,7 +1288,8 @@ body,
     color: #f8fafc;
 }
 
-#profiles-modal.open .modal-card { 
+#profiles-modal.open .modal-card,
+#recycle-bin-modal.open .modal-card { 
     left: 0; 
 }
 
@@ -1610,7 +1614,8 @@ body,
     overflow: visible !important;
 }
 
-#profiles-modal .modal-header {
+#profiles-modal .modal-header,
+#recycle-bin-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1620,7 +1625,8 @@ body,
     flex-shrink: 0;
 }
 
-#profiles-modal .modal-header h3 {
+#profiles-modal .modal-header h3,
+#recycle-bin-modal .modal-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 700;
@@ -1628,7 +1634,8 @@ body,
     letter-spacing: -0.2px;
 }
 
-#profiles-modal .modal-body {
+#profiles-modal .modal-body,
+#recycle-bin-modal .modal-body {
     flex: 1;
     display: flex;
     flex-direction: column;
