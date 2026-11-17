@@ -716,8 +716,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalBtnHTML = googleBtn ? googleBtn.innerHTML : '';
         if (googleBtn) {
             googleBtn.disabled = true;
-            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Connecting to Google...</span>';
+            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>';
         }
+
+        // Helper for smooth card transition before redirection
+        const smoothRedirectTo = (targetUrl) => {
+            if (googleBtn) {
+                googleBtn.innerHTML = '<i class="fas fa-check-circle" style="color: #38bdf8;"></i> <span>Redirecting...</span>';
+                googleBtn.style.borderColor = 'rgba(56, 189, 248, 0.5)';
+            }
+            const card = document.querySelector('.login-card');
+            if (card) {
+                card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+                card.style.opacity = '0.35';
+                card.style.transform = 'scale(0.985) translateY(-4px)';
+            }
+            setTimeout(() => {
+                window.location.replace(targetUrl);
+            }, 350);
+        };
 
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -770,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('gtrack_user_dept', userData.department || 'Admin');
                 sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || user.displayName || 'Administrator');
                 sessionStorage.setItem('gtrack_user_role', 'admin');
-                window.location.replace("../dashboard/admin.html");
+                smoothRedirectTo("../dashboard/admin.html");
                 return;
             } else {
                 // Account is an Employee
@@ -790,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('gtrack_user_dept', userData.department || '');
                 sessionStorage.setItem('gtrack_user_name', userData.fullName || userData.name || user.displayName || '');
                 sessionStorage.setItem('gtrack_user_role', 'employee');
-                window.location.replace("../dashboard/employee.html");
+                smoothRedirectTo("../dashboard/employee.html");
                 return;
             }
 
