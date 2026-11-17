@@ -7726,14 +7726,19 @@ window.openExcelImportModal = function() {
     // Reset view to stage 1 (upload)
     resetExcelUpload();
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    void modal.offsetWidth; // Force reflow for smooth sliding drawer animation
     modal.classList.add('open');
 };
 
 window.closeExcelImportModal = function() {
     const modal = document.getElementById('excel-import-modal');
     if (modal) {
-        modal.classList.add('hidden');
         modal.classList.remove('open');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }, 300);
     }
     resetExcelUpload();
 };
@@ -8345,5 +8350,15 @@ window.executeExcelImport = async function() {
         if (cancelBtn) cancelBtn.disabled = false;
     }
 };
+
+// Close Excel import drawer when clicking on the overlay outside the drawer
+const excelImportOverlay = document.getElementById('excel-import-modal');
+if (excelImportOverlay) {
+    excelImportOverlay.addEventListener('click', (e) => {
+        if (e.target === excelImportOverlay) {
+            window.closeExcelImportModal();
+        }
+    });
+}
 
 

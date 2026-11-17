@@ -15,7 +15,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style(admin).css?v=20261116_12">
+    <link rel="stylesheet" href="style(admin).css?v=20261118_1">
     <!-- Chart.js CDN for Analytics Visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -1674,71 +1674,59 @@
 
 
 <!-- ========================================================================= -->
-<!-- EXCEL BULK INVENTORY IMPORT MODAL -->
+<!-- EXCEL BULK INVENTORY IMPORT SLIDING DRAWER -->
 <!-- ========================================================================= -->
 <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display: none;" onchange="handleExcelFileSelected(event)">
 
-<div id="excel-import-modal" class="modal-overlay hidden" style="z-index: 1200; backdrop-filter: blur(4px);">
-  <div class="modal-card" style="position: relative; width: 920px; max-width: 95vw; max-height: 90vh; background: #0f172a; border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);">
+<div id="excel-import-modal" class="modal-overlay hidden">
+  <div class="modal-card">
     
-    <!-- Header -->
-    <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; background: #1e293b; flex-shrink: 0;">
-      <div style="display: flex; align-items: center; gap: 12px;">
+    <!-- Drawer Header -->
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 14px; margin-bottom: 18px; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
         <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
           <i class="fas fa-file-excel"></i>
         </div>
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">Import Inventory from Excel</h3>
-          <span style="font-size: 11.5px; color: #94a3b8;">Upload existing GSO property records from Excel spreadsheets (.xlsx, .xls) directly into the masterlist</span>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;">Import Masterlist from Excel</h3>
+          <span style="font-size: 11.5px; color: #94a3b8;">Upload existing property records directly into your system</span>
         </div>
       </div>
-      <button type="button" onclick="closeExcelImportModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.15s, background 0.15s; display: inline-flex; align-items: center; justify-content: center;" onmouseover="this.style.color='#f8fafc'; this.style.background='rgba(255,255,255,0.06)';" onmouseout="this.style.color='#94a3b8'; this.style.background='none';" title="Close">
+      <button type="button" onclick="closeExcelImportModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.15s, background 0.15s; display: inline-flex; align-items: center; justify-content: center;" onmouseover="this.style.color='#f8fafc'; this.style.background='rgba(255,255,255,0.06)';" onmouseout="this.style.color='#94a3b8'; this.style.background='none';" title="Close Drawer">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
-    <!-- Body -->
-    <div class="modal-body" style="padding: 18px 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+    <!-- Drawer Body -->
+    <div class="modal-body" style="padding: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
       
-      <!-- Stage 1: Dropzone & Template (Initial View) -->
-      <div id="excel-upload-stage" style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Stage 1: Upload & Template -->
+      <div id="excel-upload-stage" style="display: flex; flex-direction: column; gap: 14px;">
         
-        <!-- Info Banner -->
-        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px;">
-          <i class="fas fa-info-circle text-cyan" style="font-size: 16px; margin-top: 2px;"></i>
-          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
-            <strong style="color: #f8fafc;">Standardized GSO Masterlist Schema:</strong>
-            You can upload your existing property inventories. For best compatibility, your file should include columns such as <em>Article</em>, <em>Property No.</em>, <em>Quantity</em>, <em>Unit Cost</em>, <em>Location/Office</em>, and <em>Accountable Person</em>.
-          </div>
-        </div>
-
         <!-- Drag & Drop Area -->
         <div id="excel-dropzone" 
              onclick="document.getElementById('excel-file-input').click()"
              ondragover="handleExcelDragOver(event)"
              ondragleave="handleExcelDragLeave(event)"
              ondrop="handleExcelDrop(event)"
-             style="border: 2px dashed #334155; border-radius: 12px; background: rgba(30, 41, 59, 0.4); padding: 36px 20px; text-align: center; cursor: pointer; transition: all 0.2s;"
+             style="border: 2px dashed #334155; border-radius: 10px; background: rgba(30, 41, 59, 0.4); padding: 50px 24px; text-align: center; cursor: pointer; transition: all 0.2s;"
              onmouseover="this.style.borderColor='#10b981'; this.style.background='rgba(16, 185, 129, 0.05)';"
              onmouseout="this.style.borderColor='#334155'; this.style.background='rgba(30, 41, 59, 0.4)';">
-          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10b981; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px;">
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10b981; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px;">
             <i class="fas fa-cloud-arrow-up"></i>
           </div>
-          <h4 style="margin: 0 0 6px 0; font-size: 15px; color: #f8fafc; font-weight: 700;">Drag and drop your Excel file here</h4>
-          <p style="margin: 0 0 16px 0; font-size: 12px; color: #94a3b8;">Supports Microsoft Excel (.xlsx, .xls) spreadsheets</p>
-          <button type="button" class="add-eq-btn secondary-btn" style="pointer-events: none; padding: 7px 16px; font-size: 12px; border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">
-            <i class="fas fa-folder-open"></i> Browse File
+          <h4 style="margin: 0 0 6px 0; font-size: 15px; color: #f8fafc; font-weight: 700;">Choose an Excel file (.xlsx) or drag here</h4>
+          <p style="margin: 0 0 18px 0; font-size: 12px; color: #94a3b8;">Add your property inventory in bulk</p>
+          <button type="button" class="add-eq-btn secondary-btn" style="pointer-events: none; padding: 7px 18px; font-size: 12px; border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">
+            <i class="fas fa-folder-open"></i> Browse Computer
           </button>
         </div>
 
-        <!-- Download Template Card -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 8px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-file-invoice text-cyan" style="font-size: 16px;"></i>
-            <div>
-              <div style="font-size: 12.5px; font-weight: 600; color: #f8fafc;">Need an official template?</div>
-              <div style="font-size: 11px; color: #94a3b8;">Download a pre-formatted template with all 13 standard GSO columns and example data.</div>
-            </div>
+        <!-- Download Template Option -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 8px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 600; color: #f8fafc;">Need a sample template?</div>
+            <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">Download our official template with pre-filled sample items.</div>
           </div>
           <button type="button" onclick="downloadExcelTemplate()" class="add-eq-btn secondary-btn" style="padding: 7px 14px; font-size: 11.5px; white-space: nowrap;">
             <i class="fas fa-download"></i> Download Template (.xlsx)
@@ -1748,9 +1736,9 @@
       </div>
 
       <!-- Stage 2: Preview & Validation (Shown After File Parse) -->
-      <div id="excel-preview-stage" style="display: none; flex-direction: column; gap: 14px; flex: 1; min-height: 0;">
+      <div id="excel-preview-stage" style="display: none; flex-direction: column; gap: 12px; flex: 1; min-height: 0;">
         
-        <!-- File & Stats Bar -->
+        <!-- File Info & Count Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 8px; padding: 10px 14px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <i class="fas fa-file-excel" style="color: #10b981; font-size: 18px;"></i>
@@ -1768,24 +1756,24 @@
           </div>
         </div>
 
-        <!-- Duplicate Strategy Selector -->
+        <!-- Duplicate Option -->
         <div id="excel-dup-policy-row" style="display: none; align-items: center; justify-content: space-between; gap: 10px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 8px 12px; font-size: 11.5px; color: #cbd5e1;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
-            <span>Existing Property Numbers detected. How would you like to handle duplicates?</span>
+            <span>Existing items detected:</span>
           </div>
           <select id="excel-dup-policy" class="filter-dropdown" style="padding: 4px 10px; font-size: 11.5px; height: auto;">
-            <option value="skip" selected>Skip duplicates (Do not overwrite)</option>
-            <option value="update">Update existing records</option>
+            <option value="skip" selected>Skip duplicates (Keep existing records)</option>
+            <option value="update">Update existing records with Excel data</option>
           </select>
         </div>
 
         <!-- Preview Table Scroll Container -->
-        <div style="flex: 1; min-height: 260px; max-height: 380px; overflow-y: auto; overflow-x: auto; border: 1px solid #334155; border-radius: 8px; background: rgba(15, 23, 42, 0.8); scrollbar-width: thin; scrollbar-color: #334155 transparent;">
+        <div style="flex: 1; min-height: 280px; overflow-y: auto; overflow-x: auto; border: 1px solid #334155; border-radius: 8px; background: rgba(15, 23, 42, 0.6); scrollbar-width: thin; scrollbar-color: #334155 transparent;">
           <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; white-space: nowrap;">
             <thead style="position: sticky; top: 0; background: #0f172a; z-index: 5;">
               <tr style="border-bottom: 2px solid #334155; color: #94a3b8; font-size: 11px; text-transform: uppercase;">
-                <th style="padding: 10px 12px; width: 40px; text-align: center;">#</th>
+                <th style="padding: 10px 12px; width: 36px; text-align: center;">#</th>
                 <th style="padding: 10px 12px;">Status</th>
                 <th style="padding: 10px 12px;">Article</th>
                 <th style="padding: 10px 12px;">Property No.</th>
@@ -1794,10 +1782,9 @@
                 <th style="padding: 10px 12px;">Unit</th>
                 <th style="padding: 10px 12px;">Unit Cost</th>
                 <th style="padding: 10px 12px;">Total Cost</th>
-                <th style="padding: 10px 12px;">Location / Office</th>
+                <th style="padding: 10px 12px;">Location</th>
                 <th style="padding: 10px 12px;">Accountable Person</th>
                 <th style="padding: 10px 12px;">Condition</th>
-                <th style="padding: 10px 12px;">Account</th>
               </tr>
             </thead>
             <tbody id="excel-preview-tbody">
@@ -1808,10 +1795,10 @@
 
       </div>
 
-      <!-- Stage 3: Progress Bar (Shown During Import) -->
-      <div id="excel-progress-stage" style="display: none; flex-direction: column; gap: 12px; padding: 24px 10px; text-align: center;">
-        <div style="font-size: 14px; font-weight: 700; color: #f8fafc;" id="excel-progress-title">Importing records into G-TRACK...</div>
-        <div style="font-size: 12px; color: #94a3b8;" id="excel-progress-subtitle">Please wait while data is safely synchronized.</div>
+      <!-- Stage 3: Progress State -->
+      <div id="excel-progress-stage" style="display: none; flex-direction: column; gap: 12px; padding: 30px 10px; text-align: center;">
+        <div style="font-size: 15px; font-weight: 700; color: #f8fafc;" id="excel-progress-title">Importing records into G-TRACK...</div>
+        <div style="font-size: 12px; color: #94a3b8;" id="excel-progress-subtitle">Please wait while your data is safely saved.</div>
         <div style="width: 100%; background: #1e293b; border-radius: 999px; height: 10px; overflow: hidden; border: 1px solid #334155; margin-top: 8px;">
           <div id="excel-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #38bdf8); transition: width 0.2s ease;"></div>
         </div>
@@ -1820,11 +1807,11 @@
 
     </div>
 
-    <!-- Footer -->
-    <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; background: #1e293b; flex-shrink: 0;">
-      <div style="font-size: 11.5px; color: #64748b;">
-        <i class="fas fa-shield-alt text-cyan"></i> Validated against GSO inventory schema
-      </div>
+    <!-- Drawer Footer Actions -->
+    <div class="modal-footer" style="padding-top: 16px; margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+      <span style="font-size: 11.5px; color: #64748b;">
+        <i class="fas fa-shield-alt text-cyan"></i> GSO inventory masterlist
+      </span>
       <div style="display: flex; gap: 10px;">
         <button type="button" id="excel-cancel-btn" class="add-eq-btn secondary-btn" onclick="closeExcelImportModal()" style="padding: 7px 16px; font-size: 12px;">
           Cancel
@@ -1853,7 +1840,7 @@
     <!-- ExcelJS for Protected & Auto-Formatted Official Spreadsheet Downloads -->
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
-    <script src="script(admin).js?v=20261118_3"></script>
+    <script src="script(admin).js?v=20261118_4"></script>
     
 </body>
 </html>

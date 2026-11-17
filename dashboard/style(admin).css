@@ -834,6 +834,49 @@ body,
     right: 0; 
 }
 
+/* Excel Import Right-Side Sliding Drawer (Matches System Sliding Drawers) */
+#excel-import-modal.modal-overlay { 
+    justify-content: flex-end; 
+    align-items: stretch; 
+    z-index: 1100; 
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#excel-import-modal.modal-overlay.open { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
+
+#excel-import-modal .modal-card { 
+    position: fixed; 
+    top: 0; 
+    right: -860px; 
+    width: 820px; 
+    max-width: 95vw; 
+    height: 100vh; 
+    max-height: 100vh; 
+    background: #0f172a; 
+    border-left: 1px solid rgba(255, 255, 255, 0.12); 
+    border-top: none; 
+    border-bottom: none; 
+    border-right: none; 
+    border-radius: 0; 
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.65); 
+    padding: 24px 28px 28px 28px; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 1105; 
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+    box-sizing: border-box; 
+    overflow-y: hidden; 
+}
+
+#excel-import-modal.open .modal-card { 
+    right: 0; 
+}
+
 /* Admin & Employee Profile Left-Side Sliding Drawer */
 #emp-profile-modal.modal-overlay,
 #admin-profile-modal.modal-overlay { 
@@ -4282,7 +4325,8 @@ body.dark-theme-mode .table-container::-webkit-scrollbar-thumb:hover {
         font-size: 10.5px;
         padding: 3px 6px;
     }
-    #add-modal .modal-card {
+    #add-modal .modal-card,
+    #excel-import-modal .modal-card {
         width: 380px;
         max-width: 85vw;
         padding: 20px;
