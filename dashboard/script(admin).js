@@ -3099,6 +3099,11 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
     if (!ok) return;
 
     try {
+        const reqSnap = await database.ref(`masterlistRequests/${reqId}`).once('value');
+        const reqData = reqSnap.val() || {};
+        const targetEmail = reqData.userEmail || reqData.user || '';
+        const targetUserId = reqData.userId || reqData.userUid || '';
+
         const compiledCSVString = buildMasterlistCSVString();
         await database.ref(`masterlistRequests/${reqId}`).update({
             status: "Completed",
@@ -3117,7 +3122,7 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
             }
         }
 
-        // 3. Notify Employee in Real-Time
+        // 3. Notify Employee in Real-Time (Directly to the requesting employee)
         try {
             const notifRef = database.ref('notifications').push();
             await notifRef.set({
@@ -3126,6 +3131,8 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
                 message: 'Your request for an authorized inventory masterlist copy has been approved. You can download it now in My Requests.',
                 type: 'copy_request',
                 targetRole: 'employee',
+                targetEmail: targetEmail,
+                targetUserId: targetUserId,
                 createdAt: Date.now()
             });
         } catch(nErr) {
@@ -3153,6 +3160,11 @@ window.rejectMasterlistRequest = async function(reqId, triggerBtn = null) {
     if (!ok) return;
 
     try {
+        const reqSnap = await database.ref(`masterlistRequests/${reqId}`).once('value');
+        const reqData = reqSnap.val() || {};
+        const targetEmail = reqData.userEmail || reqData.user || '';
+        const targetUserId = reqData.userId || reqData.userUid || '';
+
         await database.ref(`masterlistRequests/${reqId}`).update({
             status: "Rejected",
             rejectedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -3169,7 +3181,7 @@ window.rejectMasterlistRequest = async function(reqId, triggerBtn = null) {
             }
         }
 
-        // Notify Employee in Real-Time
+        // Notify Employee in Real-Time (Directly to the requesting employee)
         try {
             const notifRef = database.ref('notifications').push();
             await notifRef.set({
@@ -3178,6 +3190,8 @@ window.rejectMasterlistRequest = async function(reqId, triggerBtn = null) {
                 message: 'Your request for an authorized inventory masterlist copy was declined by the administrator.',
                 type: 'copy_request',
                 targetRole: 'employee',
+                targetEmail: targetEmail,
+                targetUserId: targetUserId,
                 createdAt: Date.now()
             });
         } catch(nErr) {
@@ -3225,6 +3239,7 @@ window.approveDeptTransfer = async function(reqId, userId, targetDepartment, tri
                 message: `Your department transfer to ${targetDepartment} has been approved.`,
                 type: 'user_update',
                 targetRole: 'employee',
+                targetUserId: userId || '',
                 createdAt: Date.now()
             });
         } catch(nErr) {
@@ -3308,6 +3323,17 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
 
         // 5. Notify Employee in Real-Time
         try {
+            let targetEmail = '';
+            let targetUserId = '';
+            try {
+                const transferSnap = await database.ref(`equipmentTransfers/${transferId}`).once('value');
+                const tData = transferSnap.val() || {};
+                targetEmail = tData.requestedByEmail || tData.userEmail || '';
+                targetUserId = tData.requestedByUid || tData.userId || '';
+            } catch(tErr) {
+                console.warn("Could not fetch transfer requester info:", tErr);
+            }
+
             const notifRef = database.ref('notifications').push();
             await notifRef.set({
                 id: notifRef.key,
@@ -3315,6 +3341,8 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
                 message: `Equipment transfer to ${newDept} (Custodian: ${newCustodian}) was approved.`,
                 type: 'request',
                 targetRole: 'employee',
+                targetEmail: targetEmail,
+                targetUserId: targetUserId,
                 createdAt: Date.now()
             });
         } catch(nErr) {
@@ -3350,6 +3378,17 @@ window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
 
         // Notify Employee in Real-Time
         try {
+            let targetEmail = '';
+            let targetUserId = '';
+            try {
+                const transferSnap = await database.ref(`equipmentTransfers/${transferId}`).once('value');
+                const tData = transferSnap.val() || {};
+                targetEmail = tData.requestedByEmail || tData.userEmail || '';
+                targetUserId = tData.requestedByUid || tData.userId || '';
+            } catch(tErr) {
+                console.warn("Could not fetch transfer requester info:", tErr);
+            }
+
             const notifRef = database.ref('notifications').push();
             await notifRef.set({
                 id: notifRef.key,
@@ -3357,6 +3396,8 @@ window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
                 message: 'Your equipment transfer request was declined by the administrator.',
                 type: 'request',
                 targetRole: 'employee',
+                targetEmail: targetEmail,
+                targetUserId: targetUserId,
                 createdAt: Date.now()
             });
         } catch(nErr) {

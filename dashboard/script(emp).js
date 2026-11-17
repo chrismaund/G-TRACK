@@ -1277,13 +1277,17 @@ window.openRequestHistory = function() {
 };
 
 window.sendMasterlistRequest = async function() {
-    const userEmail = currentEmployeeEmail || "employee@gso.com";
+    const userEmail = currentEmployeeEmail || (auth.currentUser ? auth.currentUser.email : "employee@gso.com");
     const userName = currentEmployeeName || "Employee";
+    const userUid = currentEmployeeUid || (auth.currentUser ? auth.currentUser.uid : "");
     const reqTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newId = requestsRef.push().key;
 
     const newRequest = {
         user: userEmail,
+        userEmail: userEmail,
+        userId: userUid,
+        userUid: userUid,
         userName: userName,
         time: reqTime,
         status: "Pending",
@@ -4248,9 +4252,37 @@ function initEmpNotifications() {
         const data = snapshot.val();
         empNotifications = [];
         if (data) {
+            const myEmail = (currentEmployeeEmail || (auth.currentUser ? auth.currentUser.email : '') || '').toLowerCase().trim();
+            const myUid = currentEmployeeUid || (auth.currentUser ? auth.currentUser.uid : '');
+
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 if (!item) return;
+
+                // Employee portal never displays admin-only notifications
+                if (item.targetRole === 'admin') return;
+
+                const notifEmail = (item.targetEmail || item.userEmail || '').toLowerCase().trim();
+                const notifUid = item.targetUserId || item.userId || item.userUid || '';
+
+                // If notification is user-specific, verify it is destined for this employee
+                if (notifEmail || notifUid) {
+                    const isTargetMe = (notifEmail && myEmail && notifEmail === myEmail) || (notifUid && myUid && notifUid === myUid);
+                    if (!isTargetMe) return; // Belongs to a different employee
+                } else if (item.type === 'copy_request') {
+                    // Copy request notifications without target belong to individual requesters
+                    return;
+                }
+
+                // Check office targeting if specified
+                if (item.targetOffice && item.targetOffice !== 'all') {
+                    const myDept = (currentEmployeeDept || '').toLowerCase().trim();
+                    const targetDept = (item.targetOffice || '').toLowerCase().trim();
+                    if (myDept && targetDept && myDept !== targetDept) {
+                        return;
+                    }
+                }
+
                 // Employee sees notifications targeted to 'all' or 'employee'
                 if (item.targetRole === 'all' || item.targetRole === 'employee' || !item.targetRole) {
                     empNotifications.push({
