@@ -1848,7 +1848,27 @@ window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) 
 
     try {
         await db.collection("users").doc(userId).delete();
-        window.showGTrackToast('info', 'Account Deleted', `User account ${displayName} was permanently deleted.`);
+
+        // Clean up any pending role elevation requests in RTDB
+        if (typeof database !== 'undefined') {
+            try {
+                const roleSnap = await database.ref('roleElevationRequests').once('value');
+                if (roleSnap.exists()) {
+                    const updates = [];
+                    roleSnap.forEach((child) => {
+                        const r = child.val();
+                        if (r.userId === userId || r.userEmail === userEmail) {
+                            updates.push(database.ref(`roleElevationRequests/${child.key}`).remove());
+                        }
+                    });
+                    if (updates.length > 0) await Promise.all(updates);
+                }
+            } catch (rtdbErr) {
+                console.warn("Could not clean up RTDB role requests:", rtdbErr);
+            }
+        }
+
+        window.showGTrackToast('info', 'Account Deleted', `User account ${displayName} was permanently deleted from the system.`);
     } catch (error) {
         console.error("Error deleting user account: ", error);
         window.showGTrackToast('error', 'Delete Failed', "Error deleting user account: " + (error.message || error));

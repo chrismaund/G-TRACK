@@ -440,13 +440,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // EMPLOYEE REGISTRATION WITH FIRESTORE WRITE
     if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
+        registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const fullName = document.getElementById('regFullName').value.trim();
             const email = document.getElementById('regEmail').value.trim().toLowerCase();
             const department = (document.getElementById('regDepartment')?.value || '').trim();
             const password = document.getElementById('regPassword').value;
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
 
             if (regErrorMessage) regErrorMessage.style.display = 'none';
             if (regSuccessMessage) regSuccessMessage.style.display = 'none';
@@ -492,47 +493,112 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Create Auth Account and write to Firestore
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    
-                    // Write document to 'users' collection using UID as Document ID
-                    return db.collection("users").doc(user.uid).set({
-                        uid: user.uid,
-                        fullName: fullName,
-                        email: email,
-                        department: department,
-                        role: "employee",
-                        status: "pending",
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                })
-                .then(() => {
-                    if (regSuccessMessage) {
-                        regSuccessMessage.textContent = 'Registration successful! Awaiting Admin approval.';
-                        regSuccessMessage.style.display = 'block';
-                    }
-                    registerForm.reset();
-                    if (typeof window.evaluateRegPasswordRequirements === 'function') {
-                        window.evaluateRegPasswordRequirements('');
-                    }
-                    const textSpan = document.getElementById('deptSelectText');
-                    const trigger = document.getElementById('deptSelectTrigger');
-                    const hiddenInput = document.getElementById('regDepartment');
-                    if (textSpan) textSpan.textContent = 'Select Municipal Department';
-                    if (trigger) trigger.classList.remove('selected');
-                    if (hiddenInput) hiddenInput.value = '';
-                    document.querySelectorAll('#deptOptionsList .custom-option').forEach(o => o.classList.remove('selected'));
+            const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '<span>Submit Request</span> <i class="fas fa-paper-plane"></i>';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Processing...</span>';
+            }
 
-                    return auth.signOut(); // Keep signed out until approved
-                })
-                .catch((error) => {
-                    if (regErrorMessage) {
+            // Create Auth Account and write to Firestore (with deleted-account reclamation)
+            try {
+                let userCredential = null;
+
+                try {
+                    userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                } catch (createErr) {
+                    const isEmailInUse = createErr.code === 'auth/email-already-in-use' || 
+                        (createErr.message && createErr.message.includes('email-already-in-use'));
+
+                    if (!isEmailInUse) {
+                        throw createErr;
+                    }
+
+                    // Check if an active user profile exists in Firestore
+                    const existingUserSnap = await db.collection("users").where("email", "==", email).get();
+
+                    if (!existingUserSnap.empty) {
+                        // User genuinely exists in Firestore as an active account
+                        throw createErr;
+                    }
+
+                    // No profile exists in Firestore (the account was deleted by Admin from dashboard)
+                    // Attempt to sign in to the orphaned Auth record with the password entered
+                    try {
+                        const reAuthCred = await auth.signInWithEmailAndPassword(email, password);
+                        // If authenticated, permanently delete the old Auth record to free up the email cleanly
+                        await reAuthCred.user.delete();
+                        // Re-create the account fresh with clean credentials
+                        userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    } catch (reAuthErr) {
+                        if (reAuthErr.code === 'auth/wrong-password') {
+                            throw new Error("PREV_DELETED_WRONG_PASSWORD");
+                        } else {
+                            throw reAuthErr;
+                        }
+                    }
+                }
+
+                const user = userCredential.user;
+                
+                // Write document to 'users' collection using UID as Document ID
+                await db.collection("users").doc(user.uid).set({
+                    uid: user.uid,
+                    fullName: fullName,
+                    email: email,
+                    department: department,
+                    role: "employee",
+                    status: "pending",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                if (regSuccessMessage) {
+                    regSuccessMessage.textContent = 'Registration successful! Awaiting Admin approval.';
+                    regSuccessMessage.style.display = 'block';
+                }
+                registerForm.reset();
+                if (typeof window.evaluateRegPasswordRequirements === 'function') {
+                    window.evaluateRegPasswordRequirements('');
+                }
+                const textSpan = document.getElementById('deptSelectText');
+                const trigger = document.getElementById('deptSelectTrigger');
+                const hiddenInput = document.getElementById('regDepartment');
+                if (textSpan) textSpan.textContent = 'Select Municipal Department';
+                if (trigger) trigger.classList.remove('selected');
+                if (hiddenInput) hiddenInput.value = '';
+                document.querySelectorAll('#deptOptionsList .custom-option').forEach(o => o.classList.remove('selected'));
+
+                await auth.signOut(); // Keep signed out until approved
+            } catch (error) {
+                if (regErrorMessage) {
+                    if (error.message === "PREV_DELETED_WRONG_PASSWORD") {
+                        regErrorMessage.innerHTML = `This email was previously used with a different password. Enter the previous password to re-register, or <a href="javascript:void(0)" id="reRegResetLink" style="color: #38bdf8; text-decoration: underline; font-weight: 700;">send a password reset link</a> to ${email}.`;
+                        regErrorMessage.style.display = 'block';
+                        const resetLink = document.getElementById('reRegResetLink');
+                        if (resetLink) {
+                            resetLink.onclick = async () => {
+                                try {
+                                    await auth.sendPasswordResetEmail(email);
+                                    if (regSuccessMessage) {
+                                        regSuccessMessage.textContent = `Password reset link sent to ${email}. Check your inbox, reset the password, and then complete registration.`;
+                                        regSuccessMessage.style.display = 'block';
+                                    }
+                                    regErrorMessage.style.display = 'none';
+                                } catch (resetErr) {
+                                    regErrorMessage.textContent = formatAuthError(resetErr);
+                                }
+                            };
+                        }
+                    } else {
                         regErrorMessage.textContent = formatAuthError(error);
                         regErrorMessage.style.display = 'block';
                     }
-                });
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHTML;
+                }
+            }
         });
     }
 
@@ -580,7 +646,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const docSnap = await db.collection("users").doc(user.uid).get();
 
                 if (!docSnap.exists) {
-                    throw new Error("Invalid account for this role (profile not found).");
+                    try {
+                        await user.delete();
+                    } catch (delErr) {
+                        console.warn("Could not auto-purge deleted auth user:", delErr);
+                    }
+                    throw new Error("This account was deleted by an administrator and has been permanently purged from the system.");
                 }
 
                 const userData = docSnap.data();
