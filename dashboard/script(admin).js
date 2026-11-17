@@ -7714,3 +7714,636 @@ function renderServiceabilityDonutChart(riskCounts, fleetHealthPct) {
     });
 }
 
+// =========================================================================
+// EXCEL BULK INVENTORY IMPORT SYSTEM (GSO MASTERLIST)
+// =========================================================================
+let parsedExcelRows = []; // Holds normalized parsed rows for preview and import
+
+window.openExcelImportModal = function() {
+    const modal = document.getElementById('excel-import-modal');
+    if (!modal) return;
+    
+    // Reset view to stage 1 (upload)
+    resetExcelUpload();
+    modal.classList.remove('hidden');
+    modal.classList.add('open');
+};
+
+window.closeExcelImportModal = function() {
+    const modal = document.getElementById('excel-import-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('open');
+    }
+    resetExcelUpload();
+};
+
+window.resetExcelUpload = function() {
+    parsedExcelRows = [];
+    const fileInput = document.getElementById('excel-file-input');
+    if (fileInput) fileInput.value = '';
+
+    const uploadStage = document.getElementById('excel-upload-stage');
+    const previewStage = document.getElementById('excel-preview-stage');
+    const progressStage = document.getElementById('excel-progress-stage');
+    const confirmBtn = document.getElementById('excel-confirm-btn');
+    const cancelBtn = document.getElementById('excel-cancel-btn');
+    const dupRow = document.getElementById('excel-dup-policy-row');
+
+    if (uploadStage) uploadStage.style.display = 'flex';
+    if (previewStage) previewStage.style.display = 'none';
+    if (progressStage) progressStage.style.display = 'none';
+    if (confirmBtn) confirmBtn.style.display = 'none';
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (dupRow) dupRow.style.display = 'none';
+
+    const tbody = document.getElementById('excel-preview-tbody');
+    if (tbody) tbody.innerHTML = '';
+};
+
+// Drag and drop handlers
+window.handleExcelDragOver = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropzone = document.getElementById('excel-dropzone');
+    if (dropzone) {
+        dropzone.style.borderColor = '#10b981';
+        dropzone.style.background = 'rgba(16, 185, 129, 0.1)';
+    }
+};
+
+window.handleExcelDragLeave = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropzone = document.getElementById('excel-dropzone');
+    if (dropzone) {
+        dropzone.style.borderColor = '#334155';
+        dropzone.style.background = 'rgba(30, 41, 59, 0.4)';
+    }
+};
+
+window.handleExcelDrop = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropzone = document.getElementById('excel-dropzone');
+    if (dropzone) {
+        dropzone.style.borderColor = '#334155';
+        dropzone.style.background = 'rgba(30, 41, 59, 0.4)';
+    }
+    const files = e.dataTransfer ? e.dataTransfer.files : null;
+    if (files && files.length > 0) {
+        processExcelFile(files[0]);
+    }
+};
+
+window.handleExcelFileSelected = function(e) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+        processExcelFile(files[0]);
+    }
+};
+
+// Helper: Normalize Excel Dates into YYYY-MM-DD
+function normalizeExcelDate(val) {
+    if (!val) return new Date().toISOString().split('T')[0];
+    if (val instanceof Date) {
+        if (!isNaN(val.getTime())) {
+            const y = val.getFullYear();
+            const m = String(val.getMonth() + 1).padStart(2, '0');
+            const d = String(val.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+    }
+    if (typeof val === 'number' && val > 20000 && val < 70000) {
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+        }
+    }
+    const str = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str;
+    }
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return new Date().toISOString().split('T')[0];
+}
+
+// Download Official GSO Masterlist Excel Template
+window.downloadExcelTemplate = async function() {
+    if (typeof ExcelJS === 'undefined') {
+        window.showGTrackToast('error', 'Download Failed', 'Excel engine is loading. Please try again.');
+        return;
+    }
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'G-TRACK GSO Property Management System';
+        const worksheet = workbook.addWorksheet('GSO Inventory Template', { views: [{ showGridLines: true }] });
+
+        const cols = [
+            { header: 'Date Acquired', key: 'date', width: 16 },
+            { header: 'Quantity', key: 'qty', width: 12 },
+            { header: 'Unit', key: 'unit', width: 12 },
+            { header: 'Unit Cost', key: 'unitCost', width: 16 },
+            { header: 'Article', key: 'article', width: 26 },
+            { header: 'Description / Specifications', key: 'description', width: 40 },
+            { header: 'Property No.', key: 'propertyNo', width: 22 },
+            { header: 'Office / Location', key: 'location', width: 26 },
+            { header: 'Accountable Person', key: 'accountablePerson', width: 26 },
+            { header: 'Condition', key: 'condition', width: 16 },
+            { header: 'Account Classification', key: 'account', width: 24 },
+            { header: 'Remarks', key: 'remarks', width: 26 }
+        ];
+
+        worksheet.columns = cols;
+
+        // Header row styling
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 28;
+        headerRow.eachCell((cell) => {
+            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                bottom: { style: 'medium', color: { argb: 'FF38BDF8' } }
+            };
+        });
+
+        // 2 Sample Rows
+        worksheet.addRow({
+            date: '2024-01-15',
+            qty: 1,
+            unit: 'unit',
+            unitCost: 45000,
+            article: 'DESKTOP COMPUTER',
+            description: 'Core i7 16GB RAM 512GB SSD with 24" Monitor',
+            propertyNo: '101-24-01-001',
+            location: 'ACCOUNTING',
+            accountablePerson: 'JUAN DELA CRUZ',
+            condition: 'Serviceable',
+            account: '106-05-020',
+            remarks: 'Complete with accessories'
+        });
+
+        worksheet.addRow({
+            date: '2024-03-20',
+            qty: 2,
+            unit: 'units',
+            unitCost: 12500,
+            article: 'STEEL FILING CABINET',
+            description: '4-drawer heavy duty fire resistant gray',
+            propertyNo: '101-24-03-002',
+            location: 'GSO',
+            accountablePerson: 'MARIA SANTOS',
+            condition: 'Serviceable',
+            account: '106-07-010',
+            remarks: 'In good condition'
+        });
+
+        // Format sample rows
+        [2, 3].forEach(rowNum => {
+            const r = worksheet.getRow(rowNum);
+            r.height = 22;
+            r.getCell('date').alignment = { horizontal: 'center' };
+            r.getCell('qty').alignment = { horizontal: 'center' };
+            r.getCell('unit').alignment = { horizontal: 'center' };
+            r.getCell('unitCost').alignment = { horizontal: 'right' };
+            r.getCell('unitCost').numFmt = '#,##0.00';
+            r.getCell('propertyNo').alignment = { horizontal: 'center' };
+            r.getCell('condition').alignment = { horizontal: 'center' };
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'GSO_Masterlist_Import_Template.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        window.showGTrackToast('success', 'Template Downloaded', 'Official GSO inventory template downloaded.');
+    } catch (err) {
+        console.error("Error generating Excel template:", err);
+        window.showGTrackToast('error', 'Download Failed', err.message || 'Could not generate template.');
+    }
+};
+
+// Process Excel File into Preview Table
+async function processExcelFile(file) {
+    if (!file) return;
+    const name = file.name || '';
+    const ext = name.toLowerCase().split('.').pop();
+    if (ext !== 'xlsx' && ext !== 'xls') {
+        window.showGTrackToast('error', 'Invalid File Type', 'Please upload a valid Microsoft Excel file (.xlsx or .xls).');
+        return;
+    }
+
+    if (typeof ExcelJS === 'undefined') {
+        window.showGTrackToast('error', 'Engine Not Ready', 'Excel processor is loading. Please try again.');
+        return;
+    }
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet || worksheet.rowCount < 2) {
+            window.showGTrackToast('warning', 'Empty Spreadsheet', 'The selected Excel file has no data rows.');
+            return;
+        }
+
+        // Helper to extract clean text from cell
+        function getCellText(cell) {
+            if (!cell) return '';
+            const v = cell.value;
+            if (v === null || v === undefined) return '';
+            if (v instanceof Date) return normalizeExcelDate(v);
+            if (typeof v === 'object') {
+                if (v.result !== undefined && v.result !== null) return String(v.result).trim();
+                if (v.text !== undefined && v.text !== null) return String(v.text).trim();
+                if (Array.isArray(v.richText)) {
+                    return v.richText.map(t => (t && t.text) ? t.text : '').join('').trim();
+                }
+                return String(v).trim();
+            }
+            return String(v).trim();
+        }
+
+        // 1. Detect Header Row by Scanning Top Rows
+        let headerRowIdx = 1;
+        let maxMatches = 0;
+        const keyWords = ['article', 'item', 'description', 'property', 'qty', 'quantity', 'unit', 'cost', 'value', 'date', 'location', 'office', 'accountable', 'person', 'condition', 'account', 'remarks'];
+
+        const maxScan = Math.min(worksheet.rowCount, 15);
+        for (let r = 1; r <= maxScan; r++) {
+            const row = worksheet.getRow(r);
+            let matchCount = 0;
+            row.eachCell((cell) => {
+                const txt = getCellText(cell).toLowerCase();
+                if (keyWords.some(kw => txt.includes(kw))) {
+                    matchCount++;
+                }
+            });
+            if (matchCount > maxMatches) {
+                maxMatches = matchCount;
+                headerRowIdx = r;
+            }
+        }
+
+        // 2. Map Columns by Alias
+        const headerRow = worksheet.getRow(headerRowIdx);
+        const colMap = {}; // key -> colNumber
+
+        const aliasDefs = {
+            propertyNo: ['property no', 'property number', 'propertyno', 'prop no', 'prop num', 'property_no', 'property #', 'property code', 'property'],
+            article: ['article', 'articles', 'item', 'item name', 'article name', 'article/description', 'articles/description'],
+            description: ['description', 'specification', 'specifications', 'desc', 'particulars'],
+            date: ['date acquired', 'acquisition date', 'date_acquired', 'date received', 'date assumption', 'date'],
+            qty: ['quantity', 'qty', 'balance per card', 'on hand', 'count', 'pieces', 'pcs'],
+            unit: ['unit of measure', 'unit', 'uom', 'measure'],
+            unitCost: ['unit cost', 'unit value', 'unit price', 'unit_cost', 'unit_value', 'cost', 'price'],
+            totalCost: ['total cost', 'total value', 'total amount', 'total_cost', 'total_value', 'total'],
+            location: ['office / location', 'office/location', 'office', 'location', 'department', 'dept', 'assigned office'],
+            accountablePerson: ['accountable person', 'person accountable', 'custodian', 'employee', 'assigned to', 'accountable_person', 'name of accountable officer'],
+            condition: ['condition', 'serviceability', 'state', 'status'],
+            account: ['account classification', 'account code', 'account', 'coa account', 'classification'],
+            remarks: ['remarks', 'notes', 'comments', 'remark']
+        };
+
+        headerRow.eachCell((cell, colNumber) => {
+            const headerTxt = getCellText(cell).toLowerCase().replace(/[\r\n]+/g, ' ').trim();
+            for (const [key, aliases] of Object.entries(aliasDefs)) {
+                if (!colMap[key] && aliases.some(a => headerTxt === a || headerTxt.includes(a))) {
+                    colMap[key] = colNumber;
+                }
+            }
+        });
+
+        // 3. Parse Data Rows
+        parsedExcelRows = [];
+        let duplicateCount = 0;
+
+        for (let r = headerRowIdx + 1; r <= worksheet.rowCount; r++) {
+            const row = worksheet.getRow(r);
+            if (!row || row.cellCount === 0) continue;
+
+            const articleVal = colMap.article ? getCellText(row.getCell(colMap.article)) : '';
+            const propVal = colMap.propertyNo ? getCellText(row.getCell(colMap.propertyNo)) : '';
+            const descVal = colMap.description ? getCellText(row.getCell(colMap.description)) : '';
+
+            // Skip completely empty or summary rows
+            if (!articleVal && !propVal && !descVal) continue;
+            const lowerArticle = articleVal.toLowerCase();
+            if (lowerArticle.startsWith('total') || lowerArticle.startsWith('grand total') || lowerArticle.startsWith('subtotal')) continue;
+
+            const dateVal = colMap.date ? row.getCell(colMap.date).value : null;
+            const dateStr = normalizeExcelDate(dateVal);
+
+            const qtyRaw = colMap.qty ? getCellText(row.getCell(colMap.qty)) : '1';
+            const qtyNum = parseInt(qtyRaw.replace(/[^0-9]/g, ''), 10) || 1;
+
+            const unitVal = colMap.unit ? getCellText(row.getCell(colMap.unit)) : 'unit';
+
+            const unitCostRaw = colMap.unitCost ? getCellText(row.getCell(colMap.unitCost)) : '0';
+            const unitCostNum = parseFloat(unitCostRaw.replace(/[^0-9.]/g, '')) || 0;
+
+            let totalCostNum = 0;
+            if (colMap.totalCost) {
+                const totalCostRaw = getCellText(row.getCell(colMap.totalCost));
+                totalCostNum = parseFloat(totalCostRaw.replace(/[^0-9.]/g, '')) || 0;
+            }
+            if (!totalCostNum || totalCostNum === 0) {
+                totalCostNum = qtyNum * unitCostNum;
+            }
+
+            const locVal = colMap.location ? getCellText(row.getCell(colMap.location)) : 'GSO';
+            const personVal = colMap.accountablePerson ? getCellText(row.getCell(colMap.accountablePerson)) : 'Unassigned';
+            
+            let condVal = colMap.condition ? getCellText(row.getCell(colMap.condition)) : 'Serviceable';
+            if (condVal.toLowerCase().includes('unservice')) condVal = 'Unserviceable';
+            else condVal = 'Serviceable';
+
+            const accountVal = colMap.account ? getCellText(row.getCell(colMap.account)) : '';
+            const remarksVal = colMap.remarks ? getCellText(row.getCell(colMap.remarks)) : '';
+
+            // Duplicate check against live inventoryData
+            const normProp = propVal.trim().toLowerCase();
+            const existingMatch = normProp ? (inventoryData || []).find(inv => inv.propertyNo && inv.propertyNo.trim().toLowerCase() === normProp) : null;
+            const isDuplicate = !!existingMatch;
+            if (isDuplicate) duplicateCount++;
+
+            parsedExcelRows.push({
+                article: articleVal || 'Property Item',
+                description: descVal || '',
+                propertyNo: propVal || 'Unassigned',
+                date: dateStr,
+                qty: qtyNum,
+                unit: unitVal || 'unit',
+                unitCost: unitCostNum,
+                totalCost: totalCostNum,
+                location: locVal || 'GSO',
+                accountablePerson: personVal || 'Unassigned',
+                condition: condVal,
+                account: accountVal || '',
+                remarks: remarksVal || '',
+                isDuplicate: isDuplicate,
+                existingId: existingMatch ? existingMatch.id : null
+            });
+        }
+
+        if (parsedExcelRows.length === 0) {
+            window.showGTrackToast('warning', 'No Records Found', 'Could not find valid inventory rows in this Excel sheet.');
+            return;
+        }
+
+        // 4. Update UI to Preview Stage
+        renderExcelPreviewUI(file.name, file.size, duplicateCount);
+
+    } catch (err) {
+        console.error("Error parsing Excel file:", err);
+        window.showGTrackToast('error', 'Parse Error', "Failed to read Excel file: " + (err.message || err));
+    }
+}
+
+// Render Preview Table UI
+function renderExcelPreviewUI(fileName, fileSize, duplicateCount) {
+    const uploadStage = document.getElementById('excel-upload-stage');
+    const previewStage = document.getElementById('excel-preview-stage');
+    const confirmBtn = document.getElementById('excel-confirm-btn');
+    const dupRow = document.getElementById('excel-dup-policy-row');
+    const filenameEl = document.getElementById('excel-filename');
+    const filesizeEl = document.getElementById('excel-filesize');
+    const validPill = document.getElementById('excel-valid-count-pill');
+    const dupPill = document.getElementById('excel-dup-count-pill');
+    const tbody = document.getElementById('excel-preview-tbody');
+
+    if (uploadStage) uploadStage.style.display = 'none';
+    if (previewStage) previewStage.style.display = 'flex';
+    if (confirmBtn) {
+        confirmBtn.style.display = 'inline-flex';
+        confirmBtn.innerHTML = `<i class="fas fa-file-import"></i> Confirm & Import (${parsedExcelRows.length} Items)`;
+    }
+
+    if (filenameEl) filenameEl.textContent = fileName;
+    if (filesizeEl) filesizeEl.textContent = `${(fileSize / 1024).toFixed(1)} KB`;
+
+    const validCount = parsedExcelRows.length - duplicateCount;
+    if (validPill) validPill.textContent = `${validCount} New Record${validCount === 1 ? '' : 's'}`;
+
+    if (dupPill) {
+        if (duplicateCount > 0) {
+            dupPill.textContent = `${duplicateCount} Duplicate${duplicateCount === 1 ? '' : 's'}`;
+            dupPill.style.display = 'inline-block';
+        } else {
+            dupPill.style.display = 'none';
+        }
+    }
+
+    if (dupRow) {
+        dupRow.style.display = duplicateCount > 0 ? 'flex' : 'none';
+    }
+
+    if (tbody) {
+        tbody.innerHTML = '';
+        parsedExcelRows.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid rgba(51, 65, 85, 0.4)';
+            if (item.isDuplicate) {
+                tr.style.backgroundColor = 'rgba(245, 158, 11, 0.04)';
+            }
+
+            const statusBadge = item.isDuplicate 
+                ? `<span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Duplicate</span>`
+                : `<span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">New Item</span>`;
+
+            tr.innerHTML = `
+                <td style="padding: 9px 12px; text-align: center; color: #64748b; font-size: 11px;">${idx + 1}</td>
+                <td style="padding: 9px 12px;">${statusBadge}</td>
+                <td style="padding: 9px 12px; font-weight: 600; color: #f8fafc; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${sanitizeText(item.article)}</td>
+                <td style="padding: 9px 12px; font-family: monospace; color: #38bdf8;">${sanitizeText(item.propertyNo)}</td>
+                <td style="padding: 9px 12px; color: #94a3b8; font-size: 11.5px;">${sanitizeText(item.date)}</td>
+                <td style="padding: 9px 12px; text-align: center; color: #f8fafc;">${item.qty}</td>
+                <td style="padding: 9px 12px; color: #94a3b8;">${sanitizeText(item.unit)}</td>
+                <td style="padding: 9px 12px; text-align: right; color: #cbd5e1;">₱${item.unitCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="padding: 9px 12px; text-align: right; font-weight: 600; color: #34d399;">₱${item.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="padding: 9px 12px;"><span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${sanitizeText(item.location)}</span></td>
+                <td style="padding: 9px 12px; color: #cbd5e1;">${sanitizeText(item.accountablePerson)}</td>
+                <td style="padding: 9px 12px; color: ${item.condition === 'Serviceable' ? '#4ade80' : '#f87171'}; font-weight: 600; font-size: 11px;">${sanitizeText(item.condition)}</td>
+                <td style="padding: 9px 12px; color: #94a3b8; font-size: 11px;">${sanitizeText(item.account || '-')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+}
+
+// Execute Batch Insertion into Firebase and Supabase
+window.executeExcelImport = async function() {
+    if (!parsedExcelRows || parsedExcelRows.length === 0) return;
+
+    const dupPolicySelect = document.getElementById('excel-dup-policy');
+    const dupPolicy = dupPolicySelect ? dupPolicySelect.value : 'skip'; // 'skip' or 'update'
+
+    let itemsToProcess = [];
+    if (dupPolicy === 'skip') {
+        itemsToProcess = parsedExcelRows.filter(r => !r.isDuplicate);
+    } else {
+        itemsToProcess = [...parsedExcelRows];
+    }
+
+    if (itemsToProcess.length === 0) {
+        window.showGTrackToast('info', 'No Items to Import', 'All items in the spreadsheet are existing duplicates and duplicate policy was set to Skip.');
+        return;
+    }
+
+    // Switch to progress stage
+    const previewStage = document.getElementById('excel-preview-stage');
+    const progressStage = document.getElementById('excel-progress-stage');
+    const confirmBtn = document.getElementById('excel-confirm-btn');
+    const cancelBtn = document.getElementById('excel-cancel-btn');
+    const progressBar = document.getElementById('excel-progress-bar');
+    const progressCount = document.getElementById('excel-progress-count');
+
+    if (previewStage) previewStage.style.display = 'none';
+    if (progressStage) progressStage.style.display = 'flex';
+    if (confirmBtn) confirmBtn.style.display = 'none';
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    try {
+        const totalItems = itemsToProcess.length;
+        let processedCount = 0;
+        const chunkSize = 50;
+
+        for (let i = 0; i < totalItems; i += chunkSize) {
+            const chunk = itemsToProcess.slice(i, i + chunkSize);
+            const fbUpdates = {};
+            const supaInserts = [];
+
+            for (const item of chunk) {
+                if (item.isDuplicate && item.existingId && dupPolicy === 'update') {
+                    // Update existing
+                    const updatePayload = {
+                        article: item.article,
+                        description: item.description,
+                        propertyNo: item.propertyNo,
+                        date: item.date,
+                        qty: item.qty,
+                        unit: item.unit,
+                        unitCost: item.unitCost,
+                        totalCost: item.totalCost,
+                        location: item.location,
+                        accountablePerson: item.accountablePerson,
+                        condition: item.condition,
+                        account: item.account,
+                        remarks: item.remarks,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    fbUpdates[`inventoryData/${item.existingId}`] = updatePayload;
+
+                    if (supabaseClient && typeof mapInventoryItemToSupabase === 'function') {
+                        try {
+                            const supaPayload = mapInventoryItemToSupabase(updatePayload);
+                            await supabaseClient.from('inventory').update(supaPayload).eq('id', item.existingId);
+                        } catch (sErr) {
+                            console.warn("Supabase update error:", sErr);
+                        }
+                    }
+                } else {
+                    // Insert new item
+                    const newRef = inventoryRef.push();
+                    const newId = newRef.key;
+                    const itemData = {
+                        id: newId,
+                        article: item.article,
+                        description: item.description,
+                        propertyNo: item.propertyNo,
+                        date: item.date,
+                        qty: item.qty,
+                        unit: item.unit,
+                        unitCost: item.unitCost,
+                        totalCost: item.totalCost,
+                        location: item.location,
+                        accountablePerson: item.accountablePerson,
+                        condition: item.condition,
+                        account: item.account,
+                        remarks: item.remarks,
+                        tallyStatus: 'Pending',
+                        tallied: false,
+                        importedAt: firebase.database.ServerValue.TIMESTAMP,
+                        importedBy: 'Admin (Excel Import)'
+                    };
+                    fbUpdates[`inventoryData/${newId}`] = itemData;
+
+                    if (supabaseClient && typeof mapInventoryItemToSupabase === 'function') {
+                        const sPayload = mapInventoryItemToSupabase(itemData);
+                        sPayload.id = newId;
+                        sPayload.tally_status = 'Pending';
+                        sPayload.tallied = false;
+                        supaInserts.push(sPayload);
+                    }
+                }
+            }
+
+            // Write chunk to Firebase Realtime Database
+            if (Object.keys(fbUpdates).length > 0) {
+                await database.ref().update(fbUpdates);
+            }
+
+            // Write chunk to Supabase if configured
+            if (supabaseClient && supaInserts.length > 0) {
+                try {
+                    await supabaseClient.from('inventory').insert(supaInserts);
+                } catch (supaErr) {
+                    console.warn("Supabase batch insert notice:", supaErr);
+                }
+            }
+
+            processedCount += chunk.length;
+            const pct = Math.min(100, Math.round((processedCount / totalItems) * 100));
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressCount) progressCount.textContent = `${processedCount} / ${totalItems}`;
+
+            // Small delay for smooth progress animation
+            await new Promise(res => setTimeout(res, 40));
+        }
+
+        // Broadcast notification to system
+        try {
+            const notifRef = database.ref('notifications').push();
+            await notifRef.set({
+                id: notifRef.key,
+                title: 'Bulk Inventory Import Completed',
+                message: `${processedCount} property item(s) imported from Excel into the masterlist.`,
+                type: 'import_excel',
+                targetRole: 'admin',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        } catch (nErr) {}
+
+        // Complete & Refresh
+        closeExcelImportModal();
+        if (supabaseClient && typeof fetchInventoryFromSupabase === 'function') {
+            fetchInventoryFromSupabase();
+        }
+        if (typeof renderTable === 'function') {
+            renderTable();
+        }
+
+        window.showGTrackToast('success', 'Import Successful', `Successfully imported ${processedCount} property records into the Masterlist.`);
+
+    } catch (err) {
+        console.error("Error executing Excel import:", err);
+        window.showGTrackToast('error', 'Import Failed', err.message || 'An error occurred during import.');
+        if (cancelBtn) cancelBtn.disabled = false;
+    }
+};
+
+
