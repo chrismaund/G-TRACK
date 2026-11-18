@@ -93,6 +93,13 @@ auth.onAuthStateChanged(async (user) => {
             if (chipName) chipName.textContent = nameParts[0] || 'Admin';
             if (dropFullname) dropFullname.textContent = adminName;
             if (dropRole) dropRole.textContent = 'GSO Administrator';
+
+            // Dismiss zero-flash session verification cloak smoothly
+            const cloak = document.getElementById('auth-cloak');
+            if (cloak) {
+                cloak.classList.add('hidden');
+                setTimeout(() => { if (cloak && cloak.parentNode) cloak.remove(); }, 350);
+            }
         }, (err) => {
             console.error("Admin user listener error:", err);
         });

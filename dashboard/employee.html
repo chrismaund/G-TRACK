@@ -13,8 +13,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style(admin).css?v=20261021_4">
+    <style id="auth-cloak-style">
+        #auth-cloak {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #auth-cloak.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .auth-cloak-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(56, 189, 248, 0.15);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: authCloakSpin 0.75s linear infinite;
+            margin-bottom: 14px;
+        }
+        @keyframes authCloakSpin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Zero-Flash Session Authorization Cloak -->
+    <div id="auth-cloak">
+        <div class="auth-cloak-spinner"></div>
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: #94a3b8; letter-spacing: 0.3px;">
+            Verifying Session...
+        </div>
+    </div>
 
     <!-- Sliding Sidebar Nav Menu Drawer -->
     <div id="sidebar-drawer" class="sidebar-drawer">
@@ -1231,7 +1268,7 @@
     <!-- ExcelJS for Protected & Auto-Formatted Official Spreadsheet Downloads -->
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
-    <script src="script(emp).js?v=20261118_3"></script>
+    <script src="script(emp).js?v=20261118_4"></script>
 
 </body>
 </html>

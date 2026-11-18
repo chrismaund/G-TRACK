@@ -171,6 +171,13 @@ auth.onAuthStateChanged(async (user) => {
             if (dropFullname) dropFullname.textContent = currentEmployeeName || 'Employee';
             if (dropRole) dropRole.textContent = `Staff • ${currentEmployeeDept || 'LGU Member'}`;
 
+            // Dismiss zero-flash session verification cloak smoothly
+            const cloak = document.getElementById('auth-cloak');
+            if (cloak) {
+                cloak.classList.add('hidden');
+                setTimeout(() => { if (cloak && cloak.parentNode) cloak.remove(); }, 350);
+            }
+
             // Profile modal fields
             const modalFullname = document.getElementById('profile-name-input') || document.getElementById('profile-fullname');
             const modalEmail = document.getElementById('profile-email-input') || document.getElementById('profile-email-display');
