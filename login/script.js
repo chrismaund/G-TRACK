@@ -513,28 +513,100 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw createErr;
                     }
 
-                    // Check if an active user profile exists in Firestore
-                    const existingUserSnap = await db.collection("users").where("email", "==", email).get();
-
-                    if (!existingUserSnap.empty) {
-                        // User genuinely exists in Firestore as an active account
-                        throw createErr;
-                    }
-
-                    // No profile exists in Firestore (the account was deleted by Admin from dashboard)
-                    // Attempt to sign in to the orphaned Auth record with the password entered
+                    // The email already exists in Firebase Auth (e.g. from a prior Google sign-in or orphaned record)
+                    // Attempt to sign in to verify if it has an existing profile or is an orphaned auth record
+                    let signedInUser = null;
                     try {
                         const reAuthCred = await auth.signInWithEmailAndPassword(email, password);
-                        // If authenticated, permanently delete the old Auth record to free up the email cleanly
-                        await reAuthCred.user.delete();
-                        // Re-create the account fresh with clean credentials
-                        userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                    } catch (reAuthErr) {
-                        if (reAuthErr.code === 'auth/wrong-password') {
-                            throw new Error("PREV_DELETED_WRONG_PASSWORD");
+                        signedInUser = reAuthCred.user;
+                    } catch (signErr) {
+                        // Password didn't match or account was created via Google Sign-In (no password set)
+                    }
+
+                    if (signedInUser) {
+                        const profileSnap = await db.collection("users").doc(signedInUser.uid).get();
+                        if (profileSnap.exists) {
+                            await auth.signOut();
+                            throw new Error("An account with this email address is already registered. Please go to Login or use Forgot Password.");
                         } else {
-                            throw reAuthErr;
+                            // Orphaned Auth user without a Firestore profile -> Use this user to create the profile
+                            userCredential = { user: signedInUser };
                         }
+                    } else {
+                        // The email exists in Firebase Auth from Google Sign-In.
+                        // Provide a 1-click button to verify with Google and submit the registration!
+                        if (regErrorMessage) {
+                            regErrorMessage.innerHTML = `
+                                <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start; text-align: left;">
+                                    <span><i class="fas fa-info-circle"></i> <strong>${email}</strong> was previously connected via Google sign-in.</span>
+                                    <span style="font-size: 11.5px; opacity: 0.9;">Click below to verify with Google and submit your registration request for <strong>${fullName}</strong>:</span>
+                                    <button type="button" id="regGoogleVerifyBtn" class="google-sign-in-btn" style="width: 100%; justify-content: center; margin-top: 4px; height: 38px; font-size: 12px; border-color: rgba(56, 189, 248, 0.4);">
+                                        <i class="fab fa-google"></i> <span>Verify with Google &amp; Submit Registration</span>
+                                    </button>
+                                </div>
+                            `;
+                            regErrorMessage.style.display = 'block';
+
+                            const googleVerifyBtn = document.getElementById('regGoogleVerifyBtn');
+                            if (googleVerifyBtn) {
+                                googleVerifyBtn.onclick = async () => {
+                                    googleVerifyBtn.disabled = true;
+                                    googleVerifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Verifying...</span>';
+                                    try {
+                                        const provider = new firebase.auth.GoogleAuthProvider();
+                                        provider.setCustomParameters({ prompt: 'select_account' });
+                                        const gResult = await auth.signInWithPopup(provider);
+                                        const gUser = gResult.user;
+                                        if (!gUser) return;
+
+                                        // Set or update personal password for manual login flexibility
+                                        try {
+                                            await gUser.updatePassword(password);
+                                        } catch (pwdErr) {
+                                            console.warn("Auto password set warning:", pwdErr);
+                                        }
+
+                                        // Write Firestore profile
+                                        await db.collection("users").doc(gUser.uid).set({
+                                            uid: gUser.uid,
+                                            fullName: fullName,
+                                            email: email,
+                                            department: department,
+                                            role: "employee",
+                                            status: "pending",
+                                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        });
+
+                                        if (regSuccessMessage) {
+                                            regSuccessMessage.textContent = 'Registration successful! Awaiting Admin approval.';
+                                            regSuccessMessage.style.display = 'block';
+                                        }
+                                        regErrorMessage.style.display = 'none';
+                                        registerForm.reset();
+                                        if (typeof window.evaluateRegPasswordRequirements === 'function') {
+                                            window.evaluateRegPasswordRequirements('');
+                                        }
+                                        const textSpan = document.getElementById('deptSelectText');
+                                        const trigger = document.getElementById('deptSelectTrigger');
+                                        const hiddenInput = document.getElementById('regDepartment');
+                                        if (textSpan) textSpan.textContent = 'Select Municipal Department';
+                                        if (trigger) trigger.classList.remove('selected');
+                                        if (hiddenInput) hiddenInput.value = '';
+                                        document.querySelectorAll('#deptOptionsList .custom-option').forEach(o => o.classList.remove('selected'));
+
+                                        await auth.signOut();
+                                    } catch (gErr) {
+                                        if (gErr.code === 'auth/popup-closed-by-user' || gErr.code === 'auth/cancelled-popup-request') {
+                                            googleVerifyBtn.disabled = false;
+                                            googleVerifyBtn.innerHTML = '<i class="fab fa-google"></i> <span>Verify with Google &amp; Submit Registration</span>';
+                                            return;
+                                        }
+                                        regErrorMessage.textContent = formatAuthError(gErr);
+                                    }
+                                };
+                            }
+                        }
+                        return;
                     }
                 }
 
@@ -780,6 +852,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Case A: User profile does NOT exist in Firestore (Not registered in G-TRACK)
             if (!userData) {
+                try {
+                    await user.delete();
+                } catch (delErr) {
+                    console.warn("Could not auto-purge unregistered auth user:", delErr);
+                }
                 await auth.signOut();
                 const userEmail = (user && user.email) ? user.email : 'this Google account';
                 if (errorMessage) {
