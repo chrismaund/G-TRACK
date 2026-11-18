@@ -2254,7 +2254,15 @@ window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) 
         return;
     }
 
-    const displayName = userEmail ? `"${userEmail}"` : "this user account";
+    let resolvedEmail = userEmail;
+    if (!resolvedEmail && Array.isArray(allUserProfiles)) {
+        const found = allUserProfiles.find(p => p.id === userId);
+        if (found && found.data) {
+            resolvedEmail = found.data.email || '';
+        }
+    }
+
+    const displayName = resolvedEmail ? `"${resolvedEmail}"` : "this user account";
     const ok = await window.showGTrackConfirm(
         "Delete User Account?",
         `Are you sure you want to permanently delete ${displayName}? This account will be permanently removed from the system and can no longer log in.`,
@@ -2464,11 +2472,11 @@ function renderUserProfilesTable() {
                 <div id="kebab-menu-${userId}" class="kebab-dropdown-menu" style="position: absolute; right: 14px; top: 40px; background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 100; min-width: 165px; padding: 6px; display: none; flex-direction: column; gap: 4px; text-align: left;">
                     ${!item.isSelf ? `
                         ${userRole === 'admin' ? `
-                            <button onclick="changeUserRole('${userId}', 'employee', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
+                            <button onclick="changeUserRole('${userId}', 'employee', '', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #fbbf24; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Demote account to standard employee">
                                 <i class="fas fa-user-minus" style="width: 14px;"></i> Demote to Employee
                             </button>
                         ` : `
-                            <button onclick="changeUserRole('${userId}', 'admin', '${sanitizeText(user.fullName || user.name || 'User')}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
+                            <button onclick="changeUserRole('${userId}', 'admin', '', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #c084fc; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;" title="Promote account to administrator">
                                 <i class="fas fa-user-shield" style="width: 14px;"></i> Promote to Admin
                             </button>
                         `}
@@ -2485,12 +2493,12 @@ function renderUserProfilesTable() {
                             </button>
                         `}
                     ` : ''}
-                    <button onclick="openAdminReassignModal('${userId}', '${sanitizeText(user.fullName || user.name || 'Staff')}', '${sanitizeText(user.email || '')}', '${sanitizeText(deptName)}', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                    <button onclick="openAdminReassignModal('${userId}', '', '', '', event); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #38bdf8; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                         <i class="fas fa-building" style="width: 14px;"></i> Reassign Dept
                     </button>
                     ${!item.isSelf ? `
                         <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0;"></div>
-                        <button onclick="deleteUserAccount('${userId}', '${sanitizeText(user.email)}', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
+                        <button onclick="deleteUserAccount('${userId}', '', this); closeAllKebabMenus();" class="kebab-item-btn" style="background: none; border: none; color: #f87171; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; border-radius: 4px; transition: background 0.15s;">
                             <i class="fas fa-trash-alt" style="width: 14px;"></i> Delete Account
                         </button>
                     ` : ''}
@@ -2608,12 +2616,22 @@ document.addEventListener('DOMContentLoaded', initUserProfilesListener);
 window.changeUserRole = async function(userId, newRole, userName, triggerBtn = null) {
     if (!userId) return;
 
+    let resolvedName = userName;
+    if (!resolvedName && Array.isArray(allUserProfiles)) {
+        const found = allUserProfiles.find(p => p.id === userId);
+        if (found && found.data) {
+            resolvedName = found.data.fullName || found.data.name || found.data.email || 'this user';
+        } else {
+            resolvedName = 'this user';
+        }
+    }
+
     const isDemote = newRole === 'employee';
     const ok = await window.showGTrackConfirm(
         isDemote ? "Demote to Employee?" : "Elevate to Administrator?",
         isDemote 
-            ? `Revoke Administrator privileges from ${userName}? Their account will immediately revert to standard Employee access.`
-            : `Grant full Administrator privileges to ${userName}?`,
+            ? `Revoke Administrator privileges from ${resolvedName}? Their account will immediately revert to standard Employee access.`
+            : `Grant full Administrator privileges to ${resolvedName}?`,
         isDemote ? "Yes, Demote to Employee" : "Yes, Promote to Admin",
         "Cancel",
         isDemote,
@@ -2683,10 +2701,23 @@ window.openAdminReassignModal = function(userId, userName, userEmail, currentDep
     const saveBtn = document.getElementById('save-reassign-btn');
     const modalCard = modal ? modal.querySelector('.modal-card') : null;
 
+    let resolvedName = userName;
+    let resolvedEmail = userEmail;
+    let resolvedDept = currentDept;
+
+    if (userId && (!resolvedName || !resolvedEmail || !resolvedDept) && Array.isArray(allUserProfiles)) {
+        const found = allUserProfiles.find(p => p.id === userId);
+        if (found && found.data) {
+            if (!resolvedName) resolvedName = found.data.fullName || found.data.name || 'Staff Member';
+            if (!resolvedEmail) resolvedEmail = found.data.email || 'No Email';
+            if (!resolvedDept) resolvedDept = found.data.department || 'None';
+        }
+    }
+
     if (userIdInput) userIdInput.value = userId;
-    if (nameEl) nameEl.textContent = userName || 'Staff Member';
-    if (emailEl) emailEl.textContent = userEmail || 'No Email';
-    if (currentDeptEl) currentDeptEl.textContent = currentDept || 'None';
+    if (nameEl) nameEl.textContent = resolvedName || 'Staff Member';
+    if (emailEl) emailEl.textContent = resolvedEmail || 'No Email';
+    if (currentDeptEl) currentDeptEl.textContent = resolvedDept || 'None';
     if (alertBox) alertBox.style.display = 'none';
 
     if (saveBtn) {
@@ -3277,7 +3308,7 @@ async function renderAdminRequestsPanel() {
                     </div>
                     ${isPending ? `
                         <div class="req-actions">
-                            <button onclick="approveEquipmentTransfer('${item.id}', '${d.itemId}', '${d.targetDepartment}', '${sanitizeText(d.newCustodian)}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
+                            <button onclick="approveEquipmentTransfer('${item.id}', '${d.itemId}', '${d.targetDepartment}', '', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto;">
                                 <i class="fas fa-check"></i> Approve Transfer
                             </button>
                             <button onclick="rejectEquipmentTransfer('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
@@ -3317,7 +3348,7 @@ async function renderAdminRequestsPanel() {
                     </div>
                     ${isPending ? `
                         <div class="req-actions">
-                            <button onclick="approveAdminRole('${item.id}', '${d.userId}', '${sanitizeText(d.userName)}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);">
+                            <button onclick="approveAdminRole('${item.id}', '${d.userId}', '', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);">
                                 <i class="fas fa-user-shield"></i> Approve Admin Access
                             </button>
                             <button onclick="rejectAdminRole('${item.id}', this)" class="add-eq-btn secondary-btn" style="padding: 6px 12px; font-size: 11.5px; height: auto; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
@@ -3802,9 +3833,27 @@ window.rejectDeptTransfer = async function(reqId, triggerBtn = null) {
 };
 
 window.approveEquipmentTransfer = async function(transferId, itemId, newDept, newCustodian, triggerBtn = null) {
+    let resolvedCustodian = newCustodian;
+    let resolvedDept = newDept;
+    let resolvedItemId = itemId;
+
+    if (transferId && (!resolvedCustodian || !resolvedDept || !resolvedItemId)) {
+        try {
+            const snap = await database.ref(`equipmentTransfers/${transferId}`).once('value');
+            if (snap.exists()) {
+                const val = snap.val();
+                if (!resolvedCustodian) resolvedCustodian = val.newCustodian || 'New Custodian';
+                if (!resolvedDept) resolvedDept = val.targetDepartment || 'Assigned Office';
+                if (!resolvedItemId) resolvedItemId = val.itemId || '';
+            }
+        } catch (e) {
+            console.warn("Could not fetch transfer details:", e);
+        }
+    }
+
     const ok = await window.showGTrackConfirm(
         "Approve Equipment Transfer?",
-        `Transfer this equipment to ${newDept} (Custodian: ${newCustodian})?`,
+        `Transfer this equipment to ${resolvedDept} (Custodian: ${resolvedCustodian})?`,
         "Approve Transfer",
         "Cancel",
         false,
@@ -3814,22 +3863,22 @@ window.approveEquipmentTransfer = async function(transferId, itemId, newDept, ne
 
     try {
         // 1. Update Inventory in Supabase
-        if (supabaseClient && itemId) {
+        if (supabaseClient && resolvedItemId) {
             try {
                 await supabaseClient.from('inventory').update({
-                    location: newDept,
-                    accountable_person: newCustodian
-                }).eq('id', itemId);
+                    location: resolvedDept,
+                    accountable_person: resolvedCustodian
+                }).eq('id', resolvedItemId);
             } catch(err) {
                 console.warn("Supabase item update fallback:", err);
             }
         }
 
         // 2. Update Inventory in Firebase Realtime Database
-        if (itemId) {
-            await database.ref(`inventoryData/${itemId}`).update({
-                location: newDept,
-                accountablePerson: newCustodian
+        if (resolvedItemId) {
+            await database.ref(`inventoryData/${resolvedItemId}`).update({
+                location: resolvedDept,
+                accountablePerson: resolvedCustodian
             });
         }
 
@@ -3937,9 +3986,17 @@ window.rejectEquipmentTransfer = async function(transferId, triggerBtn = null) {
 };
 
 window.approveAdminRole = async function(reqId, userId, userName, triggerBtn = null) {
+    let resolvedName = userName;
+    if (!resolvedName && userId && Array.isArray(allUserProfiles)) {
+        const found = allUserProfiles.find(p => p.id === userId);
+        if (found && found.data) {
+            resolvedName = found.data.fullName || found.data.name || found.data.email || 'this user';
+        }
+    }
+
     const ok = await window.showGTrackConfirm(
         "Authorize Administrator Access?",
-        `Elevate ${userName || 'this user'} to Administrator role? They will be granted full administrative authority.`,
+        `Elevate ${resolvedName || 'this user'} to Administrator role? They will be granted full administrative authority.`,
         "Authorize Admin Role",
         "Cancel",
         false,
