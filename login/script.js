@@ -643,6 +643,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
+
+                // If user previously attempted to Continue with Google, link Google credential now
+                if (window.pendingGoogleCredential) {
+                    try {
+                        await user.linkWithCredential(window.pendingGoogleCredential);
+                        window.pendingGoogleCredential = null;
+                        console.log("Successfully linked Google credential to account.");
+                    } catch (linkErr) {
+                        console.warn("Could not link pending Google credential:", linkErr);
+                    }
+                }
                 const docSnap = await db.collection("users").doc(user.uid).get();
 
                 if (!docSnap.exists) {
@@ -820,6 +831,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
                 return;
             }
+
+            // Case: Account exists with password - guide user to enter password to link Google shortcut
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                window.pendingGoogleCredential = error.credential;
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                const accountEmail = error.email || (emailInput ? emailInput.value : '');
+
+                if (emailInput && accountEmail) {
+                    emailInput.value = accountEmail;
+                }
+
+                if (errorMessage) {
+                    errorMessage.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 6px;"></i> An account already exists for <strong>${accountEmail}</strong>. Please enter your password above and click <strong>Sign In</strong> to link Google as your 1-click shortcut.`;
+                    errorMessage.style.display = "block";
+                    errorMessage.style.color = "#38bdf8";
+                    errorMessage.style.borderColor = "rgba(56, 189, 248, 0.4)";
+                }
+
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+                return;
+            }
+
             if (errorMessage) {
                 errorMessage.textContent = formatAuthError(error);
                 errorMessage.style.display = "block";

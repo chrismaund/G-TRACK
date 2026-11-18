@@ -1195,7 +1195,14 @@
             <!-- Google Account Notice for Social Logins -->
             <div id="admin-google-user-notice" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #38bdf8; align-items: center; gap: 10px;">
                 <i class="fab fa-google" style="font-size: 16px; color: #38bdf8;"></i>
-                <span>You are signed in with Google. Passwords and email are managed securely by your Google Account.</span>
+                <span id="admin-google-notice-text">Signed in with Google. You can use Google as a 1-click login shortcut, or change/set your account password below to also log in manually with your email.</span>
+            </div>
+
+            <!-- Google Account Link Shortcut Button (for Email/Password sign-ins) -->
+            <div id="admin-google-link-wrapper" style="display: none; margin-bottom: 16px;">
+                <button type="button" id="admin-link-google-btn" onclick="linkAdminGoogleAccount(event)" class="add-eq-btn secondary-btn" style="width: 100%; justify-content: center; gap: 8px; font-size: 12px; height: 38px; border-color: rgba(56, 189, 248, 0.35); color: #38bdf8;">
+                    <i class="fab fa-google"></i> <span>Link Google Account for 1-Click Login</span>
+                </button>
             </div>
 
             <!-- Password Change Section (Optional) -->
@@ -1203,10 +1210,10 @@
                 <span style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
                     <i class="fas fa-key" style="margin-right: 4px;"></i> Change Password (Optional)
                 </span>
-                <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 14px;">Enter your current password to authorize setting a new administrative password.</span>
+                <span id="admin-pwd-subtitle" style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 14px;">Enter your current password to authorize setting a new administrative password.</span>
 
                 <div class="form-group" style="margin-bottom: 14px;">
-                    <label for="admin-profile-old-password">Current Password</label>
+                    <label for="admin-profile-old-password" id="admin-old-password-label">Current Password</label>
                     <input type="password" id="admin-profile-old-password" placeholder="Enter current password">
                 </div>
 
@@ -1883,7 +1890,7 @@
     <!-- ExcelJS for Protected & Auto-Formatted Official Spreadsheet Downloads -->
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
-    <script src="script(admin).js?v=20261118_8"></script>
+    <script src="script(admin).js?v=20261118_9"></script>
     
 </body>
 </html>

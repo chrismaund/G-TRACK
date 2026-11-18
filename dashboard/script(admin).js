@@ -46,6 +46,27 @@ auth.onAuthStateChanged(async (user) => {
 
         adminDocUnsubscribe = db.collection("users").doc(user.uid).onSnapshot((docSnap) => {
             if (!docSnap.exists) {
+                const uEmail = (user.email || '').toLowerCase();
+                if (uEmail) {
+                    db.collection("users").where("email", "==", uEmail).get().then(snap => {
+                        if (!snap.empty) {
+                            const matchedDoc = snap.docs[0];
+                            return db.collection("users").doc(user.uid).set({
+                                ...matchedDoc.data(),
+                                uid: user.uid
+                            }, { merge: true });
+                        } else {
+                            auth.signOut();
+                            sessionStorage.clear();
+                            window.location.replace("../login/index.html");
+                        }
+                    }).catch(() => {
+                        auth.signOut();
+                        sessionStorage.clear();
+                        window.location.replace("../login/index.html");
+                    });
+                    return;
+                }
                 auth.signOut();
                 sessionStorage.clear();
                 window.location.replace("../login/index.html");
@@ -1467,12 +1488,21 @@ window.openAdminProfileModal = function() {
 
     const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
     const googleNotice = document.getElementById('admin-google-user-notice');
+    const googleLinkWrapper = document.getElementById('admin-google-link-wrapper');
     const pwdSection = document.getElementById('admin-password-section');
     const emailNotice = document.getElementById('admin-profile-email-notice');
+    const pwdSubtitle = document.getElementById('admin-pwd-subtitle');
+    const oldPassLabel = document.getElementById('admin-old-password-label');
+
+    // Always keep Password section accessible so administrators can freely set or update passwords
+    if (pwdSection) pwdSection.style.display = 'block';
 
     if (isGoogleUser) {
         if (googleNotice) googleNotice.style.display = 'flex';
-        if (pwdSection) pwdSection.style.display = 'none';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'none';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Set or update your administrative password. (Current password required for password login; optional if signed in with Google)';
+        if (oldPass) oldPass.placeholder = 'Enter current password (optional with Google)';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password <span style="font-size: 10.5px; color: #38bdf8; font-weight: 500;">(Optional with Google)</span>';
         if (emailNotice) emailNotice.textContent = 'Signed in with Google. Email address is managed by your Google Account.';
         if (emailInput) {
             emailInput.readOnly = true;
@@ -1481,7 +1511,10 @@ window.openAdminProfileModal = function() {
         }
     } else {
         if (googleNotice) googleNotice.style.display = 'none';
-        if (pwdSection) pwdSection.style.display = 'block';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'block';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Enter your current password to authorize setting a new administrative password.';
+        if (oldPass) oldPass.placeholder = 'Enter current password';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password';
         if (emailNotice) emailNotice.textContent = 'Enter current password below to authorize changing email address or password.';
         if (emailInput) {
             emailInput.readOnly = false;
@@ -1515,6 +1548,54 @@ window.closeAdminProfileModal = function() {
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
     window.evaluateAdminPasswordRequirements('');
+};
+
+window.linkAdminGoogleAccount = async function(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('admin-link-google-btn');
+    const originalHTML = btn ? btn.innerHTML : '<i class="fab fa-google"></i> <span>Link Google Account for 1-Click Login</span>';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Linking Google...';
+    }
+    clearAdminProfileAlerts();
+
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No authenticated session found.");
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await user.linkWithPopup(provider);
+
+        showAdminProfileAlert('success', 'Google account linked successfully! You can now use "Continue with Google" as a 1-click shortcut.');
+
+        const googleNotice = document.getElementById('admin-google-user-notice');
+        const googleLinkWrapper = document.getElementById('admin-google-link-wrapper');
+        const pwdSubtitle = document.getElementById('admin-pwd-subtitle');
+        const oldPass = document.getElementById('admin-profile-old-password');
+        const oldPassLabel = document.getElementById('admin-old-password-label');
+
+        if (googleNotice) googleNotice.style.display = 'flex';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'none';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Set or update your administrative password. (Current password required for password login; optional if signed in with Google)';
+        if (oldPass) oldPass.placeholder = 'Enter current password (optional with Google)';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password <span style="font-size: 10.5px; color: #38bdf8; font-weight: 500;">(Optional with Google)</span>';
+    } catch (err) {
+        if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+            return;
+        }
+        if (err.code === 'auth/credential-already-in-use') {
+            showAdminProfileAlert('error', 'This Google account is already linked to another user profile.');
+        } else {
+            showAdminProfileAlert('error', err.message || "Failed to link Google account.");
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }
 };
 
 window.toggleAdminProfileDeptDropdown = function(event) {
@@ -1649,7 +1730,7 @@ window.saveAdminProfileChanges = async function(event) {
 
     const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
     const isEmailChangeAttempt = !isGoogleUser && Boolean(newEmail && currentAdminEmail && newEmail !== currentAdminEmail.toLowerCase());
-    const isPasswordChangeAttempt = !isGoogleUser && Boolean(currentPassword || newPassword || confirmPassword);
+    const isPasswordChangeAttempt = Boolean(newPassword || confirmPassword || (!isGoogleUser && currentPassword));
 
     // Validation 3: If email is being changed, require current password for security verification
     if (isEmailChangeAttempt && !currentPassword) {
@@ -1660,7 +1741,7 @@ window.saveAdminProfileChanges = async function(event) {
 
     // Validation 4: Password validation rules
     if (isPasswordChangeAttempt) {
-        if (!currentPassword) {
+        if (!isGoogleUser && !currentPassword) {
             showAdminProfileAlert('error', "Please enter your current password to authorize changing your credentials.");
             if (oldPassInput) oldPassInput.focus();
             return;
@@ -1684,7 +1765,7 @@ window.saveAdminProfileChanges = async function(event) {
             return;
         }
 
-        if (newPassword === currentPassword) {
+        if (currentPassword && newPassword === currentPassword) {
             showAdminProfileAlert('error', "Choose a password you haven't used before. New password cannot be the same as current password.");
             if (newPassInput) newPassInput.focus();
             return;
@@ -1712,8 +1793,8 @@ window.saveAdminProfileChanges = async function(event) {
         let nameUpdated = false;
         let deptUpdated = false;
 
-        // 1. Re-authenticate if either Email or Password is being modified
-        if (isEmailChangeAttempt || isPasswordChangeAttempt) {
+        // 1. Re-authenticate with EmailAuthProvider if currentPassword was provided or email is being changed
+        if (isEmailChangeAttempt || (isPasswordChangeAttempt && currentPassword)) {
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying password...';
             try {
                 const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
@@ -1739,8 +1820,24 @@ window.saveAdminProfileChanges = async function(event) {
         // 3. Update Password in Firebase Auth if requested
         if (isPasswordChangeAttempt) {
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
-            await user.updatePassword(newPassword);
-            passwordUpdated = true;
+            if (currentPassword) {
+                await user.updatePassword(newPassword);
+                passwordUpdated = true;
+            } else if (isGoogleUser) {
+                try {
+                    await user.updatePassword(newPassword);
+                } catch (pwdErr) {
+                    if (pwdErr.code === 'auth/requires-recent-login') {
+                        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming Google login...';
+                        const provider = new firebase.auth.GoogleAuthProvider();
+                        await user.reauthenticateWithPopup(provider);
+                        await user.updatePassword(newPassword);
+                    } else {
+                        throw pwdErr;
+                    }
+                }
+                passwordUpdated = true;
+            }
         }
 
         // 4. Direct Admin Account Update to Firestore
@@ -1760,6 +1857,21 @@ window.saveAdminProfileChanges = async function(event) {
         if (Object.keys(updatePayload).length > 0) {
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating database...';
             await db.collection("users").doc(user.uid).update(updatePayload);
+
+            // Also mirror sync to matching email doc if it exists under another UID
+            const userEmail = (user.email || '').toLowerCase();
+            if (userEmail) {
+                try {
+                    const emailSnap = await db.collection("users").where("email", "==", userEmail).get();
+                    emailSnap.forEach(d => {
+                        if (d.id !== user.uid) {
+                            d.ref.update(updatePayload).catch(() => {});
+                        }
+                    });
+                } catch (syncErr) {
+                    console.warn("Mirroring admin profile update warning:", syncErr);
+                }
+            }
             
             if (emailUpdated) {
                 currentAdminEmail = newEmail;

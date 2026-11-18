@@ -96,6 +96,26 @@ auth.onAuthStateChanged(async (user) => {
 
         userDocUnsubscribe = db.collection("users").doc(user.uid).onSnapshot((docSnap) => {
             if (!docSnap.exists) {
+                // Fallback check by email in case account was registered under another UID
+                const uEmail = (user.email || '').toLowerCase();
+                if (uEmail) {
+                    db.collection("users").where("email", "==", uEmail).get().then(snap => {
+                        if (!snap.empty) {
+                            const matchedDoc = snap.docs[0];
+                            return db.collection("users").doc(user.uid).set({
+                                ...matchedDoc.data(),
+                                uid: user.uid
+                            }, { merge: true });
+                        } else {
+                            auth.signOut();
+                            window.location.replace("../login/index.html");
+                        }
+                    }).catch(() => {
+                        auth.signOut();
+                        window.location.replace("../login/index.html");
+                    });
+                    return;
+                }
                 auth.signOut();
                 window.location.replace("../login/index.html");
                 return;
@@ -2204,11 +2224,20 @@ window.openEmpProfileModal = function() {
 
     const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
     const googleNotice = document.getElementById('emp-google-user-notice');
+    const googleLinkWrapper = document.getElementById('emp-google-link-wrapper');
     const pwdSection = document.getElementById('emp-password-section');
+    const pwdSubtitle = document.getElementById('emp-pwd-subtitle');
+    const oldPassLabel = document.getElementById('emp-old-password-label');
+
+    // Always keep Password section accessible so employees can freely set or update passwords
+    if (pwdSection) pwdSection.style.display = 'block';
 
     if (isGoogleUser) {
         if (googleNotice) googleNotice.style.display = 'flex';
-        if (pwdSection) pwdSection.style.display = 'none';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'none';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Set or update your personal account password. (Current password required for password login; optional if signed in with Google)';
+        if (oldPass) oldPass.placeholder = 'Enter current password (optional with Google)';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password <span style="font-size: 10.5px; color: #38bdf8; font-weight: 500;">(Optional with Google)</span>';
         if (emailInput && emailInput.tagName === 'INPUT') {
             emailInput.readOnly = true;
             emailInput.style.opacity = '0.75';
@@ -2216,7 +2245,10 @@ window.openEmpProfileModal = function() {
         }
     } else {
         if (googleNotice) googleNotice.style.display = 'none';
-        if (pwdSection) pwdSection.style.display = 'block';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'block';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Enter your current password to authorize setting a new password.';
+        if (oldPass) oldPass.placeholder = 'Enter current password';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password';
         if (emailInput && emailInput.tagName === 'INPUT') {
             emailInput.readOnly = false;
             emailInput.style.opacity = '1';
@@ -2251,6 +2283,54 @@ window.closeEmpProfileModal = function() {
     if (confPass) confPass.value = '';
     if (typeof window.evaluateEmpPasswordRequirements === 'function') {
         window.evaluateEmpPasswordRequirements('');
+    }
+};
+
+window.linkEmployeeGoogleAccount = async function(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('emp-link-google-btn');
+    const originalHTML = btn ? btn.innerHTML : '<i class="fab fa-google"></i> <span>Link Google Account for 1-Click Login</span>';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Linking Google...';
+    }
+    clearProfileAlerts();
+
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No authenticated session found.");
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await user.linkWithPopup(provider);
+
+        showProfileAlert('success', 'Google account linked successfully! You can now use "Continue with Google" as a 1-click shortcut.');
+
+        const googleNotice = document.getElementById('emp-google-user-notice');
+        const googleLinkWrapper = document.getElementById('emp-google-link-wrapper');
+        const pwdSubtitle = document.getElementById('emp-pwd-subtitle');
+        const oldPass = document.getElementById('profile-old-password');
+        const oldPassLabel = document.getElementById('emp-old-password-label');
+
+        if (googleNotice) googleNotice.style.display = 'flex';
+        if (googleLinkWrapper) googleLinkWrapper.style.display = 'none';
+        if (pwdSubtitle) pwdSubtitle.textContent = 'Set or update your personal account password. (Current password required for password login; optional if signed in with Google)';
+        if (oldPass) oldPass.placeholder = 'Enter current password (optional with Google)';
+        if (oldPassLabel) oldPassLabel.innerHTML = 'Current Password <span style="font-size: 10.5px; color: #38bdf8; font-weight: 500;">(Optional with Google)</span>';
+    } catch (err) {
+        if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+            return;
+        }
+        if (err.code === 'auth/credential-already-in-use') {
+            showProfileAlert('error', 'This Google account is already linked to another user profile.');
+        } else {
+            showProfileAlert('error', err.message || "Failed to link Google account.");
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
     }
 };
 
@@ -2305,11 +2385,11 @@ if (profileForm) {
         }
 
         const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
-        const isPasswordChangeAttempt = !isGoogleUser && Boolean(currentPassword || newPassword || confirmPassword);
+        const isPasswordChangeAttempt = Boolean(newPassword || confirmPassword || (!isGoogleUser && currentPassword));
 
         // Validation 2: Strong password validation rules
         if (isPasswordChangeAttempt) {
-            if (!currentPassword) {
+            if (!isGoogleUser && !currentPassword) {
                 showProfileAlert('error', "Please enter your current password to authorize changing your credentials.");
                 if (oldPassInput) oldPassInput.focus();
                 return;
@@ -2333,7 +2413,7 @@ if (profileForm) {
                 return;
             }
 
-            if (newPassword === currentPassword) {
+            if (currentPassword && newPassword === currentPassword) {
                 showProfileAlert('error', "Choose a password you haven't used before. New password cannot be the same as your current password.");
                 if (newPassInput) newPassInput.focus();
                 return;
@@ -2360,27 +2440,41 @@ if (profileForm) {
             let passwordUpdated = false;
             let nameUpdated = false;
 
-            // 1. If password change is requested, Re-authenticate with Firebase Auth (Google-style authorization)
+            // 1. If password change is requested, update credentials securely
             if (isPasswordChangeAttempt) {
-                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying password...';
-                
-                try {
-                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
-                    await user.reauthenticateWithCredential(credential);
-                } catch (reauthErr) {
-                    if (reauthErr.code === 'auth/wrong-password' || reauthErr.code === 'auth/invalid-credential' || reauthErr.code === 'auth/user-mismatch') {
-                        throw new Error("Incorrect current password. Please check your credentials and try again.");
-                    } else if (reauthErr.code === 'auth/too-many-requests') {
-                        throw new Error("Access temporarily locked due to many failed attempts. Please try again later.");
-                    } else {
-                        throw new Error(reauthErr.message || "Failed to verify current password.");
+                if (currentPassword) {
+                    if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying password...';
+                    try {
+                        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                        await user.reauthenticateWithCredential(credential);
+                    } catch (reauthErr) {
+                        if (reauthErr.code === 'auth/wrong-password' || reauthErr.code === 'auth/invalid-credential' || reauthErr.code === 'auth/user-mismatch') {
+                            throw new Error("Incorrect current password. Please check your credentials and try again.");
+                        } else if (reauthErr.code === 'auth/too-many-requests') {
+                            throw new Error("Access temporarily locked due to many failed attempts. Please try again later.");
+                        } else {
+                            throw new Error(reauthErr.message || "Failed to verify current password.");
+                        }
                     }
+                    if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
+                    await user.updatePassword(newPassword);
+                    passwordUpdated = true;
+                } else if (isGoogleUser) {
+                    if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
+                    try {
+                        await user.updatePassword(newPassword);
+                    } catch (pwdErr) {
+                        if (pwdErr.code === 'auth/requires-recent-login') {
+                            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming Google login...';
+                            const provider = new firebase.auth.GoogleAuthProvider();
+                            await user.reauthenticateWithPopup(provider);
+                            await user.updatePassword(newPassword);
+                        } else {
+                            throw pwdErr;
+                        }
+                    }
+                    passwordUpdated = true;
                 }
-
-                // Update password on Firebase Auth
-                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating password...';
-                await user.updatePassword(newPassword);
-                passwordUpdated = true;
             }
 
             // 2. If name changed, update Firestore Profile record
@@ -2394,6 +2488,21 @@ if (profileForm) {
                 if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating profile...';
                 await db.collection("users").doc(user.uid).update(updatePayload);
                 if (nameUpdated) currentEmployeeName = newName;
+
+                // Also sync to matching email doc if it exists under another UID
+                const userEmail = (user.email || '').toLowerCase();
+                if (userEmail) {
+                    try {
+                        const emailSnap = await db.collection("users").where("email", "==", userEmail).get();
+                        emailSnap.forEach(d => {
+                            if (d.id !== user.uid) {
+                                d.ref.update(updatePayload).catch(() => {});
+                            }
+                        });
+                    } catch (syncErr) {
+                        console.warn("Mirroring profile update warning:", syncErr);
+                    }
+                }
 
                 // Live-update displays
                 const nameEl = document.getElementById('emp-profile-name');
