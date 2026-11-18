@@ -1458,6 +1458,31 @@ window.openAdminProfileModal = function() {
     
     window.selectAdminProfileDept(currentAdminDept || 'GSO', currentAdminDept ? `${currentAdminDept}` : 'General Services Office (GSO)');
 
+    const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
+    const googleNotice = document.getElementById('admin-google-user-notice');
+    const pwdSection = document.getElementById('admin-password-section');
+    const emailNotice = document.getElementById('admin-profile-email-notice');
+
+    if (isGoogleUser) {
+        if (googleNotice) googleNotice.style.display = 'flex';
+        if (pwdSection) pwdSection.style.display = 'none';
+        if (emailNotice) emailNotice.textContent = 'Signed in with Google. Email address is managed by your Google Account.';
+        if (emailInput) {
+            emailInput.readOnly = true;
+            emailInput.style.opacity = '0.75';
+            emailInput.style.cursor = 'not-allowed';
+        }
+    } else {
+        if (googleNotice) googleNotice.style.display = 'none';
+        if (pwdSection) pwdSection.style.display = 'block';
+        if (emailNotice) emailNotice.textContent = 'Enter current password below to authorize changing email address or password.';
+        if (emailInput) {
+            emailInput.readOnly = false;
+            emailInput.style.opacity = '1';
+            emailInput.style.cursor = 'text';
+        }
+    }
+
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
@@ -1615,8 +1640,9 @@ window.saveAdminProfileChanges = async function(event) {
         return;
     }
 
-    const isEmailChangeAttempt = Boolean(newEmail && currentAdminEmail && newEmail !== currentAdminEmail.toLowerCase());
-    const isPasswordChangeAttempt = Boolean(currentPassword || newPassword || confirmPassword);
+    const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
+    const isEmailChangeAttempt = !isGoogleUser && Boolean(newEmail && currentAdminEmail && newEmail !== currentAdminEmail.toLowerCase());
+    const isPasswordChangeAttempt = !isGoogleUser && Boolean(currentPassword || newPassword || confirmPassword);
 
     // Validation 3: If email is being changed, require current password for security verification
     if (isEmailChangeAttempt && !currentPassword) {

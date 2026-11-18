@@ -2194,6 +2194,29 @@ window.openEmpProfileModal = function() {
     if (window.selectCustomDept) {
         window.selectCustomDept('profile-dept-select', 'profileDeptText', 'profileDeptTrigger', 'profileDeptSelectWrapper', currentEmployeeDept || '', currentEmployeeDept ? `${currentEmployeeDept}` : 'Select Municipal Department');
     }
+
+    const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
+    const googleNotice = document.getElementById('emp-google-user-notice');
+    const pwdSection = document.getElementById('emp-password-section');
+
+    if (isGoogleUser) {
+        if (googleNotice) googleNotice.style.display = 'flex';
+        if (pwdSection) pwdSection.style.display = 'none';
+        if (emailInput && emailInput.tagName === 'INPUT') {
+            emailInput.readOnly = true;
+            emailInput.style.opacity = '0.75';
+            emailInput.style.cursor = 'not-allowed';
+        }
+    } else {
+        if (googleNotice) googleNotice.style.display = 'none';
+        if (pwdSection) pwdSection.style.display = 'block';
+        if (emailInput && emailInput.tagName === 'INPUT') {
+            emailInput.readOnly = false;
+            emailInput.style.opacity = '1';
+            emailInput.style.cursor = 'text';
+        }
+    }
+
     if (oldPass) oldPass.value = '';
     if (newPass) newPass.value = '';
     if (confPass) confPass.value = '';
@@ -2274,7 +2297,8 @@ if (profileForm) {
             return;
         }
 
-        const isPasswordChangeAttempt = Boolean(currentPassword || newPassword || confirmPassword);
+        const isGoogleUser = Boolean(auth.currentUser && auth.currentUser.providerData && auth.currentUser.providerData.some(p => p.providerId === 'google.com'));
+        const isPasswordChangeAttempt = !isGoogleUser && Boolean(currentPassword || newPassword || confirmPassword);
 
         // Validation 2: Strong password validation rules
         if (isPasswordChangeAttempt) {
