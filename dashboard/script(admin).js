@@ -2759,9 +2759,41 @@ window.changeUserRole = async function(userId, newRole, userName, triggerBtn = n
     if (!ok) return;
 
     try {
+        let targetEmail = '';
+        if (Array.isArray(allUserProfiles)) {
+            const found = allUserProfiles.find(p => p.id === userId);
+            if (found && found.data && found.data.email) {
+                targetEmail = found.data.email.toLowerCase().trim();
+            }
+        }
+        if (!targetEmail) {
+            const userSnap = await db.collection("users").doc(userId).get();
+            if (userSnap.exists) {
+                targetEmail = (userSnap.data().email || '').toLowerCase().trim();
+            }
+        }
+
         await db.collection("users").doc(userId).update({
             role: newRole
         });
+
+        // Dual UID parity: sync matching email doc if present (e.g. Google and email registered)
+        if (targetEmail) {
+            try {
+                const mirrorSnap = await db.collection("users").where('email', '==', targetEmail).get();
+                const mirrorUpdates = [];
+                mirrorSnap.forEach((doc) => {
+                    if (doc.id !== userId && doc.data().role !== newRole) {
+                        mirrorUpdates.push(doc.ref.update({ role: newRole }));
+                    }
+                });
+                if (mirrorUpdates.length > 0) {
+                    await Promise.all(mirrorUpdates);
+                }
+            } catch (mirrorErr) {
+                console.warn("Could not sync role across matching email docs:", mirrorErr);
+            }
+        }
 
         // Clean up or update role elevation requests in RTDB
         const roleSnap = await database.ref('roleElevationRequests').once('value');
@@ -2790,21 +2822,73 @@ window.changeUserRole = async function(userId, newRole, userName, triggerBtn = n
 };
 
 // Function to Approve or Reject User Status
-function updateUserStatus(userId, newStatus) {
+window.updateUserStatus = async function(userId, newStatus) {
     if (!userId || userId === 'undefined') {
         console.error("Invalid user ID passed to updateUserStatus");
         return;
     }
 
-    db.collection("users").doc(userId).update({
-        status: newStatus
-    })
-    .then(() => {
+    try {
+        let targetEmail = '';
+        let targetName = '';
+        if (Array.isArray(allUserProfiles)) {
+            const found = allUserProfiles.find(p => p.id === userId);
+            if (found && found.data) {
+                targetEmail = (found.data.email || '').toLowerCase().trim();
+                targetName = found.data.fullName || found.data.name || '';
+            }
+        }
+        if (!targetEmail) {
+            const userSnap = await db.collection("users").doc(userId).get();
+            if (userSnap.exists) {
+                targetEmail = (userSnap.data().email || '').toLowerCase().trim();
+                if (!targetName) targetName = userSnap.data().fullName || userSnap.data().name || '';
+            }
+        }
+
+        await db.collection("users").doc(userId).update({
+            status: newStatus
+        });
+
+        // Dual UID parity: If the user registered with email and also used Google sign-in,
+        // sync all Firestore docs with this email so approval status is 100% consistent across both UIDs.
+        if (targetEmail) {
+            try {
+                const mirrorSnap = await db.collection("users").where('email', '==', targetEmail).get();
+                const mirrorUpdates = [];
+                mirrorSnap.forEach((doc) => {
+                    if (doc.id !== userId && doc.data().status !== newStatus) {
+                        mirrorUpdates.push(doc.ref.update({ status: newStatus }));
+                    }
+                });
+                if (mirrorUpdates.length > 0) {
+                    await Promise.all(mirrorUpdates);
+                }
+            } catch (mirrorErr) {
+                console.warn("Could not sync status across matching email docs:", mirrorErr);
+            }
+        }
+
         console.log(`User status updated to ${newStatus}`);
-    })
-    .catch((error) => {
+        if (typeof window.showGTrackToast === 'function') {
+            const label = newStatus === 'approved' ? 'Approved' : (newStatus === 'rejected' ? 'Rejected / Revoked' : newStatus);
+            const userLabel = targetName ? ` for ${targetName}` : '';
+            window.showGTrackToast(
+                newStatus === 'approved' ? 'success' : 'info',
+                'Status Updated',
+                `Account status${userLabel} updated to ${label}.`
+            );
+        }
+    } catch (error) {
         console.error("Error updating user status: ", error);
-    });
+        if (typeof window.showGTrackToast === 'function') {
+            window.showGTrackToast('error', 'Status Update Failed', error.message || 'Could not update user status.');
+        }
+    }
+};
+
+function updateUserStatus(userId, newStatus) {
+    return window.updateUserStatus(userId, newStatus);
 }
 
 // =========================================================================
