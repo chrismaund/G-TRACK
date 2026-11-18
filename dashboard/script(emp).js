@@ -4243,6 +4243,30 @@ window.hideSidebarNotifToast = function() {
     }
 };
 
+function getEmpDismissedNotifSet(userKey) {
+    try {
+        const uKey = userKey || currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+        const raw = localStorage.getItem(`gtrack_dismissed_notifs_${uKey}`);
+        return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) {
+        return new Set();
+    }
+}
+
+function saveDismissedNotifLocally(notifId, userKey) {
+    if (!notifId) return;
+    try {
+        const uKey = userKey || currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+        const storageKey = `gtrack_dismissed_notifs_${uKey}`;
+        const set = getEmpDismissedNotifSet(uKey);
+        set.add(String(notifId));
+        const arr = Array.from(set).slice(-300);
+        localStorage.setItem(storageKey, JSON.stringify(arr));
+    } catch (e) {
+        console.warn("Could not save dismissed notif locally:", e);
+    }
+}
+
 function initEmpNotifications() {
     const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
 
@@ -4254,6 +4278,7 @@ function initEmpNotifications() {
         if (data) {
             const myEmail = (currentEmployeeEmail || (auth.currentUser ? auth.currentUser.email : '') || '').toLowerCase().trim();
             const myUid = currentEmployeeUid || (auth.currentUser ? auth.currentUser.uid : '');
+            const localDismissed = getEmpDismissedNotifSet(userKey);
 
             Object.keys(data).forEach(key => {
                 const item = data[key];
@@ -4261,6 +4286,13 @@ function initEmpNotifications() {
 
                 // Employee portal never displays admin-only notifications
                 if (item.targetRole === 'admin') return;
+
+                const notifId = item.id || key;
+
+                // Skip if dismissed by this employee (via RTDB or local cache)
+                if ((item.dismissedBy && item.dismissedBy[userKey]) || localDismissed.has(String(notifId))) {
+                    return;
+                }
 
                 const notifEmail = (item.targetEmail || item.userEmail || '').toLowerCase().trim();
                 const notifUid = item.targetUserId || item.userId || item.userUid || '';
@@ -4287,7 +4319,7 @@ function initEmpNotifications() {
                 if (item.targetRole === 'all' || item.targetRole === 'employee' || !item.targetRole) {
                     empNotifications.push({
                         ...item,
-                        id: item.id || key
+                        id: notifId
                     });
                 }
             });
@@ -4531,15 +4563,24 @@ window.deleteSingleNotification = async function(event, notifId) {
     }
     if (!notifId) return;
 
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+
     try {
-        await database.ref(`notifications/${notifId}`).remove();
+        saveDismissedNotifLocally(notifId, userKey);
+        await database.ref(`notifications/${notifId}/dismissedBy/${userKey}`).set(true);
+
+        empNotifications = empNotifications.filter(n => n.id !== notifId);
+        renderEmpNotifications(userKey);
+
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('info', 'Notification Deleted', 'Notification removed successfully.');
+            window.showGTrackToast('info', 'Notification Removed', 'Notification removed from your list.');
         }
     } catch (err) {
-        console.error("Error deleting notification:", err);
+        console.error("Error dismissing notification:", err);
+        empNotifications = empNotifications.filter(n => n.id !== notifId);
+        renderEmpNotifications(userKey);
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('error', 'Delete Failed', 'Could not delete notification.');
+            window.showGTrackToast('info', 'Notification Removed', 'Notification removed from your list.');
         }
     }
 };
@@ -4558,25 +4599,40 @@ window.clearAllNotifications = async function(event) {
 
     const confirmed = await window.showGTrackConfirm(
         "Clear All Notifications?",
-        "Are you sure you want to delete all notifications? This action cannot be undone.",
+        "Are you sure you want to clear your notifications? This will only remove them from your personal view.",
         "Clear All",
         "Cancel",
         true
     );
     if (!confirmed) return;
 
+    const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    const toDismiss = [...empNotifications];
+
     try {
-        await database.ref('notifications').remove();
+        const updates = {};
+        toDismiss.forEach(n => {
+            saveDismissedNotifLocally(n.id, userKey);
+            updates[`notifications/${n.id}/dismissedBy/${userKey}`] = true;
+        });
+
+        if (Object.keys(updates).length > 0) {
+            await database.ref().update(updates);
+        }
+
         empNotifications = [];
-        const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
         renderEmpNotifications(userKey);
+
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('info', 'Notifications Cleared', 'All notifications have been removed.');
+            window.showGTrackToast('info', 'Notifications Cleared', 'Your notifications have been cleared.');
         }
     } catch (err) {
         console.error("Error clearing all notifications:", err);
+        toDismiss.forEach(n => saveDismissedNotifLocally(n.id, userKey));
+        empNotifications = [];
+        renderEmpNotifications(userKey);
         if (typeof window.showGTrackToast === 'function') {
-            window.showGTrackToast('error', 'Clear Failed', 'Could not clear notifications.');
+            window.showGTrackToast('info', 'Notifications Cleared', 'Your notifications have been cleared.');
         }
     }
 };
