@@ -2396,6 +2396,25 @@ window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) 
     try {
         await db.collection("users").doc(userId).delete();
 
+        // Dual UID cleanup: if this user had both an email UID and mirrored Google UID document in Firestore
+        if (resolvedEmail) {
+            try {
+                const normEmail = resolvedEmail.toLowerCase().trim();
+                const mirrorSnap = await db.collection("users").where('email', '==', normEmail).get();
+                const deletePromises = [];
+                mirrorSnap.forEach((doc) => {
+                    if (doc.id !== userId) {
+                        deletePromises.push(doc.ref.delete());
+                    }
+                });
+                if (deletePromises.length > 0) {
+                    await Promise.all(deletePromises);
+                }
+            } catch (mirrorErr) {
+                console.warn("Could not clean up mirrored email docs:", mirrorErr);
+            }
+        }
+
         // Clean up any pending role elevation requests in RTDB
         if (typeof database !== 'undefined') {
             try {
@@ -2404,7 +2423,7 @@ window.deleteUserAccount = async function(userId, userEmail, triggerBtn = null) 
                     const updates = [];
                     roleSnap.forEach((child) => {
                         const r = child.val();
-                        if (r.userId === userId || r.userEmail === userEmail) {
+                        if (r.userId === userId || (resolvedEmail && r.userEmail === resolvedEmail) || r.userEmail === userEmail) {
                             updates.push(database.ref(`roleElevationRequests/${child.key}`).remove());
                         }
                     });
@@ -3115,9 +3134,41 @@ window.saveAdminReassignedDept = async function(event) {
     }
 
     try {
+        let targetEmail = '';
+        if (Array.isArray(allUserProfiles)) {
+            const found = allUserProfiles.find(p => p.id === userId);
+            if (found && found.data && found.data.email) {
+                targetEmail = found.data.email.toLowerCase().trim();
+            }
+        }
+        if (!targetEmail) {
+            const userSnap = await db.collection("users").doc(userId).get();
+            if (userSnap.exists) {
+                targetEmail = (userSnap.data().email || '').toLowerCase().trim();
+            }
+        }
+
         await db.collection("users").doc(userId).update({
             department: newDept
         });
+
+        // Dual UID parity: sync matching email doc if present
+        if (targetEmail) {
+            try {
+                const mirrorSnap = await db.collection("users").where('email', '==', targetEmail).get();
+                const mirrorUpdates = [];
+                mirrorSnap.forEach((doc) => {
+                    if (doc.id !== userId && doc.data().department !== newDept) {
+                        mirrorUpdates.push(doc.ref.update({ department: newDept }));
+                    }
+                });
+                if (mirrorUpdates.length > 0) {
+                    await Promise.all(mirrorUpdates);
+                }
+            } catch (mirrorErr) {
+                console.warn("Could not sync department across matching email docs:", mirrorErr);
+            }
+        }
 
         if (alertBox) {
             alertBox.style.display = 'flex';
