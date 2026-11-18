@@ -10,23 +10,25 @@ body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #0b0f19;
     color: #f8fafc;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* Base Container */
 .gov-container {
     position: relative;
     display: flex;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
     align-items: center;
     justify-content: center;
+    padding: 30px 20px;
 }
 
-/* Background Image */
+/* Background Image - Fixed to viewport so scrolling never breaks the backdrop */
 .hero-background {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -35,9 +37,9 @@ body {
     z-index: 1;
 }
 
-/* Overlay with Pointer-Events Fix */
+/* Overlay with Pointer-Events Fix - Fixed to viewport */
 .hero-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -125,31 +127,32 @@ body {
 .gov-login-wrapper {
     width: 100%;
     max-width: 440px;
+    margin: auto 0;
 }
 
 .login-card {
-    background: rgba(18, 26, 43, 0.65);
+    background: rgba(18, 26, 43, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    padding: 40px 36px;
+    border-radius: 18px;
+    padding: 28px 26px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 
                 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 14px;
 }
 
 .logo-wrapper {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 12px auto;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 8px auto;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 50%;
-    padding: 8px;
+    padding: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
@@ -159,30 +162,30 @@ body {
 }
 
 .login-logo {
-    width: 149%;
-    height: 145%;
+    width: 140%;
+    height: 140%;
     object-fit: contain; 
     border-radius: 50%; 
 }
 .agency-subtext {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
     color: #38bdf8;
     letter-spacing: 1.5px;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .login-header h1 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
     color: #ffffff;
     letter-spacing: -0.4px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .login-header p {
-    font-size: 13.5px;
+    font-size: 12.5px;
     color: #94a3b8;
 }
 
@@ -190,19 +193,19 @@ body {
 .role-tabs {
     display: flex;
     background: rgba(11, 15, 25, 0.6);
-    padding: 5px;
-    border-radius: 12px;
-    margin-bottom: 24px;
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 15px;
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .tab-btn {
     flex: 1;
-    padding: 11px;
+    padding: 8.5px 12px;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    font-size: 13.5px;
+    border-radius: 7px;
+    font-size: 13px;
     font-weight: 600;
     color: #64748b;
     cursor: pointer;
@@ -210,7 +213,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 7px;
 }
 
 .tab-btn.active {
@@ -227,15 +230,15 @@ body {
 .form-section {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 12px;
 }
 
 .input-group label {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #e2e8f0;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .input-wrapper {
@@ -275,11 +278,11 @@ body {
 
 .custom-select-trigger {
     width: 100%;
-    padding: 13px 40px 13px 44px;
+    padding: 10.5px 36px 10.5px 40px;
     background: rgba(11, 15, 25, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    font-size: 13.5px;
+    border-radius: 9px;
+    font-size: 13px;
     color: #94a3b8;
     cursor: pointer;
     display: flex;
@@ -467,11 +470,11 @@ body {
 
 .input-wrapper input {
     width: 100%;
-    padding: 13px 42px;
+    padding: 10.5px 38px;
     background: rgba(11, 15, 25, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 9px;
+    font-size: 13.5px;
     font-family: inherit;
     color: #ffffff;
     transition: all 0.25s ease;
@@ -632,16 +635,16 @@ body {
 /* Accent Glowing Action Button */
 .sign-in-btn {
     width: 100%;
-    padding: 13.5px;
+    padding: 11.5px;
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
     border: 1px solid rgba(56, 189, 248, 0.3);
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 9px;
+    font-size: 13.5px;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
-    margin-top: 8px;
+    margin-top: 4px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -666,7 +669,7 @@ body {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 12px 0 10px 0;
+    margin: 8px 0 6px 0;
 }
 
 .auth-divider::before,
@@ -688,12 +691,12 @@ body {
 /* Google Sign-In Button */
 .google-sign-in-btn {
     width: 100%;
-    padding: 12px 14px;
+    padding: 10.5px 14px;
     background: rgba(255, 255, 255, 0.04);
     color: #cbd5e1;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    font-size: 13.5px;
+    border-radius: 9px;
+    font-size: 13px;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -703,7 +706,7 @@ body {
     gap: 9px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
 }
 
 .google-sign-in-btn i.fab {
@@ -759,9 +762,9 @@ body {
 .error-popup {
     background: rgba(239, 68, 68, 0.12);
     color: #fca5a5;            
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     text-align: center;
     border: 1px solid rgba(239, 68, 68, 0.3);
@@ -770,9 +773,9 @@ body {
 .success-popup {
     background: rgba(34, 197, 94, 0.12);
     color: #86efac;            
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     text-align: center;
     border: 1px solid rgba(34, 197, 94, 0.3);
@@ -783,9 +786,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 28px;
-    padding-top: 20px;
+    gap: 7px;
+    margin-top: 14px;
+    padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -884,8 +887,8 @@ body {
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid rgba(56, 189, 248, 0.2);
     border-radius: 8px;
-    padding: 10px 12px;
-    margin: 8px 0 14px 0;
+    padding: 7px 10px;
+    margin: 2px 0 6px 0;
     transition: all 0.25s ease;
 }
 
@@ -893,25 +896,25 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
     color: #38bdf8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .pwd-req-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px 10px;
+    gap: 4px 8px;
 }
 
 .pwd-req-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
+    gap: 5px;
+    font-size: 10.5px;
     color: #94a3b8;
     transition: all 0.2s ease;
 }

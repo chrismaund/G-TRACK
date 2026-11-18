@@ -449,7 +449,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('regPassword').value;
             const submitBtn = registerForm.querySelector('button[type="submit"]');
 
-            if (regErrorMessage) regErrorMessage.style.display = 'none';
+            if (regErrorMessage) {
+                regErrorMessage.style.display = 'none';
+                regErrorMessage.style.background = '';
+                regErrorMessage.style.borderColor = '';
+                regErrorMessage.style.color = '';
+                regErrorMessage.style.padding = '';
+            }
             if (regSuccessMessage) regSuccessMessage.style.display = 'none';
 
             if (!fullName || fullName.length < 2) {
@@ -534,14 +540,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     } else {
                         // The email exists in Firebase Auth from Google Sign-In.
-                        // Provide a 1-click button to verify with Google and submit the registration!
+                        // Provide a compact, beautifully styled card to verify with Google and submit the registration!
                         if (regErrorMessage) {
+                            regErrorMessage.style.background = 'rgba(56, 189, 248, 0.08)';
+                            regErrorMessage.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+                            regErrorMessage.style.color = '#e2e8f0';
+                            regErrorMessage.style.padding = '10px 12px';
                             regErrorMessage.innerHTML = `
-                                <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start; text-align: left;">
-                                    <span><i class="fas fa-info-circle"></i> <strong>${email}</strong> was previously connected via Google sign-in.</span>
-                                    <span style="font-size: 11.5px; opacity: 0.9;">Click below to verify with Google and submit your registration request for <strong>${fullName}</strong>:</span>
-                                    <button type="button" id="regGoogleVerifyBtn" class="google-sign-in-btn" style="width: 100%; justify-content: center; margin-top: 4px; height: 38px; font-size: 12px; border-color: rgba(56, 189, 248, 0.4);">
-                                        <i class="fab fa-google"></i> <span>Verify with Google &amp; Submit Registration</span>
+                                <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #38bdf8; font-size: 12px;">
+                                        <i class="fab fa-google"></i>
+                                        <span>Google Account Recognized</span>
+                                    </div>
+                                    <span style="font-size: 11.5px; line-height: 1.45; color: #94a3b8;">
+                                        <strong>${email}</strong> was previously connected. Click below to verify with Google and submit registration:
+                                    </span>
+                                    <button type="button" id="regGoogleVerifyBtn" class="google-sign-in-btn" style="width: 100%; justify-content: center; margin-top: 3px; height: 34px; font-size: 12px; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); color: #ffffff;">
+                                        <i class="fab fa-google" style="color: #38bdf8;"></i> <span>Verify with Google &amp; Submit</span>
                                     </button>
                                 </div>
                             `;
