@@ -132,7 +132,7 @@ function mapSupabaseToInventoryItem(row) {
 }
 
 function mapInventoryItemToSupabase(item) {
-    return {
+    const payload = {
         date: item.date || '',
         qty: parseInt(item.qty, 10) || 0,
         unit: item.unit || '',
@@ -147,6 +147,22 @@ function mapInventoryItemToSupabase(item) {
         account: item.account || '',
         remarks: item.remarks || ''
     };
+    if (item.id) {
+        payload.id = item.id;
+    }
+    if (item.tallyStatus !== undefined) {
+        payload.tally_status = item.tallyStatus;
+    }
+    if (item.tallied !== undefined) {
+        payload.tallied = Boolean(item.tallied);
+    }
+    if (item.talliedBy !== undefined) {
+        payload.tallied_by = item.talliedBy;
+    }
+    if (item.talliedAt !== undefined) {
+        payload.tallied_at = item.talliedAt;
+    }
+    return payload;
 }
 
 function mapSupabaseToRequest(row) {
@@ -1046,6 +1062,7 @@ if (addForm) {
 
                 // Insert into Supabase if available
                 if (supabaseClient) {
+                    supabasePayload.id = newId;
                     supabasePayload.tally_status = 'Pending';
                     supabasePayload.tallied = false;
                     await supabaseClient
@@ -4771,7 +4788,7 @@ async function checkAndMigrateData() {
             inventoryRef.once('value', async (snapshot) => {
                 const fbData = snapshot.val();
                 if (fbData) {
-                    const toInsert = Object.keys(fbData).map(k => mapInventoryItemToSupabase(fbData[k]));
+                    const toInsert = Object.keys(fbData).map(k => mapInventoryItemToSupabase({ id: k, ...fbData[k] }));
                     if (toInsert.length > 0) {
                         const { error: insErr } = await supabaseClient.from('inventory').insert(toInsert);
                         if (!insErr) {
