@@ -1303,12 +1303,120 @@ window.openRequestHistory = function() {
     window.openEmpRequestsModal();
 };
 
-window.sendMasterlistRequest = async function() {
+// Department Matching Helper for Scope Filtering
+function doesItemMatchDepartment(itemLocation, targetDept) {
+    if (!itemLocation || !targetDept) return false;
+    const loc = String(itemLocation).toLowerCase().trim();
+    const dept = String(targetDept).toLowerCase().trim();
+    if (loc === dept) return true;
+
+    // Check acronym matches e.g. (ACCOUNTING), (MACCO), (BFP), (GSO)
+    const locAcronymMatch = loc.match(/\(([^)]+)\)/);
+    const deptAcronymMatch = dept.match(/\(([^)]+)\)/);
+    const locAcronym = locAcronymMatch ? locAcronymMatch[1].trim() : '';
+    const deptAcronym = deptAcronymMatch ? deptAcronymMatch[1].trim() : '';
+
+    if (locAcronym && deptAcronym && locAcronym === deptAcronym) {
+        return true;
+    }
+
+    // Strip parentheses and common organizational words for match
+    const locClean = loc.replace(/\s*\([^)]*\)/g, '').replace(/municipal|office|department|unit/g, '').trim();
+    const deptClean = dept.replace(/\s*\([^)]*\)/g, '').replace(/municipal|office|department|unit/g, '').trim();
+
+    if (locClean && deptClean && (locClean === deptClean || locClean.includes(deptClean) || deptClean.includes(locClean))) {
+        return true;
+    }
+
+    if (locAcronym && dept.includes(locAcronym)) return true;
+    if (deptAcronym && loc.includes(deptAcronym)) return true;
+
+    return false;
+}
+
+window.selectMasterlistScope = function(scope) {
+    const deptRadio = document.getElementById('scope-radio-dept');
+    const fullRadio = document.getElementById('scope-radio-full');
+    const deptCard = document.getElementById('scope-card-dept');
+    const fullCard = document.getElementById('scope-card-full');
+
+    if (scope === 'department') {
+        if (deptRadio) deptRadio.checked = true;
+        if (deptCard) {
+            deptCard.style.background = 'rgba(56, 189, 248, 0.08)';
+            deptCard.style.borderColor = 'rgba(56, 189, 248, 0.6)';
+        }
+        if (fullCard) {
+            fullCard.style.background = 'rgba(255, 255, 255, 0.02)';
+            fullCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }
+    } else {
+        if (fullRadio) fullRadio.checked = true;
+        if (fullCard) {
+            fullCard.style.background = 'rgba(56, 189, 248, 0.08)';
+            fullCard.style.borderColor = 'rgba(56, 189, 248, 0.6)';
+        }
+        if (deptCard) {
+            deptCard.style.background = 'rgba(255, 255, 255, 0.02)';
+            deptCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }
+    }
+};
+
+window.openMasterlistScopeModal = function() {
+    const modal = document.getElementById('masterlist-scope-modal');
+    if (!modal) {
+        window.confirmAndSendMasterlistRequest();
+        return;
+    }
+
+    const deptPreview = document.getElementById('scope-dept-preview');
+    const dept = currentEmployeeDept || sessionStorage.getItem('gtrack_user_dept') || 'Your Assigned Department';
+    if (deptPreview) deptPreview.textContent = dept;
+
+    window.selectMasterlistScope('department');
+
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        const card = modal.querySelector('div');
+        if (card) card.style.transform = 'scale(1)';
+    });
+};
+
+window.closeMasterlistScopeModal = function() {
+    const modal = document.getElementById('masterlist-scope-modal');
+    if (modal) {
+        modal.style.opacity = '0';
+        const card = modal.querySelector('div');
+        if (card) card.style.transform = 'scale(0.96)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 180);
+    }
+};
+
+window.sendMasterlistRequest = function() {
+    window.openMasterlistScopeModal();
+};
+
+window.confirmAndSendMasterlistRequest = async function() {
+    const submitBtn = document.getElementById('submit-masterlist-scope-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    const selectedScope = document.querySelector('input[name="masterlistScopeRadio"]:checked')?.value || 'department';
     const userEmail = currentEmployeeEmail || (auth.currentUser ? auth.currentUser.email : "employee@gso.com");
     const userName = currentEmployeeName || "Employee";
     const userUid = currentEmployeeUid || (auth.currentUser ? auth.currentUser.uid : "");
+    const userDept = currentEmployeeDept || sessionStorage.getItem('gtrack_user_dept') || "Staff";
     const reqTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newId = requestsRef.push().key;
+
+    const isDeptScope = (selectedScope === 'department');
+    const scopeLabel = isDeptScope ? `Department Copy (${userDept})` : `Full Municipal Masterlist`;
 
     const newRequest = {
         user: userEmail,
@@ -1316,6 +1424,10 @@ window.sendMasterlistRequest = async function() {
         userId: userUid,
         userUid: userUid,
         userName: userName,
+        department: userDept,
+        userDept: userDept,
+        scope: selectedScope, // 'department' or 'full'
+        scopeLabel: scopeLabel,
         time: reqTime,
         status: "Pending",
         requestedAt: new Date().toISOString()
@@ -1329,6 +1441,8 @@ window.sendMasterlistRequest = async function() {
                     id: newId,
                     user_email: userEmail,
                     user_name: userName,
+                    department: userDept,
+                    scope: selectedScope,
                     status: 'pending',
                     requested_at: new Date().toISOString()
                 }]);
@@ -1343,7 +1457,7 @@ window.sendMasterlistRequest = async function() {
             await notifAdminRef.set({
                 id: notifAdminRef.key,
                 title: 'New Copy Request',
-                message: `${userName} (${currentEmployeeDept || 'Staff'}) submitted a request for an authorized masterlist copy.`,
+                message: `${userName} (${userDept}) requested an authorized copy: ${scopeLabel}.`,
                 type: 'copy_request',
                 targetRole: 'admin',
                 createdAt: Date.now()
@@ -1352,15 +1466,21 @@ window.sendMasterlistRequest = async function() {
             console.warn("Notification dispatch notice:", nErr);
         }
 
-        window.showGTrackToast('success', 'Request Submitted', 'Masterlist copy request has been submitted for GSO Admin authorization.');
+        window.closeMasterlistScopeModal();
+        window.showGTrackToast('success', 'Request Submitted', `${scopeLabel} request has been submitted for GSO Admin authorization.`);
         window.openEmpRequestsModal();
     } catch (err) {
         console.error("Error submitting masterlist request:", err);
         window.showGTrackToast('error', 'Request Failed', err.message || 'Could not submit request.');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
+        }
     }
 };
 
-function buildMasterlistCSVString() {
+function buildMasterlistCSVString(scope = 'full', department = '') {
     const headers = [
         "Date Acquired",
         "Quantity",
@@ -1377,7 +1497,15 @@ function buildMasterlistCSVString() {
         "Remarks"
     ];
 
-    const rows = inventoryData.map(item => {
+    let source = (inventoryData && inventoryData.length > 0) ? inventoryData : [];
+    if (scope === 'department' && department) {
+        const filtered = source.filter(item => doesItemMatchDepartment(item.location, department));
+        if (filtered.length > 0) {
+            source = filtered;
+        }
+    }
+
+    const rows = source.map(item => {
         const qtyVal = parseInt(item.qty, 10) || 0;
         const unitCostVal = parseSafeFloat(item.unitCost) || 0;
         const totalCostVal = parseSafeFloat(item.totalCost) || (qtyVal * unitCostVal);
@@ -1401,7 +1529,7 @@ function buildMasterlistCSVString() {
     return [headers.join(','), ...rows].join('\r\n');
 }
 
-async function generateProtectedMasterlistExcel(requestId) {
+async function generateProtectedMasterlistExcel(requestId, scope = 'full', department = '') {
     if (typeof ExcelJS === 'undefined') {
         throw new Error('ExcelJS library is not loaded');
     }
@@ -1412,7 +1540,8 @@ async function generateProtectedMasterlistExcel(requestId) {
     workbook.created = new Date();
     workbook.modified = new Date();
 
-    const worksheet = workbook.addWorksheet('GSO Masterlist', {
+    const sheetName = (scope === 'department' && department) ? 'Department Inventory' : 'GSO Masterlist';
+    const worksheet = workbook.addWorksheet(sheetName, {
         views: [{ showGridLines: true }]
     });
 
@@ -1447,13 +1576,18 @@ async function generateProtectedMasterlistExcel(requestId) {
 
     worksheet.getRow(3).height = 19;
     const subtitleCell = worksheet.getCell('A3');
-    subtitleCell.value = 'OFFICIAL PROPERTY, PLANT & EQUIPMENT MASTERLIST (AUTHORIZED COPY)';
+    if (scope === 'department' && department) {
+        subtitleCell.value = `OFFICIAL PROPERTY, PLANT & EQUIPMENT REGISTRY • ${department.toUpperCase()} (AUTHORIZED COPY)`;
+    } else {
+        subtitleCell.value = 'OFFICIAL PROPERTY, PLANT & EQUIPMENT MASTERLIST (AUTHORIZED COPY)';
+    }
     subtitleCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
 
     worksheet.getRow(4).height = 18;
     const metaCell = worksheet.getCell('A4');
     const nowStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    metaCell.value = `Export Date: ${nowStr} | Request Reference: ${requestId || 'GSO-OFFICIAL'} | Security: Read-Only Document (Password Protected)`;
+    const scopeLabelText = (scope === 'department' && department) ? `Scope: ${department} Only` : `Scope: Full Masterlist (All Departments)`;
+    metaCell.value = `Export Date: ${nowStr} | Request Ref: ${requestId || 'GSO-OFFICIAL'} | ${scopeLabelText} | Security: Read-Only (Password Protected)`;
     metaCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF64748B' } };
 
     worksheet.getRow(5).height = 10;
@@ -1485,7 +1619,13 @@ async function generateProtectedMasterlistExcel(requestId) {
     let currentRowIdx = 7;
     let grandTotalCost = 0;
     let grandTotalQty = 0;
-    const sourceData = (inventoryData && inventoryData.length > 0) ? inventoryData : [];
+    let sourceData = (inventoryData && inventoryData.length > 0) ? inventoryData : [];
+    if (scope === 'department' && department) {
+        const filtered = sourceData.filter(item => doesItemMatchDepartment(item.location, department));
+        if (filtered.length > 0) {
+            sourceData = filtered;
+        }
+    }
 
     sourceData.forEach((item, index) => {
         const row = worksheet.getRow(currentRowIdx);
@@ -1614,14 +1754,31 @@ async function generateProtectedMasterlistExcel(requestId) {
     const downloadLink = document.createElement("a");
     downloadLink.setAttribute("href", url);
     const dateStr = new Date().toISOString().split('T')[0];
-    downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${dateStr}.xlsx`);
+    const deptSuffix = (scope === 'department' && department) ? `_${department.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 24)}` : '';
+    downloadLink.setAttribute("download", `GSO_Masterlist${deptSuffix}_Approved_${dateStr}.xlsx`);
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
 }
 
-window.downloadApprovedMasterlistCopy = async function(requestId, btn) {
+window.downloadApprovedMasterlistCopy = async function(requestId, btn, passedScope, passedDept) {
+    let scope = passedScope;
+    let dept = passedDept ? decodeURIComponent(passedDept) : '';
+
+    if (!scope && requestId) {
+        try {
+            const snap = await database.ref(`masterlistRequests/${requestId}`).once('value');
+            if (snap.exists()) {
+                const reqVal = snap.val();
+                scope = reqVal.scope || 'full';
+                dept = reqVal.department || reqVal.userDept || '';
+            }
+        } catch (e) {
+            console.warn("Could not retrieve request scope from RTDB:", e);
+        }
+    }
+
     const originalText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -1630,16 +1787,17 @@ window.downloadApprovedMasterlistCopy = async function(requestId, btn) {
 
     try {
         if (typeof ExcelJS !== 'undefined') {
-            await generateProtectedMasterlistExcel(requestId);
+            await generateProtectedMasterlistExcel(requestId, scope, dept);
             window.showGTrackToast('success', 'Download Complete', 'Authorized GSO Masterlist (Protected Excel) downloaded successfully.');
         } else {
             console.warn("ExcelJS not available, falling back to CSV export.");
-            const csvContent = buildMasterlistCSVString();
+            const csvContent = buildMasterlistCSVString(scope, dept);
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.createElement("a");
             downloadLink.setAttribute("href", url);
-            downloadLink.setAttribute("download", `GSO_Masterlist_Approved_${new Date().toISOString().split('T')[0]}.csv`);
+            const deptSuffix = (scope === 'department' && dept) ? `_${dept.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 24)}` : '';
+            downloadLink.setAttribute("download", `GSO_Masterlist${deptSuffix}_Approved_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
@@ -2101,6 +2259,14 @@ async function renderEmpRequestsPanel() {
                     </div>
                 `;
             } else {
+                const reqScope = d.scope || 'full';
+                const reqDept = d.department || d.userDept || currentEmployeeDept || '';
+                const isDeptScope = (reqScope === 'department');
+                const scopeDisplay = isDeptScope ? `Department Copy (${sanitizeText(reqDept)})` : `Full Municipal Masterlist`;
+                const scopeBadge = isDeptScope
+                    ? `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-building"></i> Department Only</span>`
+                    : `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-globe"></i> Full Copy</span>`;
+
                 cardEl.innerHTML = `
                     <div class="req-header">
                         <span class="req-tag" style="background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3);">
@@ -2121,8 +2287,10 @@ async function renderEmpRequestsPanel() {
                             <span class="req-data-val">${sanitizeText(d.user || currentEmployeeEmail)}</span>
                         </div>
                         <div class="req-data-row">
-                            <span class="req-data-label">Request Type</span>
-                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Full Inventory Masterlist Export (Excel)</span>
+                            <span class="req-data-label">Request Scope</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; flex-wrap: wrap;">
+                                ${scopeDisplay} ${scopeBadge}
+                            </span>
                         </div>
                         <div class="req-data-row">
                             <span class="req-data-label">Authorization Status</span>
@@ -2133,8 +2301,8 @@ async function renderEmpRequestsPanel() {
                     </div>
                     ${isApproved ? `
                         <div class="req-actions" style="margin-top: 4px;">
-                            <button onclick="downloadApprovedMasterlistCopy('${item.id}', this)" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
-                                <i class="fas fa-file-excel"></i> Download Official Excel (.xlsx)
+                            <button onclick="downloadApprovedMasterlistCopy('${item.id}', this, '${reqScope}', '${encodeURIComponent(reqDept)}')" class="add-eq-btn btn-blue" style="padding: 6px 14px; font-size: 11.5px; height: auto; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
+                                <i class="fas fa-file-excel"></i> Download ${isDeptScope ? 'Department Excel (.xlsx)' : 'Official Excel (.xlsx)'}
                             </button>
                         </div>
                     ` : ''}

@@ -3612,6 +3612,14 @@ async function renderAdminRequestsPanel() {
                     ` : ''}
                 `;
             } else {
+                const reqScope = d.scope || 'full';
+                const reqDept = d.department || d.userDept || 'Staff Office';
+                const isDeptScope = (reqScope === 'department');
+                const scopeDisplay = isDeptScope ? `Department Copy (${sanitizeText(reqDept)})` : `Full Municipal Masterlist`;
+                const scopeBadge = isDeptScope
+                    ? `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-building"></i> Department Only</span>`
+                    : `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-globe"></i> Full Copy</span>`;
+
                 cardEl.innerHTML = `
                     <div class="req-header">
                         <span class="req-tag" style="background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3);">
@@ -3632,8 +3640,10 @@ async function renderAdminRequestsPanel() {
                             <span class="req-data-val">${sanitizeText(d.user || '-')}</span>
                         </div>
                         <div class="req-data-row">
-                            <span class="req-data-label">Request Type</span>
-                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600;">Inventory Masterlist Copy</span>
+                            <span class="req-data-label">Requested Scope</span>
+                            <span class="req-data-val" style="color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; flex-wrap: wrap;">
+                                ${scopeDisplay} ${scopeBadge}
+                            </span>
                         </div>
                         <div class="req-data-row">
                             <span class="req-data-label">Status Details</span>
@@ -3880,9 +3890,45 @@ window.adminClearRequestsLogs = async function(e) {
 
 window.dismissAllMasterlistRequests = window.adminClearRequestsLogs;
 
-function buildMasterlistCSVString() {
+// Department Matching Helper for Scope Filtering
+function doesItemMatchDepartment(itemLocation, targetDept) {
+    if (!itemLocation || !targetDept) return false;
+    const loc = String(itemLocation).toLowerCase().trim();
+    const dept = String(targetDept).toLowerCase().trim();
+    if (loc === dept) return true;
+
+    // Check acronym matches e.g. (ACCOUNTING), (MACCO), (BFP), (GSO)
+    const locAcronymMatch = loc.match(/\(([^)]+)\)/);
+    const deptAcronymMatch = dept.match(/\(([^)]+)\)/);
+    const locAcronym = locAcronymMatch ? locAcronymMatch[1].trim() : '';
+    const deptAcronym = deptAcronymMatch ? deptAcronymMatch[1].trim() : '';
+
+    if (locAcronym && deptAcronym && locAcronym === deptAcronym) {
+        return true;
+    }
+
+    // Strip parentheses and common organizational words for match
+    const locClean = loc.replace(/\s*\([^)]*\)/g, '').replace(/municipal|office|department|unit/g, '').trim();
+    const deptClean = dept.replace(/\s*\([^)]*\)/g, '').replace(/municipal|office|department|unit/g, '').trim();
+
+    if (locClean && deptClean && (locClean === deptClean || locClean.includes(deptClean) || deptClean.includes(locClean))) {
+        return true;
+    }
+
+    if (locAcronym && dept.includes(locAcronym)) return true;
+    if (deptAcronym && loc.includes(deptAcronym)) return true;
+
+    return false;
+}
+
+function buildMasterlistCSVString(scope = 'full', department = '') {
     const headers = ["Article", "Description", "Property No", "Location", "Accountable Person", "Condition", "Acquisition Date", "Acquisition Cost", "Account Group", "Remarks"];
-    const rows = (inventoryData || []).map(item => [
+    let source = (inventoryData || []);
+    if (scope === 'department' && department) {
+        const filtered = source.filter(item => doesItemMatchDepartment(item.location, department));
+        if (filtered.length > 0) source = filtered;
+    }
+    const rows = source.map(item => [
         `"${(item.article || '').replace(/"/g, '""')}"`,
         `"${(item.description || '').replace(/"/g, '""')}"`,
         `"${(item.propertyNo || '').replace(/"/g, '""')}"`,
@@ -3900,7 +3946,7 @@ function buildMasterlistCSVString() {
 window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
     const ok = await window.showGTrackConfirm(
         "Approve Masterlist Request?",
-        "Authorize this staff member to download the current inventory masterlist copy?",
+        "Authorize this staff member to download their requested inventory copy?",
         "Approve Request",
         "Cancel",
         false,
@@ -3913,8 +3959,10 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
         const reqData = reqSnap.val() || {};
         const targetEmail = reqData.userEmail || reqData.user || '';
         const targetUserId = reqData.userId || reqData.userUid || '';
+        const reqScope = reqData.scope || 'full';
+        const reqDept = reqData.department || reqData.userDept || '';
 
-        const compiledCSVString = buildMasterlistCSVString();
+        const compiledCSVString = buildMasterlistCSVString(reqScope, reqDept);
         await database.ref(`masterlistRequests/${reqId}`).update({
             status: "Completed",
             fulfilledTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -3935,26 +3983,26 @@ window.approveMasterlistRequest = async function(reqId, triggerBtn = null) {
         // 3. Notify Employee in Real-Time (Directly to the requesting employee)
         try {
             const notifRef = database.ref('notifications').push();
+            const scopeText = (reqScope === 'department' && reqDept) ? `Department Copy (${reqDept})` : `Full Inventory Masterlist`;
             await notifRef.set({
                 id: notifRef.key,
                 title: 'Masterlist Copy Approved',
-                message: 'Your request for an authorized inventory masterlist copy has been approved. You can download it now in My Requests.',
+                message: `Your request for an authorized inventory copy (${scopeText}) has been approved. You can download it now in My Requests.`,
                 type: 'copy_request',
                 targetRole: 'employee',
                 targetEmail: targetEmail,
                 targetUserId: targetUserId,
                 createdAt: Date.now()
             });
-        } catch(nErr) {
+        } catch (nErr) {
             console.warn("Notification dispatch notice:", nErr);
         }
 
-        window.showGTrackToast('success', 'Request Approved', 'Masterlist copy generated and ready for staff download.');
+        window.showGTrackToast('success', 'Request Approved', 'Masterlist copy request has been authorized and made available for employee download.');
         renderAdminRequestsPanel();
-
     } catch (err) {
         console.error("Error approving masterlist request:", err);
-        window.showGTrackToast('error', 'Error', err.message || 'Could not approve masterlist request.');
+        window.showGTrackToast('error', 'Approval Error', err.message || 'Could not approve masterlist request.');
     }
 };
 
