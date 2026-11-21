@@ -4454,6 +4454,9 @@ function dispatchNativeDesktopNotification(title, message, notifId = null) {
                 const notif = new Notification(notifTitle, options);
                 notif.onclick = function() {
                     window.focus();
+                    if (notifId && typeof window.handleAdminNotifClick === 'function') {
+                        window.handleAdminNotifClick(notifId);
+                    }
                     notif.close();
                 };
             });
@@ -4461,19 +4464,34 @@ function dispatchNativeDesktopNotification(title, message, notifId = null) {
             const notif = new Notification(notifTitle, options);
             notif.onclick = function() {
                 window.focus();
+                if (notifId && typeof window.handleAdminNotifClick === 'function') {
+                    window.handleAdminNotifClick(notifId);
+                }
                 notif.close();
             };
         }
     } catch (e) {
         try {
-            new Notification(notifTitle, { body: notifBody, icon: '/dashboard/logo.png' });
+            const fallbackNotif = new Notification(notifTitle, { body: notifBody, icon: '/dashboard/logo.png' });
+            fallbackNotif.onclick = function() {
+                window.focus();
+                if (notifId && typeof window.handleAdminNotifClick === 'function') {
+                    window.handleAdminNotifClick(notifId);
+                }
+                fallbackNotif.close();
+            };
         } catch (err) {
             console.warn("Desktop notification trigger notice:", err);
         }
     }
 }
 
-window.showSidebarNotifToast = function(title, msg) {
+let latestAdminToastNotifId = null;
+let latestAdminToastNotifType = null;
+
+window.showSidebarNotifToast = function(title, msg, notifId = null, notifType = null) {
+    latestAdminToastNotifId = notifId;
+    latestAdminToastNotifType = notifType;
     const toast = document.getElementById('sidebar-notif-toast');
     const toastTitle = document.getElementById('sidebar-notif-toast-title');
     const toastMsg = document.getElementById('sidebar-notif-toast-msg');
@@ -4494,8 +4512,17 @@ window.showSidebarNotifToast = function(title, msg) {
 
     if (sidebarToastTimer) clearTimeout(sidebarToastTimer);
     sidebarToastTimer = setTimeout(() => {
-        hideSidebarNotifToast();
+        window.hideSidebarNotifToast();
     }, 7000);
+};
+
+window.handleSidebarToastClick = function() {
+    window.hideSidebarNotifToast();
+    if (latestAdminToastNotifId && typeof window.handleAdminNotifClick === 'function') {
+        window.handleAdminNotifClick(latestAdminToastNotifId, latestAdminToastNotifType);
+    } else if (typeof window.openSidebarNotifDrawer === 'function') {
+        window.openSidebarNotifDrawer();
+    }
 };
 
 window.hideSidebarNotifToast = function() {
@@ -4557,7 +4584,7 @@ function renderAdminNotifications(userKey = 'admin_user') {
         if (latestUnread) {
             const isDrawerOpen = drawer && drawer.classList.contains('open');
             if (!isDrawerOpen) {
-                showSidebarNotifToast(latestUnread.title, latestUnread.message);
+                showSidebarNotifToast(latestUnread.title, latestUnread.message, latestUnread.id, latestUnread.type);
             }
             // Dispatch to native Windows / OS Action Center
             dispatchNativeDesktopNotification(latestUnread.title, latestUnread.message, latestUnread.id);
@@ -4818,6 +4845,11 @@ window.clearAllNotifications = async function(event) {
 
 window.handleAdminNotifClick = async function(notifId, type) {
     const userKey = 'admin_user';
+    let notifObj = null;
+    if (Array.isArray(adminNotifications)) {
+        notifObj = adminNotifications.find(n => n.id === notifId);
+    }
+
     if (notifId) {
         try {
             await database.ref(`notifications/${notifId}/readBy/${userKey}`).set(true);
@@ -4829,16 +4861,81 @@ window.handleAdminNotifClick = async function(notifId, type) {
     // Close topbar dropdown & sliding drawer
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.remove('open');
-    closeSidebarNotifDrawer();
+    if (typeof closeSidebarNotifDrawer === 'function') {
+        closeSidebarNotifDrawer();
+    }
 
-    // Action routing
-    if (type === 'copy_request') {
+    const notifType = (type || (notifObj ? notifObj.type : '') || '').toLowerCase();
+    const title = (notifObj ? (notifObj.title || '') : '').toLowerCase();
+    const msg = (notifObj ? (notifObj.message || '') : '').toLowerCase();
+
+    // 1. Masterlist Copy Requests -> Open Requests Drawer & Switch to Masterlist Copies Tab
+    if (notifType === 'copy_request' || notifType === 'masterlist' || title.includes('copy request') || title.includes('masterlist copy') || msg.includes('masterlist copy')) {
         if (typeof openRequestsModal === 'function') {
             openRequestsModal();
-        } else if (typeof switchAdminView === 'function') {
-            const reqBtn = document.getElementById('sidebar-requests-btn') || document.getElementById('pending-requests-btn');
-            if (reqBtn) reqBtn.click();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-masterlist');
+                if (typeof filterRequestsTab === 'function') filterRequestsTab('masterlist', tabBtn);
+            }, 60);
         }
+        return;
+    }
+
+    // 2. Equipment Transfer Requests -> Open Requests Drawer & Switch to Equipment Transfers Tab
+    if (notifType === 'request' || notifType === 'transfer' || title.includes('equipment transfer') || msg.includes('transfer of')) {
+        if (typeof openRequestsModal === 'function') {
+            openRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-transfer');
+                if (typeof filterRequestsTab === 'function') filterRequestsTab('transfer', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 3. Department Transfer Requests -> Open Requests Drawer & Switch to Dept Transfers Tab
+    if (notifType === 'dept_transfer' || title.includes('department transfer') || msg.includes('department transfer')) {
+        if (typeof openRequestsModal === 'function') {
+            openRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-dept');
+                if (typeof filterRequestsTab === 'function') filterRequestsTab('dept', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 4. Role Elevation Requests -> Open Requests Drawer & Switch to Role Requests Tab
+    if (notifType === 'role_elevation' || notifType === 'user_role' || title.includes('admin access') || title.includes('admin role') || title.includes('elevation') || msg.includes('elevate')) {
+        if (typeof openRequestsModal === 'function') {
+            openRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-role');
+                if (typeof filterRequestsTab === 'function') filterRequestsTab('role', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 5. New User Registration / Staff Account Updates -> Open User Profiles Drawer
+    if (notifType === 'new_user' || notifType === 'user' || notifType === 'user_update' || title.includes('registered') || title.includes('new employee') || msg.includes('account created') || msg.includes('new user')) {
+        if (typeof openProfilesModal === 'function') {
+            openProfilesModal();
+        }
+        return;
+    }
+
+    // 6. New Property Item, Inventory Import, or Accounting Reconciliation -> View in Masterlist
+    if (notifType === 'new_item' || notifType === 'inventory' || notifType === 'import_excel' || notifType === 'item_tallied' || title.includes('property') || title.includes('import') || title.includes('tallied') || msg.includes('masterlist')) {
+        if (typeof switchAdminView === 'function') {
+            switchAdminView('masterlist');
+        }
+        return;
+    }
+
+    // Generic fallback: if it's any other request, open the requests drawer
+    if (typeof openRequestsModal === 'function') {
+        openRequestsModal();
     }
 };
 

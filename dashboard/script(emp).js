@@ -4496,6 +4496,9 @@ function dispatchNativeDesktopNotification(title, message, notifId = null) {
                 const notif = new Notification(notifTitle, options);
                 notif.onclick = function() {
                     window.focus();
+                    if (notifId && typeof window.handleEmpNotifClick === 'function') {
+                        window.handleEmpNotifClick(notifId);
+                    }
                     notif.close();
                 };
             });
@@ -4503,19 +4506,34 @@ function dispatchNativeDesktopNotification(title, message, notifId = null) {
             const notif = new Notification(notifTitle, options);
             notif.onclick = function() {
                 window.focus();
+                if (notifId && typeof window.handleEmpNotifClick === 'function') {
+                    window.handleEmpNotifClick(notifId);
+                }
                 notif.close();
             };
         }
     } catch (e) {
         try {
-            new Notification(notifTitle, { body: notifBody, icon: '/dashboard/logo.png' });
+            const fallbackNotif = new Notification(notifTitle, { body: notifBody, icon: '/dashboard/logo.png' });
+            fallbackNotif.onclick = function() {
+                window.focus();
+                if (notifId && typeof window.handleEmpNotifClick === 'function') {
+                    window.handleEmpNotifClick(notifId);
+                }
+                fallbackNotif.close();
+            };
         } catch (err) {
             console.warn("Desktop notification trigger notice:", err);
         }
     }
 }
 
-window.showSidebarNotifToast = function(title, msg) {
+let latestEmpToastNotifId = null;
+let latestEmpToastNotifType = null;
+
+window.showSidebarNotifToast = function(title, msg, notifId = null, notifType = null) {
+    latestEmpToastNotifId = notifId;
+    latestEmpToastNotifType = notifType;
     const toast = document.getElementById('sidebar-notif-toast');
     const toastTitle = document.getElementById('sidebar-notif-toast-title');
     const toastMsg = document.getElementById('sidebar-notif-toast-msg');
@@ -4538,6 +4556,15 @@ window.showSidebarNotifToast = function(title, msg) {
     empSidebarToastTimer = setTimeout(() => {
         hideSidebarNotifToast();
     }, 7000);
+};
+
+window.handleSidebarToastClick = function() {
+    window.hideSidebarNotifToast();
+    if (latestEmpToastNotifId && typeof window.handleEmpNotifClick === 'function') {
+        window.handleEmpNotifClick(latestEmpToastNotifId, latestEmpToastNotifType);
+    } else if (typeof window.openSidebarNotifDrawer === 'function') {
+        window.openSidebarNotifDrawer();
+    }
 };
 
 window.hideSidebarNotifToast = function() {
@@ -4661,7 +4688,7 @@ function renderEmpNotifications(userKey) {
         if (latestUnread) {
             const isDrawerOpen = drawer && drawer.classList.contains('open');
             if (!isDrawerOpen) {
-                showSidebarNotifToast(latestUnread.title, latestUnread.message);
+                showSidebarNotifToast(latestUnread.title, latestUnread.message, latestUnread.id, latestUnread.type);
             }
             // Dispatch to native Windows / OS Action Center
             dispatchNativeDesktopNotification(latestUnread.title, latestUnread.message, latestUnread.id);
@@ -4947,6 +4974,11 @@ window.clearAllNotifications = async function(event) {
 
 window.handleEmpNotifClick = async function(notifId, type) {
     const userKey = currentEmployeeUid || (currentEmployeeEmail ? currentEmployeeEmail.replace(/[^a-zA-Z0-9]/g, '_') : 'emp_user');
+    let notifObj = null;
+    if (Array.isArray(empNotifications)) {
+        notifObj = empNotifications.find(n => n.id === notifId);
+    }
+
     if (notifId) {
         try {
             await database.ref(`notifications/${notifId}/readBy/${userKey}`).set(true);
@@ -4958,11 +4990,84 @@ window.handleEmpNotifClick = async function(notifId, type) {
     // Close dropdown and drawer
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.remove('open');
-    closeSidebarNotifDrawer();
+    if (typeof closeSidebarNotifDrawer === 'function') {
+        closeSidebarNotifDrawer();
+    }
 
-    // Route to directory tab if new item
-    if (type === 'new_item' && typeof switchEmpView === 'function') {
-        switchEmpView('directory');
+    const notifType = (type || (notifObj ? notifObj.type : '') || '').toLowerCase();
+    const title = (notifObj ? (notifObj.title || '') : '').toLowerCase();
+    const msg = (notifObj ? (notifObj.message || '') : '').toLowerCase();
+
+    // 1. Masterlist Copy Approved / Declined / Status -> Open Requests Drawer & Focus Masterlist Copies Tab
+    if (notifType === 'copy_request' || notifType === 'masterlist' || title.includes('masterlist copy') || msg.includes('masterlist copy') || msg.includes('authorized copy')) {
+        if (typeof openEmpRequestsModal === 'function') {
+            openEmpRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-emp-masterlist');
+                if (typeof filterEmpRequestsTab === 'function') filterEmpRequestsTab('masterlist', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 2. Equipment Transfer Approved / Declined / Status -> Open Requests Drawer & Focus Equipment Transfers Tab
+    if (notifType === 'request' || notifType === 'transfer' || title.includes('equipment transfer') || msg.includes('equipment transfer')) {
+        if (typeof openEmpRequestsModal === 'function') {
+            openEmpRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-emp-transfer');
+                if (typeof filterEmpRequestsTab === 'function') filterEmpRequestsTab('transfer', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 3. Department Transfer Approved / Requested -> Open Requests Drawer & Focus Dept Transfers Tab
+    if (notifType === 'dept_transfer' || title.includes('department transfer') || msg.includes('department transfer') || msg.includes('municipal department')) {
+        if (typeof openEmpRequestsModal === 'function') {
+            openEmpRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-emp-dept');
+                if (typeof filterEmpRequestsTab === 'function') filterEmpRequestsTab('dept', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 4. Role Elevation / Administrator Access -> Open Requests Drawer & Focus Role Requests Tab
+    if (notifType === 'role_elevation' || notifType === 'user_role' || title.includes('administrator') || msg.includes('administrator') || msg.includes('admin role')) {
+        if (typeof openEmpRequestsModal === 'function') {
+            openEmpRequestsModal();
+            setTimeout(() => {
+                const tabBtn = document.getElementById('tab-btn-emp-role');
+                if (typeof filterEmpRequestsTab === 'function') filterEmpRequestsTab('role', tabBtn);
+            }, 60);
+        }
+        return;
+    }
+
+    // 5. New Property Item Added -> View in Masterlist Directory
+    if (notifType === 'new_item' || notifType === 'inventory' || title.includes('property item')) {
+        if (typeof switchEmpView === 'function') {
+            switchEmpView('directory');
+        }
+        return;
+    }
+
+    // 6. Accounting Reconciliation / Tallied Item
+    if (notifType === 'item_tallied' || notifType === 'tally' || notifType === 'accounting') {
+        const isAccountingOffice = (currentEmployeeDept || '').toLowerCase().includes('accounting');
+        if (isAccountingOffice && typeof switchEmpView === 'function') {
+            switchEmpView('accounting');
+        } else if (typeof switchEmpView === 'function') {
+            switchEmpView('directory');
+        }
+        return;
+    }
+
+    // Generic fallback: open My Requests
+    if (typeof openEmpRequestsModal === 'function') {
+        openEmpRequestsModal();
     }
 };
 
