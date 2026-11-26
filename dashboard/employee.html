@@ -52,6 +52,16 @@
             Verifying Session...
         </div>
     </div>
+    <script>
+        // Failsafe: Ensure cloak dismisses even if network or Firestore listener is slow
+        setTimeout(function() {
+            var c = document.getElementById('auth-cloak');
+            if (c && !c.classList.contains('hidden')) {
+                c.classList.add('hidden');
+                setTimeout(function() { if (c && c.parentNode) c.remove(); }, 350);
+            }
+        }, 3000);
+    </script>
 
     <!-- Sliding Sidebar Nav Menu Drawer -->
     <div id="sidebar-drawer" class="sidebar-drawer">
@@ -1356,7 +1366,7 @@
     <!-- ExcelJS for Protected & Auto-Formatted Official Spreadsheet Downloads -->
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
-    <script src="script(emp).js?v=20261118_5"></script>
+    <script src="script(emp).js?v=20261126_1"></script>
 
 </body>
 </html>

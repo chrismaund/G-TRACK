@@ -1440,10 +1440,6 @@ window.openMasterlistScopeModal = function(event) {
     modal.style.display = 'block';
 };
 
-    modal.classList.remove('hidden');
-    modal.style.display = 'block';
-};
-
 window.closeMasterlistScopeModal = function(event) {
     if (event) {
         if (typeof event.preventDefault === 'function') event.preventDefault();
