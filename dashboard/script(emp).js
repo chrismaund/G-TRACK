@@ -1363,7 +1363,12 @@ window.selectMasterlistScope = function(scope) {
     }
 };
 
-window.openMasterlistScopeModal = function() {
+window.openMasterlistScopeModal = function(event) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
+
     const modal = document.getElementById('masterlist-scope-modal');
     if (!modal) {
         window.confirmAndSendMasterlistRequest();
@@ -1376,29 +1381,82 @@ window.openMasterlistScopeModal = function() {
 
     window.selectMasterlistScope('department');
 
-    modal.style.display = 'flex';
-    requestAnimationFrame(() => {
-        modal.style.opacity = '1';
-        const card = modal.querySelector('div');
-        if (card) card.style.transform = 'scale(1)';
-    });
+    // Anchor positioning beside / below the clicked button or action card
+    let trigger = (event && event.currentTarget) ? event.currentTarget : null;
+    if (!trigger) {
+        // Fallback: Check if requests modal is open, use its header button
+        const empReqModal = document.getElementById('emp-requests-modal');
+        if (empReqModal && !empReqModal.classList.contains('hidden') && empReqModal.style.display !== 'none') {
+            trigger = empReqModal.querySelector('button[onclick*="sendMasterlistRequest"]');
+        } else {
+            trigger = document.querySelector('.action-card[onclick*="sendMasterlistRequest"]');
+        }
+    }
+
+    const popoverWidth = 340;
+    if (trigger && typeof trigger.getBoundingClientRect === 'function') {
+        const rect = trigger.getBoundingClientRect();
+        let top = rect.bottom + 8;
+        // Align right edge of popover with right edge of trigger, or clamp
+        let left = rect.right - popoverWidth;
+        const minLeft = 12;
+        const maxLeft = Math.max(12, window.innerWidth - popoverWidth - 12);
+
+        if (left < minLeft) left = Math.max(minLeft, rect.left);
+        if (left > maxLeft) left = maxLeft;
+
+        // If bottom overflows screen height, position above trigger
+        if (top + 280 > window.innerHeight && rect.top > 290) {
+            top = Math.max(10, rect.top - 280);
+        }
+
+        modal.style.top = `${Math.round(top)}px`;
+        modal.style.left = `${Math.round(left)}px`;
+    } else {
+        // Center fallback if no bounding client rect available
+        modal.style.top = '120px';
+        modal.style.left = `${Math.max(12, Math.round((window.innerWidth - popoverWidth) / 2))}px`;
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'block';
 };
 
-window.closeMasterlistScopeModal = function() {
+window.closeMasterlistScopeModal = function(event) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
     const modal = document.getElementById('masterlist-scope-modal');
     if (modal) {
-        modal.style.opacity = '0';
-        const card = modal.querySelector('div');
-        if (card) card.style.transform = 'scale(0.96)';
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 180);
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
     }
 };
 
-window.sendMasterlistRequest = function() {
-    window.openMasterlistScopeModal();
+window.sendMasterlistRequest = function(event) {
+    if (event) {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
+    const modal = document.getElementById('masterlist-scope-modal');
+    if (modal && modal.style.display === 'block' && !modal.classList.contains('hidden')) {
+        window.closeMasterlistScopeModal(event);
+        return;
+    }
+    window.openMasterlistScopeModal(event);
 };
+
+// Auto-close masterlist scope popover on click outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('masterlist-scope-modal');
+    if (!modal || modal.style.display === 'none' || modal.classList.contains('hidden')) return;
+    if (modal.contains(e.target)) return;
+    if (e.target.closest && (e.target.closest('#masterlist-scope-modal') || e.target.closest('button[onclick*="sendMasterlistRequest"]') || e.target.closest('.action-card[onclick*="sendMasterlistRequest"]'))) {
+        return;
+    }
+    window.closeMasterlistScopeModal();
+});
 
 window.confirmAndSendMasterlistRequest = async function() {
     const submitBtn = document.getElementById('submit-masterlist-scope-btn');
