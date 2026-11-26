@@ -534,6 +534,10 @@ function renderTable() {
 
         const tr = document.createElement('tr');
         tr.style.animationDelay = `${Math.min(index * 0.02, 0.35)}s`;
+        if (isChecked) {
+            tr.classList.add('selected-delete-row');
+        }
+        tr.setAttribute('data-id', item.id);
         tr.innerHTML = `
             <td class="td-checkbox" style="display: ${isDeleteSelectionMode ? 'table-cell' : 'none'}; text-align: center; padding: 8px 6px;">
                 <input type="checkbox" class="row-delete-checkbox" data-id="${item.id}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 15px; height: 15px; accent-color: #ef4444;">
@@ -1311,7 +1315,11 @@ function exitDeleteSelectionMode() {
     isDeleteSelectionMode = false;
     selectedItemIds.clear();
     closeDeletePopover();
-    if (thCheckbox) thCheckbox.style.display = 'none';
+    document.body.classList.remove('delete-selection-mode');
+    if (thCheckbox) {
+        thCheckbox.style.display = 'none';
+        thCheckbox.style.cursor = 'default';
+    }
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     if (cancelDeleteModeBtn) cancelDeleteModeBtn.style.display = 'none';
     updateDeleteButtonLabel();
@@ -1322,7 +1330,11 @@ function enterDeleteSelectionMode() {
     isDeleteSelectionMode = true;
     selectedItemIds.clear();
     closeDeletePopover();
-    if (thCheckbox) thCheckbox.style.display = 'table-cell';
+    document.body.classList.add('delete-selection-mode');
+    if (thCheckbox) {
+        thCheckbox.style.display = 'table-cell';
+        thCheckbox.style.cursor = 'pointer';
+    }
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     if (cancelDeleteModeBtn) cancelDeleteModeBtn.style.display = 'inline-flex';
     updateDeleteButtonLabel();
@@ -1338,7 +1350,7 @@ if (deleteModeBtn) {
         } else {
             // Second click: open compact popover right beneath the delete button
             if (selectedItemIds.size === 0) {
-                window.showGTrackToast('info', 'Selection Needed', 'Please select at least one item to delete by ticking the checkboxes.');
+                window.showGTrackToast('info', 'Selection Needed', 'Please select at least one item to delete by clicking its row or checkbox.');
                 return;
             }
 
@@ -1358,11 +1370,14 @@ if (selectAllCheckbox) {
         visibleCheckboxes.forEach(cb => {
             cb.checked = isChecked;
             const id = cb.getAttribute('data-id');
+            const tr = cb.closest('tr');
             if (id) {
                 if (isChecked) {
                     selectedItemIds.add(id);
+                    if (tr) tr.classList.add('selected-delete-row');
                 } else {
                     selectedItemIds.delete(id);
+                    if (tr) tr.classList.remove('selected-delete-row');
                 }
             }
         });
@@ -1370,16 +1385,65 @@ if (selectAllCheckbox) {
     });
 }
 
-// Event delegation for row checkboxes in tableBody
+if (thCheckbox) {
+    thCheckbox.addEventListener('click', (e) => {
+        if (selectAllCheckbox && e.target !== selectAllCheckbox) {
+            selectAllCheckbox.checked = !selectAllCheckbox.checked;
+            selectAllCheckbox.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+// Event delegation for row-level clicks and row checkboxes in tableBody
 if (tableBody) {
+    tableBody.addEventListener('click', (e) => {
+        if (!isDeleteSelectionMode) return;
+
+        // Never trigger delete selection when clicking edit/action buttons
+        if (e.target.closest('.action-btn') || e.target.closest('.actions-cell') || e.target.closest('button')) {
+            return;
+        }
+
+        const tr = e.target.closest('tr');
+        if (!tr) return;
+
+        const cb = tr.querySelector('.row-delete-checkbox');
+        if (!cb) return;
+
+        // If user directly clicked the checkbox input, allow the change event to handle it
+        if (e.target === cb) return;
+
+        // Toggle checkbox state on row click
+        cb.checked = !cb.checked;
+        const id = cb.getAttribute('data-id');
+        if (id) {
+            if (cb.checked) {
+                selectedItemIds.add(id);
+                tr.classList.add('selected-delete-row');
+            } else {
+                selectedItemIds.delete(id);
+                tr.classList.remove('selected-delete-row');
+            }
+        }
+
+        if (selectAllCheckbox) {
+            const visibleCheckboxes = document.querySelectorAll('.row-delete-checkbox');
+            selectAllCheckbox.checked = visibleCheckboxes.length > 0 && Array.from(visibleCheckboxes).every(c => c.checked);
+        }
+        updateDeleteButtonLabel();
+    });
+
     tableBody.addEventListener('change', (e) => {
         if (e.target.classList.contains('row-delete-checkbox')) {
             const id = e.target.getAttribute('data-id');
+            const tr = e.target.closest('tr');
             if (id) {
                 if (e.target.checked) {
                     selectedItemIds.add(id);
+                    if (tr) tr.classList.add('selected-delete-row');
                 } else {
                     selectedItemIds.delete(id);
+                    if (tr) tr.classList.remove('selected-delete-row');
                 }
             }
             if (selectAllCheckbox) {

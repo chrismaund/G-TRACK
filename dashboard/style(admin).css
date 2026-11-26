@@ -2542,6 +2542,25 @@ body.dark-theme-mode .data-table tbody tr {
 body.dark-theme-mode .data-table tbody tr:hover {
     background-color: rgba(56, 189, 248, 0.05) !important;
 }
+
+/* Masterlist Delete Selection Mode Interactive Row Styling */
+body.delete-selection-mode .data-table tbody tr {
+    cursor: pointer !important;
+}
+body.delete-selection-mode .data-table tbody tr:hover {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+}
+.data-table tbody tr.selected-delete-row,
+body.dark-theme-mode .data-table tbody tr.selected-delete-row {
+    background-color: rgba(239, 68, 68, 0.16) !important;
+}
+.data-table tbody tr.selected-delete-row:hover,
+body.dark-theme-mode .data-table tbody tr.selected-delete-row:hover {
+    background-color: rgba(239, 68, 68, 0.22) !important;
+}
+.data-table tbody tr.selected-delete-row td:first-child {
+    border-left: 3px solid #ef4444 !important;
+}
 body.dark-theme-mode .font-bold {
     color: #ffffff !important;
 }
