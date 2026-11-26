@@ -2259,7 +2259,7 @@ body.sidebar-expanded .sidebar-text,
     .sidebar-drawer.expanded #printPopover,
     body.sidebar-expanded #printPopover {
         position: fixed !important;
-        left: 250px !important;
+        left: 268px !important;
         top: 140px !important;
         width: 320px !important;
         max-width: 320px !important;
@@ -2269,8 +2269,28 @@ body.sidebar-expanded .sidebar-text,
         position: fixed !important;
         left: 76px !important;
         bottom: 20px !important;
-        width: 300px !important;
-        max-width: 300px !important;
+        width: 310px !important;
+        max-width: 310px !important;
+        z-index: 1250 !important;
+    }
+    .sidebar-drawer.expanded #signout-popover,
+    body.sidebar-expanded #signout-popover {
+        position: fixed !important;
+        left: 268px !important;
+        bottom: 20px !important;
+        width: 310px !important;
+        max-width: 310px !important;
+        z-index: 1250 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #signout-popover {
+        position: fixed !important;
+        left: 16px !important;
+        bottom: 20px !important;
+        width: calc(100vw - 32px) !important;
+        max-width: 310px !important;
         z-index: 1250 !important;
     }
 }
