@@ -1226,53 +1226,68 @@
     <div id="masterlist-scope-modal" class="hidden" style="
         position: fixed;
         z-index: 1250;
-        width: 340px;
-        max-width: calc(100vw - 24px);
+        width: 410px;
+        max-width: calc(100vw - 20px);
         background-color: #0f172a;
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        border-radius: 12px;
-        padding: 14px 16px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.88), 0 0 24px rgba(56, 189, 248, 0.15);
         box-sizing: border-box;
         display: none;
     ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-file-export" style="color: #38bdf8; font-size: 13px;"></i>
-                <span style="font-size: 11.5px; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">REQUEST MASTERLIST COPY</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #ffffff; letter-spacing: 0.2px;">REQUEST MASTERLIST COPY</h4>
+                    <span style="font-size: 11px; color: #94a3b8;">Select the inventory records to request from GSO</span>
+                </div>
             </div>
-            <button type="button" onclick="window.closeMasterlistScopeModal(event)" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px;" title="Close">&times;</button>
+            <button type="button" onclick="window.closeMasterlistScopeModal(event)" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color 0.15s ease;" title="Close" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#94a3b8'">&times;</button>
         </div>
 
-        <p style="margin: 0 0 10px 0; font-size: 11px; color: #94a3b8; line-height: 1.4;">
-            Select inventory scope to request from GSO Administrator:
-        </p>
-
         <!-- Scope Selection Radio Cards -->
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
-            <!-- Department Copy Card -->
-            <label id="scope-card-dept" onclick="window.selectMasterlistScope('department')" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.6); border-radius: 8px; cursor: pointer; transition: all 0.15s ease;">
-                <input type="radio" name="masterlistScopeRadio" id="scope-radio-dept" value="department" checked style="margin-top: 2px; accent-color: #38bdf8; width: 14px; height: 14px; cursor: pointer;">
+        <div style="display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px;">
+            <!-- 1. Accountable Officer / Personal Equipment Copy Card -->
+            <label id="scope-card-personal" onclick="window.selectMasterlistScope('personal')" style="display: flex; align-items: flex-start; gap: 11px; padding: 11px 13px; background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.6); border-radius: 9px; cursor: pointer; transition: all 0.15s ease;">
+                <input type="radio" name="masterlistScopeRadio" id="scope-radio-personal" value="personal" checked style="margin-top: 2px; accent-color: #34d399; width: 15px; height: 15px; cursor: pointer;">
                 <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 12px; font-weight: 700; color: #ffffff;">Department Copy Only</span>
-                        <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700;">Recommended</span>
+                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 3px;">
+                        <span style="font-size: 12.5px; font-weight: 700; color: #ffffff;">My Assigned Equipment Only</span>
+                        <span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700;">Accountable Officer</span>
                     </div>
-                    <p style="margin: 3px 0 0 0; font-size: 10.5px; color: #94a3b8; line-height: 1.35;">
-                        Equipment located in <strong id="scope-dept-preview" style="color: #38bdf8;">Your Department</strong>.
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        Only equipment where <strong id="scope-personal-preview" style="color: #34d399;">Your Name</strong> is listed as Accountable Officer.
                     </p>
                 </div>
             </label>
 
-            <!-- Full Masterlist Card -->
-            <label id="scope-card-full" onclick="window.selectMasterlistScope('full')" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.15s ease;">
-                <input type="radio" name="masterlistScopeRadio" id="scope-radio-full" value="full" style="margin-top: 2px; accent-color: #38bdf8; width: 14px; height: 14px; cursor: pointer;">
+            <!-- 2. Department Office Copy Card -->
+            <label id="scope-card-dept" onclick="window.selectMasterlistScope('department')" style="display: flex; align-items: flex-start; gap: 11px; padding: 11px 13px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 9px; cursor: pointer; transition: all 0.15s ease;">
+                <input type="radio" name="masterlistScopeRadio" id="scope-radio-dept" value="department" style="margin-top: 2px; accent-color: #38bdf8; width: 15px; height: 15px; cursor: pointer;">
                 <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 12px; font-weight: 700; color: #ffffff;">Full Municipal Masterlist</span>
-                        <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8; font-weight: 600;">All Offices</span>
+                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 3px;">
+                        <span style="font-size: 12.5px; font-weight: 700; color: #ffffff;">Department Office Copy</span>
+                        <span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700;">Office Scope</span>
                     </div>
-                    <p style="margin: 3px 0 0 0; font-size: 10.5px; color: #94a3b8; line-height: 1.35;">
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        All equipment located in <strong id="scope-dept-preview" style="color: #38bdf8;">Your Department</strong>.
+                    </p>
+                </div>
+            </label>
+
+            <!-- 3. Full Municipal Masterlist Card -->
+            <label id="scope-card-full" onclick="window.selectMasterlistScope('full')" style="display: flex; align-items: flex-start; gap: 11px; padding: 11px 13px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 9px; cursor: pointer; transition: all 0.15s ease;">
+                <input type="radio" name="masterlistScopeRadio" id="scope-radio-full" value="full" style="margin-top: 2px; accent-color: #38bdf8; width: 15px; height: 15px; cursor: pointer;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 3px;">
+                        <span style="font-size: 12.5px; font-weight: 700; color: #ffffff;">Full Municipal Masterlist</span>
+                        <span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8; font-weight: 600;">All Offices</span>
+                    </div>
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.4;">
                         All equipment across all 27+ LGU Pagbilao offices.
                     </p>
                 </div>
@@ -1280,9 +1295,9 @@
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
-            <button type="button" onclick="window.closeMasterlistScopeModal(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 5px 11px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer;">Cancel</button>
-            <button type="button" id="submit-masterlist-scope-btn" onclick="window.confirmAndSendMasterlistRequest()" class="add-eq-btn btn-blue" style="padding: 5px 13px; font-size: 11px; height: auto; display: inline-flex; align-items: center; gap: 5px;">
+        <div style="display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+            <button type="button" onclick="window.closeMasterlistScopeModal(event)" style="background-color: #334155; color: #cbd5e1; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.backgroundColor='#475569'" onmouseout="this.style.backgroundColor='#334155'">Cancel</button>
+            <button type="button" id="submit-masterlist-scope-btn" onclick="window.confirmAndSendMasterlistRequest()" class="add-eq-btn btn-blue" style="padding: 6px 16px; font-size: 11.5px; height: auto; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px;">
                 <i class="fas fa-paper-plane"></i> Submit Request
             </button>
         </div>

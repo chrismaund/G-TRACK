@@ -3614,11 +3614,20 @@ async function renderAdminRequestsPanel() {
             } else {
                 const reqScope = d.scope || 'full';
                 const reqDept = d.department || d.userDept || 'Staff Office';
+                const reqPerson = d.accountablePerson || d.userName || 'Staff';
+                const isPersonalScope = (reqScope === 'personal');
                 const isDeptScope = (reqScope === 'department');
-                const scopeDisplay = isDeptScope ? `Department Copy (${sanitizeText(reqDept)})` : `Full Municipal Masterlist`;
-                const scopeBadge = isDeptScope
-                    ? `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-building"></i> Department Only</span>`
-                    : `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-globe"></i> Full Copy</span>`;
+
+                let scopeDisplay = 'Full Municipal Masterlist';
+                let scopeBadge = `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-globe"></i> Full Copy</span>`;
+
+                if (isPersonalScope) {
+                    scopeDisplay = `Personal Equipment (${sanitizeText(reqPerson)})`;
+                    scopeBadge = `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 700; margin-left: 6px;"><i class="fas fa-user-check"></i> Personal Custody</span>`;
+                } else if (isDeptScope) {
+                    scopeDisplay = `Department Copy (${sanitizeText(reqDept)})`;
+                    scopeBadge = `<span style="font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 700; margin-left: 6px;"><i class="fas fa-building"></i> Department Only</span>`;
+                }
 
                 cardEl.innerHTML = `
                     <div class="req-header">
