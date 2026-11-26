@@ -2269,9 +2269,9 @@ body.sidebar-expanded .sidebar-text,
         position: fixed !important;
         left: 76px !important;
         bottom: 20px !important;
-        width: 250px !important;
-        max-width: 250px !important;
-        z-index: 1200 !important;
+        width: 300px !important;
+        max-width: 300px !important;
+        z-index: 1250 !important;
     }
 }
 
